@@ -1,0 +1,16 @@
+--- Configure.orig	2012-10-25 22:44:14.000000000 -0400
++++ Configure	2012-11-09 12:54:08.000000000 -0500
+@@ -9377,6 +9377,13 @@
+ : Check if we want perlio
+ useperlio="$define"
+ 
++: Look for a hint-file generated 'call-back-unit'.
++: We need to set some defaults for building perl for Pecan.
++if $test -f pecan.cbu; then
++	echo "Setting Pecan-specific hints regarding compiler/linker flags..."
++	. ./pecan.cbu
++fi
++
+ : Set the vendorbin variables
+ case "$vendorprefix" in
+ '')	d_vendorbin="$undef"

@@ -1,0 +1,76 @@
+# Encap settings for perl.
+
+perl5='/usr/bin/false'
+installstyle='lib/perl5'
+useshrplib=true
+
+# Installation directories for "perl", "vendor" and "site" bits.
+prefix='@prefix@'
+siteprefix='@siteprefix@'
+vendorprefix='@vendorprefix@'
+
+# Avoid manpage conflicts between the standard Perl library, 3rd-party
+# modules, and other packages.
+man1ext='1'
+man1dir="$prefix/share/man/man1"
+siteman1dir="$siteprefix/share/man/man1"
+vendorman1dir="$vendorprefix/share/man/man1"
+man3ext='3'
+man3dir="$prefix/share/man/man3"
+siteman3dir="$siteprefix/share/man/man3"
+vendorman3dir="$vendorprefix/share/man/man3"
+
+# Directories to use for library searches
+libpth="/lib /usr/lib"
+
+# Generate an encap.cbu call-back script that sets the correct LDFLAGS
+# for linking against Encap-installed libraries
+cat > UU/encap.cbu <<EOCBU
+# This script UU/encap.cbu will get 'called-back' by Configure
+# *after* all hints.
+
+# Sets the correct LDFLAGS for linking against Encap-installed
+# libraries
+lddlflags="@ldflags@ \$lddlflags"
+ldflags="@ldflags@ \$ldflags"
+
+# List the directories in which headers and libraries of
+# locally-installed software may be found.
+loclibpth="@prefix@/lib"
+locincpth="@prefix@/include"
+
+# List the directories in which system libraries may be found.
+glibpth="/lib /usr/lib"
+
+# Strip /usr/pkg/lib and /usr/local/lib from variables.
+strip_path()
+{
+	_var=\$1
+	_path=\$2
+	eval _value=\"\\$\${_var}\"
+	case "\${_value}" in
+	*\${_path}*)
+		if test "@prefix@" = "\${_path}"; then
+			return
+		fi
+		set \`echo "X \${_value} " | sed "s| [^ ]*\${_path}[^ ]* | |g"\`
+		shift
+		eval \${_var}=\"\$*\"
+	esac
+}
+
+strip_path ccflags /usr/pkg
+strip_path ccflags /usr/local
+strip_path cppflags /usr/pkg
+strip_path cppflags /usr/local
+strip_path ldflags /usr/pkg
+strip_path ldflags /usr/local
+
+# Strip gdbm from libswanted
+case "\$libswanted" in
+*gdbm*)
+	set \`echo "X \$libswanted " | sed 's, [^ ]*gdbm[^ ]* , ,g'\`
+	shift
+	libswanted="\$*"
+esac
+EOCBU

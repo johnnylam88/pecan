@@ -1,0 +1,1330 @@
+pecan_build_version=1
+
+if [ -f ./pecan.conf ]; then
+	. ./pecan.conf
+elif [ -f ../pecan/pecan.conf ]; then
+	. ../pecan/pecan.conf
+fi
+
+# List of registered actions that can be given to pecan_main().
+pecan_action_registry=
+
+########
+# init #
+########
+
+pecan_action_registry="${pecan_action_registry} init"
+
+pecan_init_vars()
+{
+	if [ -z "${PECAN_PKGNAME}" ]; then
+		echo "$0: \`PECAN_PKGNAME' must be set." 1>&2
+		return 1
+	fi
+
+	: ${PECAN_TARGET:=/usr/local}
+	: ${PECAN_SOURCE:=${PECAN_TARGET}/pecan}
+	: ${PECAN_PATH:=/bin:/sbin:/usr/bin:/usr/sbin}
+	: ${PECAN_SUDO_CMD=}
+	: ${PECAN_EPKG_CMD:=${PECAN_TARGET}/bin/epkg}
+
+	pecan_pkgspec_parse "${PECAN_PKGNAME}" _pb_init_pkgname \
+		_pb_init_version _pb_init_swver _pb_init_pkgver || return 1
+
+	: ${pecan_pkgname:=${_pb_init_pkgname}}
+	: ${pecan_swver:=${_pb_init_swver}}
+	: ${pecan_pkgver:=${_pb_init_pkgver}}
+
+	: ${pecan_topdir:=`pwd`}
+	: ${pecan_workdir:=${pecan_topdir}/work}
+
+	: ${pecan_pkgdir:=${PECAN_SOURCE}/${PECAN_PKGNAME}}
+	: ${pecan_infodir:=${pecan_pkgdir}/share/info}
+	: ${pecan_mandir:=${pecan_pkgdir}/share/man}
+	: ${pecan_etcdir:=${PECAN_TARGET}/etc}
+	: ${pecan_vardir:=${PECAN_TARGET}/var}
+
+	pecan_init_cookie="${pecan_workdir}/.init_cookie"
+	pecan_init_require=
+
+	# Restrict the PATH to avoid picking up extra programs
+	# during auto-configuration.
+	#
+	PATH="${pecan_tooldir}/bin:${PECAN_PATH}"; export PATH
+}
+
+pecan_do_init()
+{
+	[ -d "${pecan_workdir}" ] || mkdir -p "${pecan_workdir}"
+	pecan_action_generator init
+}
+
+##########
+# prereq #
+##########
+
+pecan_action_registry="${pecan_action_registry} prereq"
+
+pecan_prereq_vars()
+{
+	pecan_prereq_cookie="${pecan_workdir}/.prereq_cookie"
+	pecan_prereq_require="init"
+
+	: ${pecan_prereq_dir:=${pecan_workdir}/.prereq}
+
+	_pb_prereq_cppflags=
+	_pb_prereq_ldflags=
+
+	[ -z "${pecan_prereq_lib}" ] || set -o noglob
+
+	_pb_prereq_cmp=
+	for _pb_prereq_pkgspec in ${pecan_prereq_lib}; do
+		set +o noglob
+		if [ -z "${_pb_prereq_cmp}" ]; then
+			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
+			continue
+		fi
+		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			_pb_prereq_pkgdir="${PECAN_SOURCE}/${_pb_prereq_match}"
+			if [ -z "${_pb_prereq_cppflags}" ]; then
+				_pb_prereq_cppflags="-I${_pb_prereq_pkgdir}/include"
+			else
+				_pb_prereq_cppflags="${_pb_prereq_cppflags} -I${_pb_prereq_pkgdir}/include"
+			fi
+			if [ -z "${_pb_prereq_ldflags}" ]; then
+				_pb_prereq_ldflags="-L${_pb_prereq_pkgdir}/lib"
+			else
+				_pb_prereq_ldflags="${_pb_prereq_ldflags} -L${_pb_prereq_pkgdir}/lib"
+			fi
+			_pb_prereq_ldflags="${_pb_prereq_ldflags} -Wl,-rpath,${_pb_prereq_pkgdir}/lib"
+		fi
+		_pb_prereq_cmp=
+	done
+
+	# Add ${PECAN_TARGET}/lib to the end of the library run-time search path
+	# only if there are other library pre-requisites.
+	#
+	if [ -n "${_pb_prereq_ldflags}" ]; then
+		_pb_prereq_ldflags="${_pb_prereq_ldflags} -Wl,-rpath,${PECAN_TARGET}/lib"
+	fi
+
+	# Add this package's directory to the head of the library run-time search path.
+	if [ -z "${_pb_prereq_ldflags}" ]; then
+		_pb_prereq_ldflags="-Wl,-rpath,${pecan_pkgdir}/lib"
+	else
+		_pb_prereq_ldflags="-Wl,-rpath,${pecan_pkgdir}/lib ${_pb_prereq_ldflags}"
+	fi
+
+	: ${pecan_cppflags=${_pb_prereq_cppflags}}
+	: ${pecan_ldflags=${_pb_prereq_ldflags}}
+}
+
+pecan_prereq_default()
+{
+	[ -z "${pecan_prereq_build}" ] || set -o noglob
+	[ -z "${pecan_prereq_pkg}" ] || set -o noglob
+	[ -z "${pecan_prereq_lib}" ] || set -o noglob
+
+	_pb_prereq_cmp=
+	for _pb_prereq_pkgspec in ${pecan_prereq_build} ${pecan_prereq_lib} ${pecan_prereq_pkg}; do
+		set +o noglob
+		if [ -z "${_pb_prereq_cmp}" ]; then
+			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
+			continue
+		fi
+		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' matches \`${_pb_prereq_match}'." 1>&2
+			if pecan_pkgspec_parse "${_pb_prereq_match}" _pb_prereq_pkgname; then
+				_pb_prereq_file="${pecan_prereq_dir}/${_pb_prereq_pkgname}"
+				echo "${_pb_prereq_match}" > "${_pb_prereq_file}"
+			fi
+		else
+			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' not matched." 1>&2
+			return 1
+		fi
+		_pb_prereq_cmp=
+	done
+	if [ -n "${_pb_prereq_cmp}" ]; then
+		echo "$0: prereq \`${_pb_prereq_cmp}' incomplete." 1>&2
+		return 1
+	fi
+}
+
+pecan_do_prereq()
+{
+	[ -d "${pecan_prereq_dir}" ] || mkdir -p "${pecan_prereq_dir}"
+	pecan_action_generator prereq
+}
+
+#########
+# tools #
+#########
+
+pecan_action_registry="${pecan_action_registry} tools"
+pecan_tools_registry=
+
+pecan_tools_vars()
+{
+	pecan_tools_cookie="${pecan_workdir}/.tools_cookie"
+	pecan_tools_require="prereq"
+
+	: ${pecan_tooldir:=${pecan_workdir}/.tools}
+
+	# Run the *_vars function for each tool that matches a prereq.
+
+	[ -z "${pecan_prereq_build}" ] || set -o noglob
+	[ -z "${pecan_prereq_pkg}" ] || set -o noglob
+	[ -z "${pecan_prereq_lib}" ] || set -o noglob
+
+	_pb_tools_cmp=
+	for _pb_tools_pkgspec in ${pecan_prereq_build} ${pecan_prereq_lib} ${pecan_prereq_pkg}; do
+		set +o noglob
+		if [ -z "${_pb_tools_cmp}" ]; then
+			_pb_tools_cmp="${_pb_tools_pkgspec}"
+			continue
+		fi
+		if pecan_pkgspec_match "${_pb_tools_cmp}" "${_pb_tools_pkgspec}" _pb_tools_match; then
+			pecan_pkgspec_parse "${_pb_tools_match}" _pb_tools_match_pkgname
+			for _pb_tools_tool in ${pecan_tools_registry}; do
+				eval _pb_tools_pkgname=\"\${pecan_tools_${_pb_tools_tool}_pkgname}\"
+				: ${_pb_tools_pkgname:=${_pb_tools_tool}}
+				if [ "${_pb_tools_pkgname}" = "${_pb_tools_match_pkgname}" ]; then
+					_pb_tools_vars="pecan_tools_${_pb_tools_tool}_vars"
+					if pecan_is_function_defined "${_pb_tools_vars}"; then
+						${_pb_tools_vars}
+					fi
+				fi
+			done
+		fi
+		_pb_tools_cmp=
+	done
+}
+
+pecan_tools_default()
+{
+	[ -d "${pecan_tooldir}/bin" ] || mkdir -p "${pecan_tooldir}/bin"
+
+	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
+		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
+		_pb_tools_pkgname="${_pb_tools_prereq#${pecan_prereq_dir}/}"
+		pecan_tools_link_bin "${_pb_tools_pkgname}"
+	done
+
+	for _pb_tools_tool in ${pecan_tools_registry}; do
+		_pb_tools_fn="pecan_tools_${_pb_tools_tool}"
+		if pecan_is_function_defined "${_pb_tools_fn}"; then
+			${_pb_tools_fn} || return 1
+		fi
+	done
+}
+
+pecan_do_tools()
+{
+	[ -d "${pecan_tooldir}" ] || mkdir -p "${pecan_tooldir}"
+	pecan_action_generator tools
+}
+
+###
+# tools: autoconf
+#
+pecan_tools_registry="${pecan_tools_registry} autoconf"
+
+pecan_tools_autoconf_vars()
+{
+	_pb_tools_ac_macrodir="${pecan_tooldir}/share/autoconf"
+	AC_MACRODIR="${_pb_tools_ac_macrodir}"; export AC_MACRODIR
+}
+
+pecan_tools_autoconf()
+{
+	[ -f "${pecan_prereq_dir}/autoconf" ] || return 0
+
+	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
+		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
+		read _pb_tools_pkgspec < "${_pb_tools_prereq}"
+		_pb_tools_pkgdir="${PECAN_SOURCE}/${_pb_tools_pkgspec}"
+		if [ -d "${_pb_tools_pkgdir}/share/autoconf" ]; then
+			[ -d "${_pb_tools_ac_macrodir}" ] || \
+				mkdir -p "${_pb_tools_ac_macrodir}"
+			[ -d "${_pb_tools_pkgdir}/share/autoconf" ] && \
+				pecan_lndir "${_pb_tools_pkgdir}/share/autoconf" \
+					"${_pb_tools_ac_macrodir}"
+		fi
+	done
+}
+
+###
+# tools: bash
+#
+pecan_tools_registry="${pecan_tools_registry} bash"
+
+pecan_tools_bash_vars()
+{
+	BASH="${PECAN_TARGET}/bin/bash"; export BASH
+}
+
+###
+# tools: getopt
+#
+pecan_tools_registry="${pecan_tools_registry} getopt"
+
+pecan_tools_getopt_vars()
+{
+	GETOPT="${PECAN_TARGET}/bin/getopt"; export GETOPT
+}
+
+###
+# tools: gmake
+#
+pecan_tools_registry="${pecan_tools_registry} gmake"
+
+pecan_tools_gmake()
+{
+	if [ -x "${pecan_tooldir}/bin/gmake" ]; then
+		ln -s gmake "${pecan_tooldir}/bin/make"
+	fi
+}
+
+###
+# tools: m4
+#
+pecan_tools_registry="${pecan_tools_registry} m4"
+
+pecan_tools_m4_vars()
+{
+	M4="${PECAN_TARGET}/bin/m4"; export M4
+}
+
+###
+# tools: perl
+#
+pecan_tools_registry="${pecan_tools_registry} perl"
+
+pecan_tools_perl_vars()
+{
+	PERL="${PECAN_TARGET}/bin/perl"; export PERL
+	PERL5="${PECAN_TARGET}/bin/perl"; export PERL5
+}
+
+###
+# tools: pkg-config
+#
+pecan_tools_registry="${pecan_tools_registry} pkg_config"
+pecan_tools_pkg_config_pkgname="pkg-config"
+
+pecan_tools_pkg_config_vars()
+{
+	_pb_tools_pkg_config_libdir="${pecan_tooldir}/lib/pkgconfig"
+	PKG_CONFIG_LIBDIR="${_pb_tools_pkg_config_libdir}"
+	export PKG_CONFIG_LIBDIR
+}
+
+pecan_tools_pkg_config()
+{
+	[ -f "${pecan_prereq_dir}/pkg-config" ] || return 0
+
+	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
+		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
+		read _pb_tools_pkgspec < "${_pb_tools_prereq}"
+		_pb_tools_pkgdir="${PECAN_SOURCE}/${_pb_tools_pkgspec}"
+		if [ -d "${_pb_tools_pkgdir}/lib/pkgconfig" ]; then
+			[ -d "${_pb_tools_pkg_config_libdir}" ] || \
+				mkdir -p "${_pb_tools_pkg_config_libdir}"
+			[ -d "${_pb_tools_pkgdir}/lib/pkgconfig" ] && \
+				pecan_lndir "${_pb_tools_pkgdir}/lib/pkgconfig" \
+					"${_pb_tools_pkg_config_libdir}"
+		fi
+	done
+}
+
+###
+# pecan_tools_link_bin pkgname
+#
+# Links the files under the pkgname's bin directory (if it exists)
+# into ${pecan_tooldir}/bin.
+#
+pecan_tools_link_bin()
+{
+	_pb_tools_pkgname="$1"
+
+	[ -f "${pecan_prereq_dir}/${_pb_tools_pkgname}" ] || return
+
+	read _pb_tools_pkgspec < "${pecan_prereq_dir}/${_pb_tools_pkgname}"
+	_pb_tools_pkgdir="${PECAN_SOURCE}/${_pb_tools_pkgspec}"
+	if [ -d "${_pb_tools_pkgdir}/bin" ]; then
+		pecan_lndir "${_pb_tools_pkgdir}/bin" "${pecan_tooldir}/bin"
+	fi
+}
+
+###########
+# extract #
+###########
+
+pecan_action_registry="${pecan_action_registry} extract"
+
+pecan_extract_vars()
+{
+	pecan_extract_cookie="${pecan_workdir}/.extract_cookie"
+	pecan_extract_require="tools"
+
+	: ${pecan_extract_suffix=.tar.gz}
+	: ${PECAN_DISTDIR:=${pecan_topdir}}
+	: ${pecan_extract_file:=${pecan_pkgname}-${pecan_swver}${pecan_extract_suffix}}
+	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_file%${pecan_extract_suffix}}}
+}
+
+pecan_extract_default()
+{
+	cd "${pecan_workdir}" && tar zxvf "${PECAN_DISTDIR}/${pecan_extract_file}"
+}
+
+pecan_do_extract()
+{
+	pecan_action_generator extract
+}
+
+#########
+# patch #
+#########
+
+pecan_action_registry="${pecan_action_registry} patch"
+
+pecan_patch_vars()
+{
+	pecan_patch_cookie="${pecan_workdir}/.patch_cookie"
+	pecan_patch_require="extract"
+}
+
+pecan_patch_default()
+{
+	cd "${pecan_srcdir}"
+	for _pb_patch_file in "${pecan_topdir}"/patch-*; do
+		[ "${_pb_patch_file}" != "${pecan_topdir}/patch-*" ] || break
+		patch < "${_pb_patch_file}"
+	done
+}
+
+pecan_do_patch()
+{
+	pecan_action_generator patch
+}
+
+#############
+# configure #
+#############
+
+pecan_action_registry="${pecan_action_registry} configure"
+
+pecan_configure_vars()
+{
+	pecan_configure_cookie="${pecan_workdir}/.configure_cookie"
+	pecan_configure_require="patch"
+
+	: ${pecan_configure_style=gnu}
+
+	case "${pecan_configure_style}" in
+	gnu)	pecan_configure_default=pecan_gnu_configure_default ;;
+	*)	pecan_configure_default= ;;
+	esac
+
+	# gnu configure
+	: ${pecan_gnu_configure_script:=./configure}
+	if [ -z "${pecan_gnu_configure_args}" ]; then
+		pecan_gnu_configure_args="--prefix=${pecan_pkgdir}"
+		pecan_gnu_configure_args="$pecan_gnu_configure_args --sysconfdir=${pecan_etcdir}"
+		pecan_gnu_configure_args="$pecan_gnu_configure_args --localstatedir=${pecan_vardir}"
+		pecan_gnu_configure_args="$pecan_gnu_configure_args --infodir=${pecan_infodir}"
+		pecan_gnu_configure_args="$pecan_gnu_configure_args --mandir=${pecan_mandir}"
+	fi
+}
+
+pecan_gnu_configure_default()
+{
+	cd "${pecan_srcdir}" && \
+	ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
+	CPPFLAGS="${pecan_cppflags}" LDFLAGS="${pecan_ldflags}" \
+	"${pecan_gnu_configure_script}" ${pecan_gnu_configure_args}
+}
+
+pecan_do_configure()
+{
+	pecan_action_generator configure
+}
+
+#########
+# build #
+#########
+
+pecan_action_registry="${pecan_action_registry} build"
+
+pecan_build_vars()
+{
+	pecan_build_cookie="${pecan_workdir}/.build_cookie"
+	pecan_build_require="configure"
+
+	: ${pecan_build_style=make}
+
+	case "${pecan_build_style}" in
+	make)	pecan_build_default=pecan_make_build_default ;;
+	*)	pecan_build_default= ;;
+	esac
+
+	# make
+	: ${pecan_build_makefile:=Makefile}
+	: ${pecan_build_target=}
+	: ${pecan_build_args=}
+}
+
+pecan_make_build_default()
+{
+	cd "${pecan_srcdir}" && \
+	make -f "${pecan_build_makefile}" ${pecan_build_target} ${pecan_build_args}
+}
+
+pecan_do_build()
+{
+	pecan_action_generator build
+}
+
+########
+# test #
+########
+
+pecan_action_registry="${pecan_action_registry} test"
+
+pecan_test_vars()
+{
+	pecan_test_require="build"
+
+	: ${pecan_test_style}
+
+	case "${pecan_test_style}" in
+	make)	pecan_test_default=pecan_make_test_default ;;
+	*)	pecan_test_default= ;;
+	esac
+
+	# make
+	: ${pecan_test_makefile:=Makefile}
+	: ${pecan_test_target:=check}
+}
+
+pecan_make_test_default()
+{
+	cd "${pecan_srcdir}" && \
+	make -f "${pecan_test_makefile}" ${pecan_test_target}
+}
+
+pecan_do_test()
+{
+	pecan_action_generator test
+}
+
+#########
+# stage #
+#########
+
+pecan_action_registry="${pecan_action_registry} stage"
+
+pecan_stage_vars()
+{
+	pecan_stage_cookie="${pecan_workdir}/.stage_cookie"
+	pecan_stage_require="build"
+
+	: ${pecan_stagedir:=${pecan_workdir}/.stage}
+	: ${pecan_stage_encapinfo:=${pecan_stagedir}/encapinfo}
+
+	: ${pecan_version=2.1}
+	[ -n "${PECAN_PLATFORM}" ] || pecan_platform_name PECAN_PLATFORM
+	: ${pecan_description}
+	: ${pecan_date=`date '+%a %b %d %H:%M:%S %Z %Y'`}
+	: ${PECAN_CONTACT=`whoami`}
+}
+
+pecan_stage_default()
+{
+	# encapinfo
+	echo "encap ${pecan_version}" > ${pecan_stage_encapinfo}
+	[ -z "${PECAN_PLATFORM}" ] || \
+		echo "platform ${PECAN_PLATFORM}" >> ${pecan_stage_encapinfo}
+	[ -z "${pecan_description}" ] || \
+		echo "description ${pecan_description}" >> ${pecan_stage_encapinfo}
+	[ -z "${pecan_date}" ] || \
+		echo "date ${pecan_date}" >> ${pecan_stage_encapinfo}
+	[ -z "${PECAN_CONTACT}" ] || \
+		echo "contact ${PECAN_CONTACT}" >> ${pecan_stage_encapinfo}
+
+	[ -z "${pecan_prereq_pkg}" ] || set -o noglob
+	[ -z "${pecan_prereq_lib}" ] || set -o noglob
+
+	_pb_prereq_cmp=
+	for _pb_prereq_pkgspec in ${pecan_prereq_pkg} ${pecan_prereq_lib}; do
+		set +o noglob
+		if [ -z "${_pb_prereq_cmp}" ]; then
+			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
+			continue
+		fi
+		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			echo "prereq pkgspec ${_pb_prereq_cmp} ${_pb_prereq_pkgspec}" >> ${pecan_stage_encapinfo}
+		fi
+		_pb_prereq_cmp=
+	done
+
+	# preinstall, postinstall, preremove, postremove
+	for _pb_stage_script in preinstall postinstall preremove postremove; do
+		if [ -f "${pecan_topdir}/${_pb_stage_script}" ]; then
+			cp -f "${pecan_topdir}/${_pb_stage_script}" \
+				"${pecan_stagedir}/${_pb_stage_script}"
+			chmod +x "${pecan_stagedir}/${_pb_stage_script}"
+		fi
+	done
+}
+
+pecan_do_stage()
+{
+	[ -d "${pecan_stagedir}" ] || mkdir -p "${pecan_stagedir}"
+	pecan_action_generator stage
+}
+
+###########
+# install #
+###########
+
+pecan_action_registry="${pecan_action_registry} install"
+
+pecan_install_vars()
+{
+	pecan_install_cookie="${pecan_workdir}/.install_cookie"
+	pecan_install_require="stage"
+	pecan_install_extra_actions="pecan_install_stage"
+
+	: ${pecan_install_style=make}
+
+	case "${pecan_install_style}" in
+	make)	pecan_install_default=pecan_make_install_default ;;
+	*)	pecan_install_default= ;;
+	esac
+
+	# make
+	: ${pecan_install_makefile:=${pecan_build_makefile}}
+	: ${pecan_install_target=install}
+	: ${pecan_install_args=}
+}
+
+pecan_make_install_default()
+{
+	cd "${pecan_srcdir}" && \
+	make -f "${pecan_install_makefile}" ${pecan_install_target} ${pecan_install_args}
+}
+
+pecan_install_stage()
+{
+	for _pb_stage_file in "${pecan_stagedir}/"*; do
+		[ "${_pb_stage_file}" != "${pecan_stagedir}/*" ] || break
+		[ -f "${_pb_stage_file}" ] || continue
+		cp -f "${_pb_stage_file}" "${pecan_pkgdir}"
+	done
+}
+
+pecan_do_install()
+{
+	# If PECAN_SUDO_CMD is set, then re-invoke the install after
+	# gaining root credentials.
+	#
+	_pb_install_id=`id -u`
+	if [ -z "${PECAN_SUDO_CMD}" -o ${_pb_install_id} -eq 0 ]; then
+		pecan_action_generator install
+	else
+		${PECAN_SUDO_CMD} $0 install
+	fi
+}
+
+#########
+# encap #
+#########
+
+pecan_action_registry="${pecan_action_registry} encap"
+
+pecan_do_encap()
+{
+	# If PECAN_SUDO_CMD is set, then re-invoke the install after
+	# gaining root credentials.
+	#
+	_pb_install_id=`id -u`
+	if [ -z "${PECAN_SUDO_CMD}" -o ${_pb_install_id} -eq 0 ]; then
+		pecan_encap_install "${PECAN_PKGNAME}"
+	else
+		${PECAN_SUDO_CMD} $0 encap
+	fi
+}
+
+pecan_encap_install()
+{
+	_pb_encap_pkgspec="$1"
+
+	if [ -x "${PECAN_EPKG_CMD}" ]; then
+		${PECAN_EPKG_CMD} "${_pb_encap_pkgspec}"
+		return $?
+	fi
+
+	echo "$0: installing package ${_pb_encap_pkgspec}"
+	echo "  > reading Encap source directory..."
+	pecan_pkgspec_match "=" "${_pb_encap_pkgspec}" || return 1
+
+	echo "  > installing package ${_pb_encap_pkgspec}"
+	_pb_encap_pkgdir="${PECAN_SOURCE}/${_pb_encap_pkgspec}"
+
+	_pb_encap_pre_result=0
+	if [ -x "${_pb_encap_pkgdir}/preinstall" ]; then
+		echo "    > executing postinstall script"
+		ENCAP_SOURCE="${PECAN_SOURCE}" \
+		ENCAP_TARGET="${PECAN_TARGET}" \
+		ENCAP_PKGNAME="${PECAN_PKGNAME}" \
+		"${_pb_encap_pkgdir}/preinstall"
+		_pb_encap_pre_result=$?
+	fi
+	if [ ${_pb_encap_pre_result} -gt 0 ]; then
+		echo "    ! installation failed"
+		return ${_pb_encap_pre_result}
+	fi
+
+	_pb_encap_excludes=
+	_pb_encap_linkdirs=
+	_pb_encap_encapinfo="${_pb_encap_pkgdir}/encapinfo"
+	if [ -f "${_pb_encap_encapinfo}" ]; then
+		while read _pb_encap_field _pb_encap_field_arg1 _pb_encap_field_arg2 _pb_encap_field_arg3; do
+			case "${_pb_encap_field}" in
+			exclude)
+				if [ -z "${_pb_encap_excludes}" ]; then
+					_pb_encap_excludes="${_pb_encap_field_arg1}"
+				else
+					_pb_encap_excludes="${_pb_encap_excludes} ${_pb_encap_field_arg1}"
+				fi
+				;;
+			linkdir)
+				echo "$0: \`linkdir' not supported." 1>&2
+				continue
+				;;
+			linkname)
+				echo "$0: \`linkname' not supported." 1>&2
+				continue
+				;;
+			esac
+		done < "${_pb_encap_encapinfo}"
+	fi
+
+	find "${_pb_encap_pkgdir}" -print | (
+	while read _pb_encap_src; do
+		[ "${_pb_encap_src}" != "${_pb_encap_pkgdir}" ] || continue
+		_pb_encap_file="${_pb_encap_src#${_pb_encap_pkgdir}/}"
+
+		case "${_pb_encap_file}" in
+		*/*)	;;
+		*)	[ -d "${_pb_encap_src}" ] || continue ;;
+		esac
+
+		case "${_pb_encap_excludes}" in
+		"${_pb_encap_file}"|\
+		"${_pb_encap_file} "*|\
+		*" ${_pb_encap_file} "*|\
+		*" ${_pb_encap_file}")
+			echo "    > ${_pb_encap_file}: excluding"
+			;;
+		esac
+
+		_pb_encap_relsrc="${_pb_encap_src#${PECAN_TARGET}/}"
+		_pb_encap_prev="${_pb_encap_file}"
+		_pb_encap_cur="${_pb_encap_prev#*/}"
+		while [ "${_pb_encap_cur}" != "${_pb_encap_prev}" ]; do
+			_pb_encap_relsrc="../${_pb_encap_relsrc}"
+			_pb_encap_prev="${_pb_encap_cur}"
+			_pb_encap_cur="${_pb_encap_prev#*/}"
+		done
+
+		_pb_encap_dest="${PECAN_TARGET}/${_pb_encap_file}"
+		if [ -d "${_pb_encap_src}" -a ! -h "${_pb_encap_src}" ]; then
+			if [ ! -d "${_pb_encap_dest}" ]; then 
+				if [ -e "${_pb_encap_dest}" ]; then
+					_pb_encap_result=1
+				fi
+				mkdir -p "${_pb_encap_dest}"
+			fi
+		elif [ -f "${_pb_encap_src}" ]; then
+			if [ -h "${_pb_encap_dest}" -a \
+			     "${_pb_encap_src}" -ef "${_pb_encap_dest}" ]; then
+				: "link is correct"
+			else
+				if [ -e "${_pb_encap_dest}" ]; then
+					_pb_encap_result=1
+				fi
+				ln -s "${_pb_encap_relsrc}" "${_pb_encap_dest}"
+			fi
+		fi
+	done
+	return ${_pb_encap_result:=0} )
+	_pb_encap_result=$?
+
+	_pb_encap_post_result=0
+	if [ -x "${_pb_encap_pkgdir}/postinstall" ]; then
+		ENCAP_SOURCE="${PECAN_SOURCE}" \
+		ENCAP_TARGET="${PECAN_TARGET}" \
+		ENCAP_PKGNAME="${PECAN_PKGNAME}" \
+		"${_pb_encap_pkgdir}/postinstall"
+		_pb_encap_post_result=$?
+	fi
+
+	if [ ${_pb_encap_post_result} -gt 0 ]; then
+		echo "    ! installation failed"
+		return ${_pb_encap_post_result}
+	elif [ ${_pb_encap_result} -gt 0 ]; then
+		echo "    > installation partially successful"
+		return ${_pb_encap_result}
+	else
+		echo "    > installation successful"
+	fi
+}
+
+#########
+# clean #
+#########
+
+pecan_action_registry="${pecan_action_registry} clean"
+
+pecan_clean_default()
+{
+	rm -fr ${pecan_workdir}
+}
+
+pecan_do_clean()
+{
+	pecan_action_generator clean
+}
+
+#########
+# debug #
+#########
+
+pecan_action_registry="${pecan_action_registry} debug"
+
+pecan_do_debug()
+{
+	echo "pecan_build_version: ${pecan_build_version}"
+	echo "PECAN_PLATFORM: ${PECAN_PLATFORM}"
+	echo "PECAN_PKGNAME: ${PECAN_PKGNAME}"
+	echo "PECAN_TARGET: ${PECAN_TARGET}"
+	echo "PECAN_SOURCE: ${PECAN_SOURCE}"
+	echo "pecan_pkgname: ${pecan_pkgname}"
+	echo "pecan_swver: ${pecan_swver}"
+	echo "pecan_pkgver: ${pecan_pkgver}"
+	echo "pecan_topdir: ${pecan_topdir}"
+	echo "pecan_srcdir: ${pecan_srcdir}"
+	echo "pecan_cppflags: ${pecan_cppflags}"
+	echo "pecan_ldflags: ${pecan_ldflags}"
+	echo "pecan_configure_style: ${pecan_configure_style}"
+	echo "pecan_build_style: ${pecan_build_style}"
+	echo "pecan_install_style: ${pecan_install_style}"
+}
+
+########
+# info #
+########
+
+pecan_action_registry="${pecan_action_registry} info"
+
+pecan_do_info()
+{
+	echo "Name: ${PECAN_PKGNAME}"
+	echo "Description: ${pecan_description}"
+}
+
+########
+# lint #
+########
+
+pecan_action_registry="${pecan_action_registry} lint"
+
+pecan_do_lint()
+{
+	[ -n "${pecan_description}" ] ||
+		echo "$0: \`pecan_description' should be defined."
+}
+
+###
+# pecan_vars
+#
+# Set variables for use by scripts including this library.
+#
+pecan_vars()
+{
+	for _pb_vars_action in ${pecan_action_registry}; do
+		_pb_vars_setvar="pecan_${_pb_vars_action}_vars"
+		if pecan_is_function_defined "${_pb_vars_setvar}"; then
+			${_pb_vars_setvar}
+		fi
+	done
+}
+
+###
+# pecan_is_function_defined symbol
+#
+# Returns 0 if there is a shell function with the given symbol name;
+# otherwise, returns 1.
+#
+pecan_is_function_defined()
+{
+	type "$1" | while read _pb_test_fn_line; do
+		case "${_pb_test_fn_line}" in
+		*" function")	return 0 ;;
+		esac
+		return 1
+	done
+}
+
+###
+# pecan_action_generator action
+#
+# Uses the action name and invokes the following in order:
+#
+#	pecan_pre_<action>
+#	pecan_<action>
+#	pecan_post_<action>
+#
+# Generates a cookie file upon completion if pecan_<action>_cookie
+# is set to the cookie pathname.
+#
+pecan_action_generator()
+{
+	_pb_gen_name="$1"
+
+	eval _pb_gen_action_default=\"\${pecan_${_pb_gen_name}_default}\"
+	[ -n "${_pb_gen_action_default}" ] || \
+		_pb_gen_action_default="pecan_${_pb_gen_name}_default"
+
+	eval _pb_gen_action=\"\${pecan_${_pb_gen_name}}\"
+	eval _pb_gen_preaction=\"\${pecan_pre_${_pb_gen_name}}\"
+	eval _pb_gen_postaction=\"\${pecan_post_${_pb_gen_name}}\"
+	eval _pb_gen_extra_actions=\"\${pecan_${_pb_gen_name}_extra_actions}\"
+
+	if [ -n "${_pb_gen_action}" ]; then
+		if [ "${_pb_gen_action}" != ":" ] && \
+		   ! pecan_is_function_defined "${_pb_gen_action}"; then
+			echo "$0: \`${_pb_gen_action}' function not found." 1>&2
+			return 1
+		fi
+	elif pecan_is_function_defined "pecan_${_pb_gen_name}"; then
+		_pb_gen_action="pecan_${_pb_gen_name}"
+	elif pecan_is_function_defined "${_pb_gen_action_default}"; then
+		_pb_gen_action="${_pb_gen_action_default}"
+	else
+		_pb_gen_action=:
+	fi
+
+	if [ -n "${_pb_gen_preaction}" ]; then
+		if [ "${_pb_gen_preaction}" != ":" ] && \
+		   ! pecan_is_function_defined "${_pb_gen_preaction}"; then
+			echo "$0: \`${_pb_gen_preaction}' function not found." 1>&2
+			return 1
+		fi
+	elif pecan_is_function_defined "pecan_pre_${_pb_gen_name}"; then
+		_pb_gen_preaction="pecan_pre_${_pb_gen_name}"
+	else
+		_pb_gen_preaction=:
+	fi
+
+	if [ -n "${_pb_gen_postaction}" ]; then
+		if [ "${_pb_gen_postaction}" != ":" ] && \
+		   ! pecan_is_function_defined "${_pb_gen_postaction}"; then
+			echo "$0: \`${_pb_gen_postaction}' function not found." 1>&2
+			return 1
+		fi
+	elif pecan_is_function_defined "pecan_post_${_pb_gen_name}"; then
+		_pb_gen_postaction="pecan_post_${_pb_gen_name}"
+	else
+		_pb_gen_postaction=:
+	fi
+
+	if [ -n "${_pb_gen_extra_actions}" ]; then
+		for _pb_gen_extra_action in ${_pb_gen_extra_actions}; do
+			if ! pecan_is_function_defined "${_pb_gen_extra_action}"; then
+				echo "$0: \`${_pb_gen_extra_action}' function not found." 1>&2
+				return 1
+			fi
+		done
+	else
+		_pb_gen_extra_actions=:
+	fi
+
+	eval _pb_gen_action_cookie=\"\${pecan_${_pb_gen_name}_cookie}\"
+	if [ -z "${_pb_gen_action_cookie}" ]; then
+		( ${_pb_gen_preaction} ) && \
+		( ${_pb_gen_action} ) && \
+		( ${_pb_gen_postaction} ) && \
+		( ${_pb_gen_extra_actions} )
+	elif [ ! -f "${_pb_gen_action_cookie}" ]; then
+		( ${_pb_gen_preaction} ) && \
+		( ${_pb_gen_action} ) && \
+		( ${_pb_gen_postaction} ) && \
+		( ${_pb_gen_extra_actions} ) && \
+		echo > "${_pb_gen_action_cookie}"
+	fi
+}
+
+###
+# pecan_platform_name varname
+#
+# Saves the Encap platform name into the named variable.
+#
+pecan_platform_name()
+{
+	_pb_platform_varname="$1"
+
+	_pb_platform_architecture=`uname -m`
+	_pb_platform_operatingsystem=`uname -s`
+	_pb_platform_osversion=`uname -r`
+	_pb_platform_name="${_pb_platform_architecture}-${_pb_platform_operatingsystem}-${_pb_platform_osversion}"
+	_pb_platform_name=`echo "${_pb_platform_name}" | tr '[A-Z]' '[a-z]'`
+
+	[ -z "${_pb_platform_varname}" ] || \
+		eval ${_pb_platform_varname}=\"${_pb_platform_name}\"
+}
+
+###
+# pecan_pkgspec_parse pkgspec pkgname_varname version_varname
+#	[swver_varname [pkgver_varname]]
+#
+# Splits pkgspec into <pkgname>-<swver>[+<pkgver>] and saves each piece of
+# the pkgspec into the corresponding variable.
+#
+pecan_pkgspec_parse()
+{
+	_pb_parse_pkgspec="$1"
+	_pb_parse_pkgname_varname="$2"
+	_pb_parse_version_varname="$3"
+	_pb_parse_swver_varname="$4"
+	_pb_parse_pkgver_varname="$5"
+
+	case "${_pb_parse_pkgspec}" in
+	*+*)
+		_pb_parse_pkgver="${_pb_parse_pkgspec##*+}"
+		_pb_parse_pkgname="${_pb_parse_pkgspec%+${_pb_parse_pkgver}}"
+		case "${_pb_parse_pkgver}" in
+		*[!0-9]*)
+			_pb_parse_pkgver=
+			_pb_parse_pkgname="${_pb_parse_pkgspec}"
+			;;
+		esac
+		;;
+	*)
+		_pb_parse_pkgver=
+		_pb_parse_pkgname="${_pb_parse_pkgspec}"
+	esac
+
+	_pb_parse_swver="${_pb_parse_pkgname##*-}"
+	_pb_parse_pkgname="${_pb_parse_pkgname%-${_pb_parse_swver}}"
+	case "${_pb_parse_swver}" in
+	.*|*[/+]*)
+		echo "$0: pkgspec \`${_pb_parse_pkgspec}' has bad <swver> \`${_pb_parse_swver}'." 1>&2
+		return 1
+		;;
+	esac
+
+	if [ -n "${_pb_parse_pkgver}" ]; then
+		_pb_parse_version="${_pb_parse_swver}+${_pb_parse_pkgver}"
+	else
+		_pb_parse_version="${_pb_parse_swver}"
+	fi
+
+	case "${_pb_parse_pkgname}" in
+	*/*)
+		echo "$0: pkgspec \`${_pb_parse_pkgspec}' has bad <pkgname> \`${_pb_parse_pkgname}'." 1>&2
+		return 1
+		;;
+	esac
+	[ -z "${_pb_parse_pkgname_varname}" ] || \
+		eval ${_pb_parse_pkgname_varname}=\"${_pb_parse_pkgname}\"
+	[ -z "${_pb_parse_version_varname}" ] || \
+		eval ${_pb_parse_version_varname}=\"${_pb_parse_version}\"
+	[ -z "${_pb_parse_swver_varname}" ] || \
+		eval ${_pb_parse_swver_varname}=\"${_pb_parse_swver}\"
+	[ -z "${_pb_parse_pkgver_varname}" ] || \
+		eval ${_pb_parse_pkgver_varname}=\"${_pb_parse_pkgver}\"
+}
+
+###
+# pecan_vercmp version1 version2
+#
+# Compares version1 and version2 and returns:
+#
+#	0 if version1 and version2 are the same,
+#	1 if version1 > version2
+#	2 if version1 < version2
+#
+# The algorithm is to compare each substring separated by `.' and to
+# compare the next substring if the current ones match.  If the
+# substrings are numeric, then do a numeric comparison; otherwise, do
+# a string comparison.  Treat the common substrings for pre-release as
+# follows:
+#
+#	alpha < beta < rc
+#
+pecan_vercmp()
+{
+	if [ "$1" = "$2" ]; then
+		return 0
+	fi
+	_pb_vercmp_dot_rest1="$1"
+	_pb_vercmp_dot_rest2="$2"
+	while true; do
+		_pb_vercmp_dot_head1="${_pb_vercmp_dot_rest1%%.*}"
+		case "${_pb_vercmp_dot_rest1}" in
+		*.*)	_pb_vercmp_dot_rest1="${_pb_vercmp_dot_rest1#*.}" ;;
+		*)	_pb_vercmp_dot_rest1= ;;
+		esac
+		_pb_vercmp_dot_head2="${_pb_vercmp_dot_rest2%%.*}"
+		case "${_pb_vercmp_dot_rest2}" in
+		*.*)	_pb_vercmp_dot_rest2="${_pb_vercmp_dot_rest2#*.}" ;;
+		*)	_pb_vercmp_dot_rest2= ;;
+		esac
+
+		_pb_vercmp_str_rest1="${_pb_vercmp_dot_head1}"
+		_pb_vercmp_str_rest2="${_pb_vercmp_dot_head2}"
+		while true; do
+			_pb_vercmp_str_head1="${_pb_vercmp_str_rest1%%[!0-9]*}"
+			case "${_pb_vercmp_str_rest1}" in
+			*[!0-9]*)	_pb_vercmp_str_rest1="${_pb_vercmp_str_rest1#${_pb_vercmp_str_head1}}" ;;
+			*)		_pb_vercmp_str_rest1= ;;
+			esac
+			_pb_vercmp_str_head2="${_pb_vercmp_str_rest2%%[!0-9]*}"
+			case "${_pb_vercmp_str_rest2}" in
+			*[!0-9]*)	_pb_vercmp_str_rest2="${_pb_vercmp_str_rest2#${_pb_vercmp_str_head2}}" ;;
+			*)		_pb_vercmp_str_rest2= ;;
+			esac
+
+			if [ -z "${_pb_vercmp_str_head1}" -o -z "${_pb_vercmp_str_head2}" ]; then
+				if [ "${_pb_vercmp_dot_head1}" ">" "${_pb_vercmp_dot_head2}" ]; then
+					return 1
+				elif [ "${_pb_vercmp_dot_head1}" "<" "${_pb_vercmp_dot_head2}" ]; then
+					return 2
+				fi
+			elif [ ${_pb_vercmp_str_head1} -gt ${_pb_vercmp_str_head2} ]; then
+				return 1
+			elif [ ${_pb_vercmp_str_head1} -lt ${_pb_vercmp_str_head2} ]; then
+				return 2
+			else
+				_pb_vercmp_str_head1="${_pb_vercmp_str_rest1%%[0-9]*}"
+				case "${_pb_vercmp_str_rest1}" in
+				*[0-9]*)	_pb_vercmp_str_rest1="${_pb_vercmp_str_rest1#${_pb_vercmp_str_head1}}" ;;
+				*)		_pb_vercmp_str_rest1= ;;
+				esac
+				_pb_vercmp_str_head2="${_pb_vercmp_str_rest2%%[0-9]*}"
+				case "${_pb_vercmp_str_rest2}" in
+				*[0-9]*)	_pb_vercmp_str_rest2="${_pb_vercmp_str_rest2#${_pb_vercmp_str_head2}}" ;;
+				*)		_pb_vercmp_str_rest2= ;;
+				esac
+
+				case "${_pb_vercmp_str_head1}" in
+				alpha)	_pb_vercmp_str_value1=1 ;;
+				beta)	_pb_vercmp_str_value1=2 ;;
+				rc)	_pb_vercmp_str_value1=99 ;;
+				"")	_pb_vercmp_str_value1=100 ;;
+				+)	_pb_vercmp_str_value1=101 ;;
+				*)	_pb_vercmp_str_value1=1000 ;;
+				esac
+				case "${_pb_vercmp_str_head2}" in
+				alpha)	_pb_vercmp_str_value2=1 ;;
+				beta)	_pb_vercmp_str_value2=2 ;;
+				rc)	_pb_vercmp_str_value2=99 ;;
+				"")	_pb_vercmp_str_value2=100 ;;
+				+)	_pb_vercmp_str_value2=101 ;;
+				*)	_pb_vercmp_str_value2=1000 ;;
+				esac
+
+				if [ ${_pb_vercmp_str_value1} -eq 1000 -a ${_pb_vercmp_str_value2} -eq 1000 ]; then
+					if [ "${_pb_vercmp_str_head1}" ">" "${_pb_vercmp_str_head2}" ]; then
+						return 1
+					elif [ "${_pb_vercmp_str_head1}" "<" "${_pb_vercmp_str_head2}" ]; then
+						return 2
+					fi
+				elif [ ${_pb_vercmp_str_value1} -eq 100 -a ${_pb_vercmp_str_value2} -eq 100 ]; then
+					break
+				elif [ ${_pb_vercmp_str_value1} -gt ${_pb_vercmp_str_value2} ]; then
+					return 1
+				elif [ ${_pb_vercmp_str_value1} -lt ${_pb_vercmp_str_value2} ]; then
+					return 2
+				fi
+			fi
+		done
+	done
+	return 0
+}
+
+###
+# pecan_pkgspec_match operator pkgspec best_match_varname
+#
+# Searches for the packages in ${PECAN_SOURCE} that match the prereq
+# "operator pkgspec" and saves the pkgspec of the best match into the
+# given variable.
+#
+# Returns 0 if a match is found; non-zero otherwise.
+#
+pecan_pkgspec_match()
+{
+	_pb_match_cmp="$1"
+	_pb_match_pkgspec="$2"
+	_pb_match_varname="$3"
+
+	case "${_pb_match_cmp}" in
+	[*]|"<="|"<"|">="|">"|=)
+		;;
+	*)
+		echo "$0: unknown pkgspec comparison operator \`${_pb_match_cmp}'." 1>&2
+		return 1
+		;;
+	esac
+
+	pecan_pkgspec_parse ${_pb_match_pkgspec} \
+		_pb_match_pkgname _pb_match_version || return 1
+
+	_pb_match_best_version=
+	for _pb_match_root in "${PECAN_SOURCE}/${_pb_match_pkgname}-"*; do
+		case "${_pb_match_root}" in
+		"${PECAN_SOURCE}/${_pb_match_pkgname}-*")
+			break
+			;;
+		*)
+			_pb_match_root="${_pb_match_root#${PECAN_SOURCE}/}"
+			;;
+		esac
+		pecan_pkgspec_parse ${_pb_match_root} \
+			_pb_match_root_pkgname _pb_match_root_version || continue
+
+		[ "${_pb_match_pkgname}" = "${_pb_match_root_pkgname}" ] || continue
+		pecan_vercmp ${_pb_match_root_version} ${_pb_match_version}
+		_pb_match_root_cmp_result="$?"
+		pecan_vercmp ${_pb_match_root_version} ${_pb_match_best_version}
+		_pb_match_best_cmp_result="$?"
+
+		_pb_match_update_best=
+		case "${_pb_match_cmp}" in
+		[*])	# any
+			case "${_pb_match_root_cmp_result}" in
+			0|1|2)	_pb_match_update_best=true ;;
+			esac
+			;;
+		"<=")	# less than or equal to
+			case "${_pb_match_root_cmp_result}" in
+			0|2)	_pb_match_update_best=true ;;
+			esac
+			;;
+		"<")	# less than
+			case "${_pb_match_root_cmp_result}" in
+			2)	_pb_match_update_best=true ;;
+			esac
+			;;
+		"=")	# equal to
+			case "${_pb_match_root_cmp_result}" in
+			0)	_pb_match_update_best=true ;;
+			esac
+			;;
+		">")	# greater than
+			case "${_pb_match_root_cmp_result}" in
+			1)	_pb_match_update_best=true ;;
+			esac
+			;;
+		">=")	# greater than or equal to
+			case "${_pb_match_root_cmp_result}" in
+			0|1)	_pb_match_update_best=true ;;
+			esac
+			;;
+		esac
+		if [ -n "${_pb_match_update_best}" -a ${_pb_match_best_cmp_result} -eq 1 ]; then
+			_pb_match_best_version="${_pb_match_root_version}"
+		fi
+	done
+
+	if [ -z "${_pb_match_best_version}" ]; then
+		_pb_match_best=
+		[ -z "${_pb_match_varname}" ] || \
+			eval ${_pb_match_varname}=\"${_pb_match_best}\"
+		return 1
+	else
+		_pb_match_best="${_pb_match_pkgname}-${_pb_match_best_version}"
+		[ -z "${_pb_match_varname}" ] || \
+			eval ${_pb_match_varname}=\"${_pb_match_best}\"
+		return 0
+	fi
+}
+
+###
+# pecan_lndir fromdir todir
+#
+# Link the contents of $fromdir into $todir.
+#
+pecan_lndir()
+{
+	_pb_lndir_fromdir="$1"
+	_pb_lndir_todir="$2"
+
+	find "${_pb_lndir_fromdir}" -print |
+	while read _pb_lndir_src; do
+		[ "${_pb_lndir_src}" != "${_pb_lndir_fromdir}" ] || continue
+		_pb_lndir_file="${_pb_lndir_src#${_pb_lndir_fromdir}/}"
+		_pb_lndir_dest="${_pb_lndir_todir}/${_pb_lndir_file}"
+		if [ -d "${_pb_lndir_src}" -a ! -h "${_pb_lndir_src}" ]; then
+			[ -d "${_pb_lndir_dest}" ] || \
+				mkdir -p "${_pb_lndir_dest}"
+		else
+			ln -s "${_pb_lndir_src}" "${_pb_lndir_dest}"
+		fi
+	done
+}
+
+###
+# pecan_main action [...]
+#
+pecan_main()
+{
+	_pb_main_stack="$@"
+
+	pecan_vars
+	while [ -n "${_pb_main_stack}" ]; do
+		_pb_main_top="${_pb_main_stack%%[ ]*}"
+		case "${_pb_main_stack}" in
+		*" "*)	_pb_main_stack="${_pb_main_stack#* }" ;;
+		*)	_pb_main_stack= ;;
+		esac
+
+		case "${_pb_main_top}" in
+		pecan_do_*)
+			"${_pb_main_top}" || exit 1
+			;;
+		*)
+			case "${pecan_action_registry}" in
+			${_pb_main_top}|"${_pb_main_top} "*|*" ${_pb_main_top} "*|*" ${_pb_main_top}")
+				eval _pb_main_require=\"\${pecan_${_pb_main_top}_require}\"
+				eval _pb_main_do="pecan_do_${_pb_main_top}"
+				if [ -n "${_pb_main_do}" ]; then
+					if [ -z "${_pb_main_stack}" ]; then
+						_pb_main_stack="${_pb_main_do}"
+					else
+						_pb_main_stack="${_pb_main_do} ${_pb_main_stack}"
+					fi
+				fi
+				if [ -n "${_pb_main_require}" ]; then
+					if [ -z "${_pb_main_stack}" ]; then
+						_pb_main_stack="${_pb_main_require}"
+					else
+						_pb_main_stack="${_pb_main_require} ${_pb_main_stack}"
+					fi
+				fi
+				;;
+			*)
+				echo "$0: unknown action \`${_pb_main_top}'." 1>&2
+				exit 1
+				;;
+			esac
+			;;
+		esac
+	done
+}
+
+pecan_vars

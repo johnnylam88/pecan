@@ -1,0 +1,6 @@
+#!/bin/sh
+
+if [ ! -d "${ENCAP_TARGET}/etc/priv" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/priv"
+	mkdir -p "${ENCAP_TARGET}/etc/priv"
+fi

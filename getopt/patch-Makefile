@@ -1,0 +1,41 @@
+* Use the included GNU getopt(3) implementation.
+* Support EXTRA_CPPFLAGS, EXTRA_LDFLAGS, and EXTRA_LIBS to pass additional
+  build flags to the Makefile.
+
+--- Makefile.orig	2012-08-12 05:07:43.000000000 -0400
++++ Makefile	2012-11-19 14:19:13.000000000 -0500
+@@ -10,7 +10,7 @@
+ localedir=$(sharedir)/locale
+ 
+ # Define this to 0 to use the getopt(3) routines in this package.
+-LIBCGETOPT=1
++LIBCGETOPT=0
+ 
+ # Define this to 1 if you do not have the gettext routines
+ WITHOUT_GETTEXT=0
+@@ -44,6 +44,7 @@
+ OPTIMIZE=-O3 -fno-strength-reduce
+ CFLAGS=$(WARNINGS) $(OPTIMIZE)
+ LDFLAGS=
++LIBS=
+ 
+ sources=getopt.c
+ ifeq ($(LIBCGETOPT),0)
+@@ -61,7 +62,7 @@
+ 	-$(RM) $(objects) $(binaries) 
+ 
+ getopt: $(objects)
+-	$(CC) $(LDFLAGS) -o $@ $(objects)
++	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) -o $@ $(objects) $(LIBS) $(EXTRA_LIBS)
+ 
+ install: getopt install_po
+ 	$(INSTALL) -m 755 -d $(DESTDIR)$(bindir) $(DESTDIR)$(man1dir)
+@@ -92,7 +93,7 @@
+ endif
+ 
+ %.o: %.c
+-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $*.c -o $*.o
++	$(CC) -c $(CPPFLAGS) $(EXTRA_CPPFLAGS) $(CFLAGS) $*.c -o $*.o
+ 
+ %.mo: %.po
+ 	 $(MSGFMT) -o $@ $<

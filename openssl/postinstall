@@ -1,0 +1,21 @@
+#!/bin/sh
+
+if [ ! -d "${ENCAP_TARGET}/etc/ssl" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/ssl"
+	mkdir -p "${ENCAP_TARGET}/etc/ssl"
+fi
+
+if [ ! -d "${ENCAP_TARGET}/etc/ssl/certs" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/ssl/certs"
+	mkdir -p "${ENCAP_TARGET}/etc/ssl/certs"
+fi
+
+if [ ! -d "${ENCAP_TARGET}/etc/ssl/private" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/ssl/private"
+	mkdir -p "${ENCAP_TARGET}/etc/ssl/private"
+fi
+
+if [ ! -f "${ENCAP_TARGET}/etc/ssl/openssl.cnf" ]; then
+	echo "installing: ${ENCAP_TARGET}/etc/ssl/openssl.cnf"
+	cp "${ENCAP_SOURCE}/${ENCAP_PKGNAME}/share/examples/openssl/openssl.cnf" "${ENCAP_TARGET}/etc/ssl/openssl.cnf"
+fi
