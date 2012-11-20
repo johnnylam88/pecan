@@ -2,3 +2,6 @@
 # Pecan build process.
 #
 */work
+
+# Pecan local configuration file.
+pecan/pecan.conf
