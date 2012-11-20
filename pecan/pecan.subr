@@ -674,22 +674,8 @@ pecan_encap_install()
 	_pb_encap_pkgdir="${PECAN_SOURCE}/${_pb_encap_pkgspec}"
 
 	###
-	### Execute the preinstall script if it exists.
+	### Parse package's encapinfo file.
 	###
-	_pb_encap_pre_result=0
-	if [ -x "${_pb_encap_pkgdir}/preinstall" ]; then
-		echo "    > executing postinstall script"
-		ENCAP_SOURCE="${PECAN_SOURCE}" \
-		ENCAP_TARGET="${PECAN_TARGET}" \
-		ENCAP_PKGNAME="${PECAN_PKGNAME}" \
-		"${_pb_encap_pkgdir}/preinstall"
-		_pb_encap_pre_result=$?
-	fi
-	if [ ${_pb_encap_pre_result} -gt 0 ]; then
-		echo "    ! installation failed"
-		return ${_pb_encap_pre_result}
-	fi
-
 	_pb_encap_excludes=
 	_pb_encap_linkdirs=
 	_pb_encap_linknames=
@@ -724,8 +710,42 @@ pecan_encap_install()
 					_pb_encap_linknames="${_pb_encap_linknames} ${_pb_encap_field_arg1} ${_pb_encap_field_arg2}"
 				fi
 				;;
+			prereq)
+				case "${_pb_encap_field_arg1}" in
+				regfile|directory)
+					echo "    ! ${_pb_encap_field_arg1} ${_pb_encap_field_arg2} is not supported"
+					;;
+				pkgspec)
+					_pb_encap_prereq="${_pb_encap_field_arg2} ${_pb_encap_field_arg3}"
+					if pecan_pkgspec_match "${_pb_encap_field_arg2}" "${_pb_encap_field_arg3}"; then
+						echo "    > verified prerequisite: "pkgspec ${_pb_encap_prereq}"
+					else
+						echo "    ! prerequisite not met: "pkgspec ${_pb_encap_prereq}"
+						echo "    ! installation failed"
+						return 1
+					fi
+					;;
+				esac
+				;;
 			esac
 		done < "${_pb_encap_encapinfo}"
+	fi
+
+	###
+	### Execute the preinstall script if it exists.
+	###
+	_pb_encap_pre_result=0
+	if [ -x "${_pb_encap_pkgdir}/preinstall" ]; then
+		echo "    > executing postinstall script"
+		ENCAP_SOURCE="${PECAN_SOURCE}" \
+		ENCAP_TARGET="${PECAN_TARGET}" \
+		ENCAP_PKGNAME="${PECAN_PKGNAME}" \
+		"${_pb_encap_pkgdir}/preinstall"
+		_pb_encap_pre_result=$?
+	fi
+	if [ ${_pb_encap_pre_result} -gt 0 ]; then
+		echo "    ! installation failed"
+		return ${_pb_encap_pre_result}
 	fi
 
 	find "${_pb_encap_pkgdir}" -print | (
