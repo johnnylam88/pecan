@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="epkg-2.3.9"
+PECAN_PKGNAME="epkg-2.3.9+1"
 
 pecan_description="Encap package manager"
 
@@ -17,7 +17,7 @@ fi
 configure_args="--with-encap-source=${PECAN_SOURCE}"
 configure_args="${configure_args} --with-encap-target=${PECAN_TARGET}"
 
-install_args="docdir=${pecan_pkgdir}/share/doc/encap"
+install_args="docdir=${pecan_pkgdir}/share/doc"
 
 pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
 pecan_install_args="${pecan_install_args} ${install_args}"
