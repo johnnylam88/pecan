@@ -662,7 +662,7 @@ pecan_encap_install()
 	_pb_encap_pkgspec="$1"
 
 	if [ -x "${PECAN_EPKG_CMD}" ]; then
-		${PECAN_EPKG_CMD} "${_pb_encap_pkgspec}"
+		${PECAN_EPKG_CMD} -t "${PECAN_TARGET}" -s "${PECAN_SOURCE}" "${_pb_encap_pkgspec}"
 		return $?
 	fi
 
