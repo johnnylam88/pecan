@@ -673,6 +673,9 @@ pecan_encap_install()
 	echo "  > installing package ${_pb_encap_pkgspec}"
 	_pb_encap_pkgdir="${PECAN_SOURCE}/${_pb_encap_pkgspec}"
 
+	###
+	### Execute the preinstall script if it exists.
+	###
 	_pb_encap_pre_result=0
 	if [ -x "${_pb_encap_pkgdir}/preinstall" ]; then
 		echo "    > executing postinstall script"
@@ -689,24 +692,37 @@ pecan_encap_install()
 
 	_pb_encap_excludes=
 	_pb_encap_linkdirs=
+	_pb_encap_linknames=
 	_pb_encap_encapinfo="${_pb_encap_pkgdir}/encapinfo"
 	if [ -f "${_pb_encap_encapinfo}" ]; then
 		while read _pb_encap_field _pb_encap_field_arg1 _pb_encap_field_arg2 _pb_encap_field_arg3; do
 			case "${_pb_encap_field}" in
 			exclude)
-				if [ -z "${_pb_encap_excludes}" ]; then
+				if [ -z "${_pb_encap_field_arg1}" ]; then
+					echo "    ! exclude: missing argument"
+				elif [ -z "${_pb_encap_excludes}" ]; then
 					_pb_encap_excludes="${_pb_encap_field_arg1}"
 				else
 					_pb_encap_excludes="${_pb_encap_excludes} ${_pb_encap_field_arg1}"
 				fi
 				;;
 			linkdir)
-				echo "$0: \`linkdir' not supported." 1>&2
-				continue
+				if [ -z "${_pb_encap_field_arg1}" ]; then
+					echo "    ! linkdir: missing argument"
+				elif [ -z "${_pb_encap_linkdirs}" ]; then
+					_pb_encap_linkdirs="${_pb_encap_field_arg1}"
+				else
+					_pb_encap_linkdirs="${_pb_encap_linkdirs} ${_pb_encap_field_arg1}"
+				fi
 				;;
 			linkname)
-				echo "$0: \`linkname' not supported." 1>&2
-				continue
+				if [ -z "${_pb_encap_field_arg1}" -o -z "${_pb_encap_field_arg2}" ]; then
+					echo "    ! linkname: missing argument"
+				elif [ -z "${_pb_encap_linknames}" ]; then
+					_pb_encap_linknames="${_pb_encap_field_arg1} ${_pb_encap_field_arg2}"
+				else
+					_pb_encap_linknames="${_pb_encap_linknames} ${_pb_encap_field_arg1} ${_pb_encap_field_arg2}"
+				fi
 				;;
 			esac
 		done < "${_pb_encap_encapinfo}"
@@ -717,20 +733,36 @@ pecan_encap_install()
 		[ "${_pb_encap_src}" != "${_pb_encap_pkgdir}" ] || continue
 		_pb_encap_file="${_pb_encap_src#${_pb_encap_pkgdir}/}"
 
+		###
+		### Skip the current file if it's in the package directory root.
+		###
 		case "${_pb_encap_file}" in
 		*/*)	;;
 		*)	[ -d "${_pb_encap_src}" ] || continue ;;
 		esac
 
-		case "${_pb_encap_excludes}" in
-		"${_pb_encap_file}"|\
-		"${_pb_encap_file} "*|\
-		*" ${_pb_encap_file} "*|\
-		*" ${_pb_encap_file}")
-			echo "    > ${_pb_encap_file}: excluding"
-			;;
-		esac
+		###
+		### Skip the current file if it matches an `exclude' entry from
+		### the encapinfo file.
+		###
+		[ -z "${_pb_encap_excludes}" ] || set -o noglob
+		_pb_encap_exclude_found=
+		for _pb_encap_exclude in ${_pb_encap_excludes}; do
+			set +o noglob
+			case "${_pb_encap_file}" in
+			${_pb_encap_exclude})
+				_pb_encap_exclude_found=true
+				echo "    > ${_pb_encap_file}: excluding"
+				break
+				;;
+			esac
+		done
+		[ -z "${_pb_encap_exclude_found}" ] || continue
 
+		###	
+		### Compute a relative symlink for the current file and store
+		### it in _pb_encap_relsrc.
+		###
 		_pb_encap_relsrc="${_pb_encap_src#${PECAN_TARGET}/}"
 		_pb_encap_prev="${_pb_encap_file}"
 		_pb_encap_cur="${_pb_encap_prev#*/}"
@@ -741,6 +773,83 @@ pecan_encap_install()
 		done
 
 		_pb_encap_dest="${PECAN_TARGET}/${_pb_encap_file}"
+
+		###
+		### See if the current file matches a `linkdir' entry from the
+		### encapinfo file.
+		###
+		[ -z "${_pb_encap_linkdirs}" ] || set -o noglob
+		_pb_encap_linkdir_found=
+		for _pb_encap_linkdir in ${_pb_encap_linkdirs}; do
+			set +o noglob
+			case "${_pb_encap_file}" in
+			${_pb_encap_linkdir}|${_pb_encap_linkdir}/*)
+				_pb_encap_linkdir_found="${_pb_encap_linkdir}"
+				break
+				;;
+			esac
+		done
+		if [ -n "${_pb_encap_linkdir_found}" ]; then
+			case "${_pb_encap_file}" in
+			${_pb_encap_linkdir_found})
+				#
+				# The current file matches a `linkdir' entry exactly.
+				#
+				if [ -d "${_pb_encap_src}" -a ! -h "${_pb_encap_src}" ]; then
+					if [ ! -e "${_pb_encap_dest}" ]; then
+						ln -s "${_pb_encap_relsrc}" "${_pb_encap_dest}"
+						continue
+					elif [ -d "${_pb_encap_dest}" -a ! -h "${_pb_encap_dest}" ]; then
+						continue
+					elif [ -h "${_pb_encap_dest}" -a \
+					       "${_pb_encap_src}" -ef "${_pb_encap_dest}" ]; then
+						continue
+					else
+						_pb_encap_result=1
+						echo "    ! ${_pb_encap_file}: conflict"
+						continue
+					fi
+				fi
+				;;
+			${_pb_encap_linkdir_found}/*)
+				#
+				# The current file is under a directory listed in a
+				# `linkdir' entry.
+				#
+				if [ -h "${PECAN_TARGET}/${_pb_encap_linkdir_found}" -a \
+				     "${_pb_encap_pkgdir}/${_pb_encap_linkdir_found}" -ef \
+				     "${PECAN_TARGET}/${_pb_encap_linkdir_found}" ]; then
+					continue
+				fi
+				;;
+			esac
+		fi
+
+		###
+		### See if the current file matches a `linkname' entry from the
+		### encapinfo file.
+		###
+		[ -z "${_pb_encap_linknames}" ] || set -o noglob
+		_pb_encap_linkname_found=
+		_pb_encap_linkname=
+		for _pb_encap_basename in ${_pb_encap_linknames}; do
+			set +o noglob
+			if [ -z "${_pb_encap_linkname}" ]; then
+				_pb_encap_linkname="${_pb_encap_basename}"
+				continue
+			fi
+			case "${_pb_encap_file}" in
+			${_pb_encap_linkname})
+				_pb_encap_linkname_found="${_pb_encap_basename}"
+				break
+				;;
+			esac
+			_pb_encap_linkname=
+		done
+		if [ -n "${_pb_encap_linkname_found}" ]; then
+			_pb_encap_dest="${_pb_encap_dest%/*}/${_pb_encap_linkname_found}"
+		fi
+
 		if [ -d "${_pb_encap_src}" -a ! -h "${_pb_encap_src}" ]; then
 			if [ ! -d "${_pb_encap_dest}" ]; then 
 				if [ -e "${_pb_encap_dest}" ]; then
@@ -763,6 +872,9 @@ pecan_encap_install()
 	return ${_pb_encap_result:=0} )
 	_pb_encap_result=$?
 
+	###
+	### Execute the postinstall script if it exists.
+	###
 	_pb_encap_post_result=0
 	if [ -x "${_pb_encap_pkgdir}/postinstall" ]; then
 		ENCAP_SOURCE="${PECAN_SOURCE}" \

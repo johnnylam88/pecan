@@ -70,8 +70,11 @@ pecan_pkgspec_match_test_helper()
 pecan_pkgspec_match_test()
 {
 	echo "pecan_pkgspec_match:"
+	OLD_PECAN_TARGET="${PECAN_TARGET}"
 	OLD_PECAN_SOURCE="${PECAN_SOURCE}"
-	PECAN_SOURCE="${pecan_topdir}/.pecan"
+	PECAN_TARGET="${pecan_topdir}/.pecan"
+	PECAN_SOURCE="${PECAN_TARGET}/pecan"
+
 	mkdir -p ${PECAN_SOURCE}
 	mkdir -p ${PECAN_SOURCE}/zlib-1.2.1
 	mkdir -p ${PECAN_SOURCE}/zlib-1.2.5
@@ -84,7 +87,64 @@ pecan_pkgspec_match_test()
 	pecan_pkgspec_match_test_helper "<=" "zlib-1.2.5" 
 	pecan_pkgspec_match_test_helper ">=" "zlib-1.2.5" 
 
-	rm -rf "${PECAN_SOURCE}"
+	rm -rf "${PECAN_TARGET}"
+	PECAN_TARGET="${OLD_PECAN_TARGET}"
+	PECAN_SOURCE="${OLD_PECAN_SOURCE}"
+	echo
+}
+
+pecan_encap_install_test_helper()
+{
+	pkgdir=${PECAN_SOURCE}/test-pkg-1.0
+
+	mkdir -p ${pkgdir}
+	mkdir -p ${pkgdir}/bin
+	mkdir -p ${pkgdir}/lib
+	mkdir -p ${pkgdir}/share
+	mkdir -p ${pkgdir}/share/doc
+	mkdir -p ${pkgdir}/share/doc/test-pkg
+	mkdir -p ${pkgdir}/share/man
+	mkdir -p ${pkgdir}/share/man/man1
+	mkdir -p ${pkgdir}/share/man/man3
+
+	touch ${pkgdir}/bin/testprog
+	touch ${pkgdir}/lib/libtest.a
+	touch ${pkgdir}/lib/libtest.so
+	touch ${pkgdir}/lib/libtest.so.1.0
+	touch ${pkgdir}/share/doc/test-pkg/README
+	touch ${pkgdir}/share/man/man1/testprog.1
+	touch ${pkgdir}/share/man/man3/test_func.3
+
+	echo "linkname bin/testprog gnutestprog" > ${pkgdir}/encapinfo
+	echo "exclude lib/libtest.so*" >> ${pkgdir}/encapinfo
+	echo "linkdir share/doc/test-pkg" >> ${pkgdir}/encapinfo
+	echo "linkdir share/man" >> ${pkgdir}/encapinfo
+
+	mkdir -p ${PECAN_TARGET}/share/man
+}
+
+pecan_encap_install_test()
+{
+	echo "pecan_encap_install:"
+	OLD_PECAN_EPKG_CMD="${PECAN_EPKG_CMD}"
+	OLD_PECAN_TARGET="${PECAN_TARGET}"
+	OLD_PECAN_SOURCE="${PECAN_SOURCE}"
+	PECAN_EPKG_CMD=/nonexistent
+	PECAN_TARGET="${pecan_topdir}/.pecan"
+	PECAN_SOURCE="${PECAN_TARGET}/pecan"
+
+	[ -d ${PECAN_SOURCE}/test-pkg-1.0 ] || \
+		pecan_encap_install_test_helper
+
+	( cd ${PECAN_SOURCE}/test-pkg-1.0 && find . | sort )
+
+	pecan_encap_install test-pkg-1.0
+
+	( cd ${PECAN_TARGET} && find . | grep -v "^[.]/pecan" | sort )
+
+	rm -rf "${PECAN_TARGET}"
+	PECAN_EPKG_CMD="${OLD_PECAN_EPKG_CMD}"
+	PECAN_TARGET="${OLD_PECAN_TARGET}"
 	PECAN_SOURCE="${OLD_PECAN_SOURCE}"
 	echo
 }
@@ -92,3 +152,4 @@ pecan_pkgspec_match_test()
 pecan_pkgspec_parse_test
 pecan_vercmp_test
 pecan_pkgspec_match_test
+pecan_encap_install_test
