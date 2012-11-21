@@ -769,9 +769,9 @@ pecan_encap_install()
 				pkgspec)
 					_pb_encap_prereq="${_pb_encap_field_arg2} ${_pb_encap_field_arg3}"
 					if pecan_pkgspec_match "${_pb_encap_field_arg2}" "${_pb_encap_field_arg3}"; then
-						echo "    > verified prerequisite: "pkgspec ${_pb_encap_prereq}"
+						echo "    > verified prerequisite: \"pkgspec ${_pb_encap_prereq}\""
 					else
-						echo "    ! prerequisite not met: "pkgspec ${_pb_encap_prereq}"
+						echo "    ! prerequisite not met: \"pkgspec ${_pb_encap_prereq}\""
 						echo "    ! installation failed"
 						return 1
 					fi
