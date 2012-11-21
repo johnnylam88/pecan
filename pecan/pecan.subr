@@ -375,12 +375,63 @@ pecan_extract_vars()
 
 pecan_extract_default()
 {
-	cd "${pecan_workdir}" && tar zxvf "${PECAN_DISTDIR}/${pecan_extract_file}"
+	cd "${pecan_workdir}" && \
+		pecan_extract_file "${PECAN_DISTDIR}/${pecan_extract_file}"
 }
 
 pecan_do_extract()
 {
 	pecan_action_generator extract
+}
+
+pecan_extract_file()
+{
+	_pb_extract_distfile="$1"
+
+	case "${_pb_extract_distfile}" in
+	*.Z)				_pb_extract_cformat=compress ;;
+#	*.bz2|*.tbz|*.tbz2|*.bz)	_pb_extract_cformat=bzip ;;
+	*.gz|*.tgz|*.z)			_pb_extract_cformat=gzip ;;
+#	*.lzma)				_pb_extract_cformat=lzma ;;
+#	*.xz)				_pb_extract_cformat=xz ;;
+	*)				_pb_extract_cformat=none ;;
+	esac
+
+	case "${_pb_extract_cformat}" in
+	compress|gzip)	_pb_extract_zcat="gzip -cd" ;;
+	bzip)		_pb_extract_zcat="bzcat" ;;
+#	lzma|xz)	_pb_extract_zcat="false" ;;
+	none)		_pb_extract_zcat="cat" ;;
+	esac
+
+	case "${_pb_extract_distfile}" in
+	*.tar|*.tar.*|*.t[bg]z|*-tar.*|*_tar.*)	_pb_extract_format=tar ;;
+	*.shar|*.shar.*|*.shr|*.shr.*)		_pb_extract_format=shar ;;
+	*.Z|*.bz|*.bz2|*.gz|*.z)		_pb_extract_format=compressed ;;
+	*)					_pb_extract_format=none ;;
+	esac
+
+	case "${_pb_extract_format}" in
+	compressed)
+		_pb_extract_target="${_pb_extract_distfile##*/}"
+		_pb_extract_target="${_pb_extract_target%.*}"
+		${_pb_extract_zcat} "${_pb_extract_distfile}" \
+			> "${_pb_extract_target}"
+		;;
+	none)
+		cp "${_pb_extract_distfile}" .
+		;;
+	shar)
+		${_pb_extract_zcat} "${_pb_extract_distfile}" | sh
+		;;
+	tar)
+		${_pb_extract_zcat} "${_pb_extract_distfile}" | tar -xf -
+		;;
+	*)
+		echo "$0: archive format \`${_pb_extract_format}' not recognized." 1>&2
+		return 1
+		;;
+	esac
 }
 
 #########
