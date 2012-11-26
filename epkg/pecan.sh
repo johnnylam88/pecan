@@ -1,10 +1,14 @@
 #!/bin/sh
 
-PECAN_PKGNAME="epkg-2.3.9+1"
+PECAN_PKGNAME="epkg-2.3.9+2"
 
 pecan_description="Encap package manager"
 
-pecan_prereq_lib=">= zlib-1.2.7"
+pecan_prereq_lib=">= curl-7.28.0"
+pecan_prereq_lib="${pecan_prereq_lib} >= expat-2.1.0"
+pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
+pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"
+pecan_prereq_pkg=">= m4-1.4"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr
