@@ -371,6 +371,28 @@ pecan_extract_vars()
 	: ${PECAN_DISTDIR:=${pecan_topdir}}
 	: ${pecan_extract_file:=${pecan_pkgname}-${pecan_swver}${pecan_extract_suffix}}
 	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_file%${pecan_extract_suffix}}}
+
+	pecan_extract_tools_vars
+}
+
+pecan_extract_tools_vars()
+{
+	[ -z "${_pb_extract_tools_vars_runonce}" ] || return 0
+	_pb_extract_tools_vars_runonce=true
+
+	if [ -n "${pecan_extract_file}" ]; then
+		pecan_extract_compression_format ${pecan_extract_file} _pb_extract_vars_cformat
+		pecan_extract_archive_format ${pecan_extract_file} _pb_extract_vars_aformat
+
+		case "${_pb_extract_vars_cformat}" in
+		compress|gzip)	pecan_prereq_build="${pecan_prereq_build} * gzip" ;;
+		lzma|xz)	pecan_prereq_build="${pecan_prereq_build} * xz" ;;
+		esac
+
+		case "${_pb_extract_vars_aformat}" in
+		tar)	pecan_prereq_build="${pecan_prereq_build} * tar" ;;
+		esac
+	fi
 }
 
 pecan_extract_default()
@@ -384,31 +406,53 @@ pecan_do_extract()
 	pecan_action_generator extract
 }
 
+pecan_extract_compression_format()
+{
+	_pb_extract_cformat_distfile="$1"
+	_pb_extract_cformat_varname="$2"
+
+	case "${_pb_extract_cformat_distfile}" in
+	*.Z)				_pb_extract_cformat_fmt=compress ;;
+#	*.bz2|*.tbz|*.tbz2|*.bz)	_pb_extract_cformat_fmt=bzip ;;
+	*.gz|*.tgz|*.z)			_pb_extract_cformat_fmt=gzip ;;
+	*.lzma)				_pb_extract_cformat_fmt=lzma ;;
+	*.xz)				_pb_extract_cformat_fmt=xz ;;
+	*)				_pb_extract_cformat_fmt=none ;;
+	esac
+
+	[ -z "${_pb_extract_cformat_varname}" ] || \
+		eval ${_pb_extract_cformat_varname}=\"${_pb_extract_cformat_fmt}\"
+}
+
+pecan_extract_archive_format()
+{
+	_pb_extract_aformat_distfile="$1"
+	_pb_extract_aformat_varname="$2"
+
+	case "${_pb_extract_aformat_distfile}" in
+	*.tar|*.tar.*|*.t[bg]z|*-tar.*|*_tar.*)	_pb_extract_aformat_fmt=tar ;;
+	*.shar|*.shar.*|*.shr|*.shr.*)		_pb_extract_aformat_fmt=shar ;;
+	*.Z|*.bz|*.bz2|*.gz|*.z)		_pb_extract_aformat_fmt=compressed ;;
+	*)					_pb_extract_aformat_fmt=none ;;
+	esac
+
+	[ -z "${_pb_extract_aformat_varname}" ] || \
+		eval ${_pb_extract_aformat_varname}=\"${_pb_extract_aformat_fmt}\"
+}
+
 pecan_extract_file()
 {
 	_pb_extract_distfile="$1"
 
-	case "${_pb_extract_distfile}" in
-	*.Z)				_pb_extract_cformat=compress ;;
-#	*.bz2|*.tbz|*.tbz2|*.bz)	_pb_extract_cformat=bzip ;;
-	*.gz|*.tgz|*.z)			_pb_extract_cformat=gzip ;;
-#	*.lzma)				_pb_extract_cformat=lzma ;;
-#	*.xz)				_pb_extract_cformat=xz ;;
-	*)				_pb_extract_cformat=none ;;
-	esac
+	pecan_extract_compression_format "${_pb_extract_distfile}" _pb_extract_cformat
+	pecan_extract_archive_format "${_pb_extract_distfile}" _pb_extract_format
 
 	case "${_pb_extract_cformat}" in
 	compress|gzip)	_pb_extract_zcat="gzip -cd" ;;
 	bzip)		_pb_extract_zcat="bzcat" ;;
-#	lzma|xz)	_pb_extract_zcat="false" ;;
+	lzma)		_pb_extract_zcat="lzcat" ;;
+	xz)		_pb_extract_zcat="xzcat" ;;
 	none)		_pb_extract_zcat="cat" ;;
-	esac
-
-	case "${_pb_extract_distfile}" in
-	*.tar|*.tar.*|*.t[bg]z|*-tar.*|*_tar.*)	_pb_extract_format=tar ;;
-	*.shar|*.shar.*|*.shr|*.shr.*)		_pb_extract_format=shar ;;
-	*.Z|*.bz|*.bz2|*.gz|*.z)		_pb_extract_format=compressed ;;
-	*)					_pb_extract_format=none ;;
 	esac
 
 	case "${_pb_extract_format}" in
