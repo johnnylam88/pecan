@@ -18,6 +18,7 @@ pecan_pkgspec_parse_test()
 	pecan_pkgspec_parse_test_helper perl-5.005
 	pecan_pkgspec_parse_test_helper png-1.2.8c
 	pecan_pkgspec_parse_test_helper openssl-0.9.9g+10
+	pecan_pkgspec_parse_test_helper pkg-config-0.27
 	pecan_pkgspec_parse_test_helper "foo-*"
 	echo
 }
