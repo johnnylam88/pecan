@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gzip-1.2.4a"
+PECAN_PKGNAME="gzip-1.2.4b"
 
 pecan_description="GNU compression program"
 
