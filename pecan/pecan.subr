@@ -488,6 +488,20 @@ pecan_patch_vars()
 {
 	pecan_patch_cookie="${pecan_workdir}/.patch_cookie"
 	pecan_patch_require="extract"
+
+	pecan_patch_tools_vars
+}
+
+pecan_patch_tools_vars()
+{
+	[ -z "${_pb_patch_tools_vars_runonce}" ] || return 0
+	_pb_patch_tools_vars_runonce=true
+
+	for _pb_patch_file in "${pecan_topdir}"/patch-*; do
+		[ "${_pb_patch_file}" != "${pecan_topdir}/patch-*" ] || break
+		pecan_prereq_build="${pecan_prereq_build} * patch"
+		break
+	done
 }
 
 pecan_patch_default()
