@@ -6,6 +6,8 @@ pecan_description="Utility to execute commands as a different user"
 
 pecan_extract_file="priv-1.0-beta2.tar.gz"
 
+pecan_prereq_build="* sed"
+
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then

@@ -9,10 +9,11 @@ Currently, the dependency chain for `epkg' looks like:
 	tar
 	expat
 	libiconv
-	perl
 	pkg-config
-	zlib
 	gettext-runtime
+	sed
+	zlib
+	perl
 	openssl
 	curl
 	m4

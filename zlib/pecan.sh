@@ -4,6 +4,8 @@ PECAN_PKGNAME="zlib-1.2.7"
 
 pecan_description="gzip-compatible compression library"
 
+pecan_prereq_build="* sed"
+
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then

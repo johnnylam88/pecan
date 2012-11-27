@@ -5,6 +5,7 @@ PECAN_PKGNAME="curl-7.28.0"
 pecan_description="Command-line tool for transferring data with URL syntax"
 
 pecan_prereq_build="* pkg-config"
+pecan_prereq_build="${pecan_prereq_build} * sed"
 pecan_prereq_lib=">= openssl-1.0.1c"
 pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"
 
