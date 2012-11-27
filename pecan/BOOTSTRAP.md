@@ -11,6 +11,7 @@ Currently, the dependency chain for `epkg' looks like:
 	libiconv
 	pkg-config
 	gettext-runtime
+	libidn
 	sed
 	zlib
 	perl
