@@ -37,12 +37,7 @@ pecan_init_vars()
 
 	: ${pecan_topdir:=`pwd`}
 	: ${pecan_workdir:=${pecan_topdir}/work}
-
 	: ${pecan_pkgdir:=${PECAN_SOURCE}/${PECAN_PKGNAME}}
-	: ${pecan_infodir:=${pecan_pkgdir}/share/info}
-	: ${pecan_mandir:=${pecan_pkgdir}/share/man}
-	: ${pecan_etcdir:=${PECAN_TARGET}/etc}
-	: ${pecan_vardir:=${PECAN_TARGET}/var}
 
 	pecan_init_cookie="${pecan_workdir}/.init_cookie"
 	pecan_init_require=
@@ -51,6 +46,14 @@ pecan_init_vars()
 	# during auto-configuration.
 	#
 	PATH="${pecan_tooldir}/bin:${PECAN_PATH}"; export PATH
+}
+
+pecan_init_derived_vars()
+{
+	: ${pecan_infodir:=${pecan_pkgdir}/share/info}
+	: ${pecan_mandir:=${pecan_pkgdir}/share/man}
+	: ${pecan_etcdir:=${PECAN_TARGET}/etc}
+	: ${pecan_vardir:=${PECAN_TARGET}/var}
 }
 
 pecan_do_init()
@@ -368,11 +371,15 @@ pecan_extract_vars()
 	pecan_extract_require="tools"
 
 	: ${pecan_extract_suffix=.tar.gz}
-	: ${PECAN_DISTDIR:=${pecan_topdir}}
 	: ${pecan_extract_file:=${pecan_pkgname}-${pecan_swver}${pecan_extract_suffix}}
-	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_file%${pecan_extract_suffix}}}
 
 	pecan_extract_tools_vars
+}
+
+pecan_extract_derived_vars()
+{
+	: ${PECAN_DISTDIR:=${pecan_topdir}}
+	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_file%${pecan_extract_suffix}}}
 }
 
 pecan_extract_tools_vars()
@@ -532,6 +539,15 @@ pecan_configure_vars()
 
 	: ${pecan_configure_style=gnu}
 
+	# GNU configure
+	: ${pecan_gnu_configure_script:=./configure}
+	if [ -z "${pecan_gnu_configure_args}" ]; then
+		pecan_gnu_configure_args="--prefix=${pecan_pkgdir}"
+	fi
+}
+
+pecan_configure_derived_vars()
+{
 	case "${pecan_configure_style}" in
 	gnu)	pecan_configure_default=pecan_gnu_configure_default ;;
 	*)	pecan_configure_default= ;;
@@ -539,13 +555,14 @@ pecan_configure_vars()
 
 	# gnu configure
 	: ${pecan_gnu_configure_script:=./configure}
-	if [ -z "${pecan_gnu_configure_args}" ]; then
-		pecan_gnu_configure_args="--prefix=${pecan_pkgdir}"
-		pecan_gnu_configure_args="$pecan_gnu_configure_args --sysconfdir=${pecan_etcdir}"
-		pecan_gnu_configure_args="$pecan_gnu_configure_args --localstatedir=${pecan_vardir}"
-		pecan_gnu_configure_args="$pecan_gnu_configure_args --infodir=${pecan_infodir}"
-		pecan_gnu_configure_args="$pecan_gnu_configure_args --mandir=${pecan_mandir}"
-	fi
+	[ -z "${pecan_etcdir}" ] || \
+		pecan_gnu_configure_args="${pecan_gnu_configure_args} --sysconfdir=${pecan_etcdir}"
+	[ -z "${pecan_vardir}" ] || \
+		pecan_gnu_configure_args="${pecan_gnu_configure_args} --localstatedir=${pecan_vardir}"
+	[ -z "${pecan_infodir}" ] || \
+		pecan_gnu_configure_args="${pecan_gnu_configure_args} --infodir=${pecan_infodir}"
+	[ -z "${pecan_mandir}" ] || \
+		pecan_gnu_configure_args="${pecan_gnu_configure_args} --mandir=${pecan_mandir}"
 }
 
 pecan_gnu_configure_default()
@@ -574,15 +591,18 @@ pecan_build_vars()
 
 	: ${pecan_build_style=make}
 
-	case "${pecan_build_style}" in
-	make)	pecan_build_default=pecan_make_build_default ;;
-	*)	pecan_build_default= ;;
-	esac
-
 	# make
 	: ${pecan_build_makefile:=Makefile}
 	: ${pecan_build_target=}
 	: ${pecan_build_args=}
+}
+
+pecan_build_derived_vars()
+{
+	case "${pecan_build_style}" in
+	make)	pecan_build_default=pecan_make_build_default ;;
+	*)	pecan_build_default= ;;
+	esac
 }
 
 pecan_make_build_default()
@@ -608,14 +628,19 @@ pecan_test_vars()
 
 	: ${pecan_test_style}
 
+	# make
+	: ${pecan_test_target:=check}
+}
+
+pecan_test_derived_vars()
+{
 	case "${pecan_test_style}" in
 	make)	pecan_test_default=pecan_make_test_default ;;
 	*)	pecan_test_default= ;;
 	esac
 
 	# make
-	: ${pecan_test_makefile:=Makefile}
-	: ${pecan_test_target:=check}
+	: ${pecan_test_makefile:=${pecan_build_makefile}}
 }
 
 pecan_make_test_default()
@@ -709,6 +734,13 @@ pecan_install_vars()
 
 	: ${pecan_install_style=make}
 
+	# make
+	: ${pecan_install_target=install}
+	: ${pecan_install_args=}
+}
+
+pecan_install_derived_vars()
+{
 	case "${pecan_install_style}" in
 	make)	pecan_install_default=pecan_make_install_default ;;
 	*)	pecan_install_default= ;;
@@ -716,8 +748,6 @@ pecan_install_vars()
 
 	# make
 	: ${pecan_install_makefile:=${pecan_build_makefile}}
-	: ${pecan_install_target=install}
-	: ${pecan_install_args=}
 }
 
 pecan_make_install_default()
@@ -1093,7 +1123,7 @@ pecan_do_lint()
 ###
 # pecan_vars
 #
-# Set variables for use by scripts including this library.
+# Set variables that may be modified for use by scripts including this library.
 #
 pecan_vars()
 {
@@ -1101,6 +1131,21 @@ pecan_vars()
 		_pb_vars_setvar="pecan_${_pb_vars_action}_vars"
 		if pecan_is_function_defined "${_pb_vars_setvar}"; then
 			${_pb_vars_setvar}
+		fi
+	done
+}
+
+###
+# pecan_derived_vars
+#
+# Set derived variables for use by scripts including this library.
+#
+pecan_derived_vars()
+{
+	for _pb_vars_action in ${pecan_action_registry}; do
+		_pb_vars_set_derived_var="pecan_${_pb_vars_action}_derived_vars"
+		if pecan_is_function_defined "${_pb_vars_set_derived_var}"; then
+			${_pb_vars_set_derived_var}
 		fi
 	done
 }
@@ -1557,7 +1602,7 @@ pecan_main()
 {
 	_pb_main_stack="$@"
 
-	pecan_vars
+	pecan_derived_vars
 	while [ -n "${_pb_main_stack}" ]; do
 		_pb_main_top="${_pb_main_stack%%[ ]*}"
 		case "${_pb_main_stack}" in
