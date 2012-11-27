@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gzip-1.2.4b"
+PECAN_PKGNAME="gzip-1.2.4a+1"
 
 pecan_description="GNU compression program"
 
@@ -25,10 +25,14 @@ pecan_configure()
 pecan_pre_install()
 {
 	mkdir -p "${pecan_pkgdir}"
+	mkdir -p "${pecan_pkgdir}/bin"
 	mkdir -p "${pecan_pkgdir}/share"
+	mkdir -p "${pecan_pkgdir}/share/info"
 	mkdir -p "${pecan_pkgdir}/share/man"
+	mkdir -p "${pecan_pkgdir}/share/man/man1"
 }
 
+pecan_install_target="installbin installman"
 pecan_install_args="${pecan_install_args} infodir=${pecan_pkgdir}/share/info"
 pecan_install_args="${pecan_install_args} mandir=${pecan_pkgdir}/share/man/man1"
 
