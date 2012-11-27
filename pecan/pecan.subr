@@ -385,6 +385,7 @@ pecan_extract_tools_vars()
 		pecan_extract_archive_format ${pecan_extract_file} _pb_extract_vars_aformat
 
 		case "${_pb_extract_vars_cformat}" in
+		bzip)		pecan_prereq_build="${pecan_prereq_build} * bzip2" ;;
 		compress|gzip)	pecan_prereq_build="${pecan_prereq_build} * gzip" ;;
 		lzma|xz)	pecan_prereq_build="${pecan_prereq_build} * xz" ;;
 		esac
@@ -413,7 +414,7 @@ pecan_extract_compression_format()
 
 	case "${_pb_extract_cformat_distfile}" in
 	*.Z)				_pb_extract_cformat_fmt=compress ;;
-#	*.bz2|*.tbz|*.tbz2|*.bz)	_pb_extract_cformat_fmt=bzip ;;
+	*.bz2|*.tbz|*.tbz2|*.bz)	_pb_extract_cformat_fmt=bzip ;;
 	*.gz|*.tgz|*.z)			_pb_extract_cformat_fmt=gzip ;;
 	*.lzma)				_pb_extract_cformat_fmt=lzma ;;
 	*.xz)				_pb_extract_cformat_fmt=xz ;;
