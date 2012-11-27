@@ -510,7 +510,7 @@ pecan_patch_default()
 	cd "${pecan_srcdir}"
 	for _pb_patch_file in "${pecan_topdir}"/patch-*; do
 		[ "${_pb_patch_file}" != "${pecan_topdir}/patch-*" ] || break
-		patch < "${_pb_patch_file}"
+		patch -p0 < "${_pb_patch_file}"
 	done
 }
 
