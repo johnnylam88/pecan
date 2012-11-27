@@ -843,7 +843,7 @@ pecan_encap_install()
 		return ${_pb_encap_pre_result}
 	fi
 
-	find "${_pb_encap_pkgdir}" -print | sort | (
+	( pecan_dirlist "${_pb_encap_pkgdir}" ) | (
 	while read _pb_encap_src; do
 		[ "${_pb_encap_src}" != "${_pb_encap_pkgdir}" ] || continue
 		_pb_encap_file="${_pb_encap_src#${_pb_encap_pkgdir}/}"
@@ -1482,6 +1482,36 @@ pecan_pkgspec_match()
 }
 
 ###
+# pecan_dirlist dir
+#
+# Walk the directory tree headed by dir and list the contents.
+#
+pecan_dirlist()
+{
+	local file
+	local path
+
+	if [ -z "$2" ] ; then
+		path="${1%/}/"
+	else
+		path="$2$1/"
+	fi
+
+	if cd "$1"; then
+		for file in .* *; do
+			case "$file" in
+			"."|"..") continue ;;
+			esac
+			echo $path$file
+			if [ -d "$file" -a ! -h "$file" ]; then
+				pecan_dirlist "$file" "$path"
+			fi
+		done
+		cd ..
+	fi
+}
+
+###
 # pecan_lndir fromdir todir
 #
 # Link the contents of $fromdir into $todir.
@@ -1491,7 +1521,7 @@ pecan_lndir()
 	_pb_lndir_fromdir="$1"
 	_pb_lndir_todir="$2"
 
-	find "${_pb_lndir_fromdir}" -print | sort |
+	( pecan_dirlist "${_pb_lndir_fromdir}" ) |
 	while read _pb_lndir_src; do
 		[ "${_pb_lndir_src}" != "${_pb_lndir_fromdir}" ] || continue
 		_pb_lndir_file="${_pb_lndir_src#${_pb_lndir_fromdir}/}"
