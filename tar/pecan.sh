@@ -1,9 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="tar-1.26"
-
-pecan_prereq_lib=">= gettext-runtime-0.18.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
+PECAN_PKGNAME="tar-1.26+1"
 
 pecan_description="GNU tar archive program"
 
@@ -17,6 +14,23 @@ elif [ -f ../pecan/pecan.subr ]; then
 else
 	exit 1
 fi
+
+# This tar package is used as a bootstrap for extracting files for
+# most other packages, so remove dependencies on other packages.
+#
+pecan_pre_configure()
+{
+	cd "${pecan_tooldir}"
+	mkdir -p include
+	echo > include/iconv.h
+}
+
+pecan_cppflags="-I${pecan_tooldir}/include"
+
+configure_args="--disable-nls"
+configure_args="${configure_args} --without-libiconv-prefix"
+configure_args="${configure_args} --without-libintl-prefix"
+pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
 
 pecan_test_style=make
 
