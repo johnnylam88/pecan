@@ -37,7 +37,13 @@ pecan_init_vars()
 
 	: ${pecan_topdir:=`pwd`}
 	: ${pecan_workdir:=${pecan_topdir}/work}
+	: ${pecan_tooldir:=${pecan_workdir}/.tools}
+
 	: ${pecan_pkgdir:=${PECAN_SOURCE}/${PECAN_PKGNAME}}
+	: ${pecan_infodir:=${pecan_pkgdir}/share/info}
+	: ${pecan_mandir:=${pecan_pkgdir}/share/man}
+	: ${pecan_etcdir:=${PECAN_TARGET}/etc}
+	: ${pecan_vardir:=${PECAN_TARGET}/var}
 
 	pecan_init_cookie="${pecan_workdir}/.init_cookie"
 	pecan_init_require=
@@ -46,14 +52,6 @@ pecan_init_vars()
 	# during auto-configuration.
 	#
 	PATH="${pecan_tooldir}/bin:${PECAN_PATH}"; export PATH
-}
-
-pecan_init_derived_vars()
-{
-	: ${pecan_infodir:=${pecan_pkgdir}/share/info}
-	: ${pecan_mandir:=${pecan_pkgdir}/share/man}
-	: ${pecan_etcdir:=${PECAN_TARGET}/etc}
-	: ${pecan_vardir:=${PECAN_TARGET}/var}
 }
 
 pecan_do_init()
@@ -135,20 +133,35 @@ pecan_prereq_default()
 			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
 			continue
 		fi
+		if ! pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' not matched for \`${pecan_pkgname}'." 1>&2
+			pecan_pkgspec_parse "${_pb_prereq_pkgspec}" _pb_prereq_pkgname || return 1
+			if [ ! -d "../${_pb_prereq_pkgname}" ]; then
+				echo "$0: \`../${_pb_prereq_pkgname}' directory not found." 1>&2
+				return 1
+			elif [ ! -x "../${_pb_prereq_pkgname}/pecan.sh" ]; then
+				echo "$0: \`../${_pb_prereq_pkgname}/pecan.sh' not found." 1>&2
+				return 1
+			fi
+			( set -e;
+			  if cd "../${_pb_prereq_pkgname}"; then
+				echo "$0: installing prereq \`${_pb_prereq_pkgname}' for \`${pecan_pkgname}'." &&
+				./pecan.sh install && ./pecan.sh encap &&
+				echo "$0: returning to \`${pecan_pkgname}'"
+			  fi ) || return 1
+			exec $0 ${pecan_main_args}
+		fi
 		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
-			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' matches \`${_pb_prereq_match}'." 1>&2
+			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' matches \`${_pb_prereq_match}' for \`${pecan_pkgname}'." 1>&2
 			if pecan_pkgspec_parse "${_pb_prereq_match}" _pb_prereq_pkgname; then
 				_pb_prereq_file="${pecan_prereq_dir}/${_pb_prereq_pkgname}"
 				echo "${_pb_prereq_match}" > "${_pb_prereq_file}"
 			fi
-		else
-			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' not matched." 1>&2
-			return 1
 		fi
 		_pb_prereq_cmp=
 	done
 	if [ -n "${_pb_prereq_cmp}" ]; then
-		echo "$0: prereq \`${_pb_prereq_cmp}' incomplete." 1>&2
+		echo "$0: prereq \`${_pb_prereq_cmp}' incomplete for \`${pecan_pkgname}'." 1>&2
 		return 1
 	fi
 }
@@ -170,8 +183,6 @@ pecan_tools_vars()
 {
 	pecan_tools_cookie="${pecan_workdir}/.tools_cookie"
 	pecan_tools_require="prereq"
-
-	: ${pecan_tooldir:=${pecan_workdir}/.tools}
 
 	# Run the *_vars function for each tool that matches a prereq.
 
@@ -370,16 +381,12 @@ pecan_extract_vars()
 	pecan_extract_cookie="${pecan_workdir}/.extract_cookie"
 	pecan_extract_require="tools"
 
+	: ${PECAN_DISTDIR:=${pecan_topdir}}
 	: ${pecan_extract_suffix=.tar.gz}
 	: ${pecan_extract_file:=${pecan_pkgname}-${pecan_swver}${pecan_extract_suffix}}
+	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_file%${pecan_extract_suffix}}}
 
 	pecan_extract_tools_vars
-}
-
-pecan_extract_derived_vars()
-{
-	: ${PECAN_DISTDIR:=${pecan_topdir}}
-	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_file%${pecan_extract_suffix}}}
 }
 
 pecan_extract_tools_vars()
@@ -486,6 +493,46 @@ pecan_extract_file()
 	esac
 }
 
+#############
+# patchdist #
+#############
+
+pecan_action_registry="${pecan_action_registry} patchdist"
+
+pecan_patchdist_vars()
+{
+	pecan_patchdist_cookie="${pecan_workdir}/.patchdist_cookie"
+	pecan_patchdist_require="extract"
+
+	pecan_patchdist_tools_vars
+}
+
+pecan_patchdist_tools_vars()
+{
+	[ -z "${_pb_patchdist_tools_vars_runonce}" ] || return 0
+	_pb_patchdist_tools_vars_runonce=true
+
+	for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
+		[ "${_pb_patchdist_file}" != "${pecan_topdir}/patchdist-*" ] || break
+		pecan_prereq_build="${pecan_prereq_build} * patch"
+		break
+	done
+}
+
+pecan_patchdist_default()
+{
+	cd "${pecan_srcdir}"
+	for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
+		[ "${_pb_patchdist_file}" != "${pecan_topdir}/patchdist-*" ] || break
+		patch < "${_pb_patchdist_file}"
+	done
+}
+
+pecan_do_patchdist()
+{
+	pecan_action_generator patchdist
+}
+
 #########
 # patch #
 #########
@@ -495,7 +542,7 @@ pecan_action_registry="${pecan_action_registry} patch"
 pecan_patch_vars()
 {
 	pecan_patch_cookie="${pecan_workdir}/.patch_cookie"
-	pecan_patch_require="extract"
+	pecan_patch_require="patchdist"
 
 	pecan_patch_tools_vars
 }
@@ -546,7 +593,7 @@ pecan_configure_vars()
 	fi
 }
 
-pecan_configure_derived_vars()
+pecan_configure_deferred_vars()
 {
 	case "${pecan_configure_style}" in
 	gnu)	pecan_configure_default=pecan_gnu_configure_default ;;
@@ -567,6 +614,7 @@ pecan_configure_derived_vars()
 
 pecan_gnu_configure_default()
 {
+	echo "XXX: PATH: ${PATH}"
 	cd "${pecan_srcdir}" && \
 	ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
 	CPPFLAGS="${pecan_cppflags}" LDFLAGS="${pecan_ldflags}" \
@@ -597,7 +645,7 @@ pecan_build_vars()
 	: ${pecan_build_args=}
 }
 
-pecan_build_derived_vars()
+pecan_build_deferred_vars()
 {
 	case "${pecan_build_style}" in
 	make)	pecan_build_default=pecan_make_build_default ;;
@@ -632,7 +680,7 @@ pecan_test_vars()
 	: ${pecan_test_target:=check}
 }
 
-pecan_test_derived_vars()
+pecan_test_deferred_vars()
 {
 	case "${pecan_test_style}" in
 	make)	pecan_test_default=pecan_make_test_default ;;
@@ -739,7 +787,7 @@ pecan_install_vars()
 	: ${pecan_install_args=}
 }
 
-pecan_install_derived_vars()
+pecan_install_deferred_vars()
 {
 	case "${pecan_install_style}" in
 	make)	pecan_install_default=pecan_make_install_default ;;
@@ -758,11 +806,7 @@ pecan_make_install_default()
 
 pecan_install_stage()
 {
-	for _pb_stage_file in "${pecan_stagedir}/"*; do
-		[ "${_pb_stage_file}" != "${pecan_stagedir}/*" ] || break
-		[ -f "${_pb_stage_file}" ] || continue
-		cp -f "${_pb_stage_file}" "${pecan_pkgdir}"
-	done
+	cd "${pecan_stagedir}" && cp -Rv . "${pecan_pkgdir}"
 }
 
 pecan_do_install()
@@ -1091,9 +1135,11 @@ pecan_do_debug()
 	echo "pecan_srcdir: ${pecan_srcdir}"
 	echo "pecan_cppflags: ${pecan_cppflags}"
 	echo "pecan_ldflags: ${pecan_ldflags}"
+	echo "PATH: ${PATH}"
 	echo "pecan_configure_style: ${pecan_configure_style}"
 	echo "pecan_build_style: ${pecan_build_style}"
 	echo "pecan_install_style: ${pecan_install_style}"
+	echo "pecan_install_args: ${pecan_install_args}"
 }
 
 ########
@@ -1136,16 +1182,16 @@ pecan_vars()
 }
 
 ###
-# pecan_derived_vars
+# pecan_deferred_vars
 #
-# Set derived variables for use by scripts including this library.
+# Set deferred variables for use by scripts including this library.
 #
-pecan_derived_vars()
+pecan_deferred_vars()
 {
 	for _pb_vars_action in ${pecan_action_registry}; do
-		_pb_vars_set_derived_var="pecan_${_pb_vars_action}_derived_vars"
-		if pecan_is_function_defined "${_pb_vars_set_derived_var}"; then
-			${_pb_vars_set_derived_var}
+		_pb_vars_set_deferred_var="pecan_${_pb_vars_action}_deferred_vars"
+		if pecan_is_function_defined "${_pb_vars_set_deferred_var}"; then
+			${_pb_vars_set_deferred_var}
 		fi
 	done
 }
@@ -1600,9 +1646,10 @@ pecan_lndir()
 #
 pecan_main()
 {
-	_pb_main_stack="$@"
+	pecan_main_args="$@"
+	_pb_main_stack="${pecan_main_args}"
 
-	pecan_derived_vars
+	pecan_deferred_vars
 	while [ -n "${_pb_main_stack}" ]; do
 		_pb_main_top="${_pb_main_stack%%[ ]*}"
 		case "${_pb_main_stack}" in
