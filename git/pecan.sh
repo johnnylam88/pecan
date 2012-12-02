@@ -1,10 +1,10 @@
 #!/bin/sh
 
-PECAN_PKGNAME="git-1.8.0+1"
+PECAN_PKGNAME="git-1.8.0.1"
 
 pecan_description="The stupid content tracker"
 
-pecan_prereq_build=">= autoconf-2.50"
+pecan_prereq_build=">= autoconf-2.62"
 pecan_prereq_build="${pecan_prereq_build} * gmake"
 pecan_prereq_build="${pecan_prereq_build} >= gettext-tools-0.18.1"
 pecan_prereq_lib=">= curl-7.28.0"
@@ -42,14 +42,16 @@ pecan_post_stage()
 {
 	cp "${pecan_srcdir}/COPYING" "${pecan_stagedir}"
 	cp "${pecan_srcdir}/LGPL-2.1" "${pecan_stagedir}"
+
+	# Extract the manpages into the staging area.
+	mkdir -p "${pecan_stagedir}/share/man"
+	cd "${pecan_stagedir}/share/man" &&
+	tar zxvf "${PECAN_DISTDIR}/git-manpages-${pecan_swver}.tar.gz"
 }
 
 pecan_post_install()
 {
 	rm -fr "${pecan_pkgdir}"/lib/perl5/[0-9]*
-	mkdir -p "${pecan_mandir}"
-	cd "${pecan_mandir}" && \
-		tar zxvf "${PECAN_DISTDIR}/git-manpages-${pecan_swver}.tar.gz"
 }
 
 pecan_main "$@"
