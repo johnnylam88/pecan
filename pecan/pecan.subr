@@ -528,7 +528,7 @@ pecan_patchdist_default()
 	cd "${pecan_srcdir}"
 	for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
 		[ "${_pb_patchdist_file}" != "${pecan_topdir}/patchdist-*" ] || break
-		patch < "${_pb_patchdist_file}"
+		patch -b < "${_pb_patchdist_file}"
 	done
 }
 
@@ -568,7 +568,7 @@ pecan_patch_default()
 	cd "${pecan_srcdir}"
 	for _pb_patch_file in "${pecan_topdir}"/patch-*; do
 		[ "${_pb_patch_file}" != "${pecan_topdir}/patch-*" ] || break
-		patch -p0 < "${_pb_patch_file}"
+		patch -b -p0 < "${_pb_patch_file}"
 	done
 }
 
