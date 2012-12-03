@@ -1,0 +1,63 @@
+Search for PAM modules in the following locations, in order:
+
+	OPENPAM_COMMON_MODULES_DIR
+	OPENPAM_MODULES_DIR
+
+--- lib/openpam_dynamic.c.orig	2012-05-26 09:58:09.000000000 -0400
++++ lib/openpam_dynamic.c	2012-12-03 16:26:53.000000000 -0500
+@@ -111,30 +111,42 @@
+  * Locate a dynamically linked module
+  */
+ 
++#ifndef OPENPAM_COMMON_MODULES_DIR
++#define OPENPAM_COMMON_MODULES_DIR	""
++#endif
++
++static const char *openpam_module_dirpath[] = {
++	"",
++	OPENPAM_COMMON_MODULES_DIR,
++	OPENPAM_MODULES_DIR,
++	NULL
++};
++
+ pam_module_t *
+ openpam_dynamic(const char *path)
+ {
+ 	const pam_module_t *dlmodule;
+ 	pam_module_t *module;
+-	const char *prefix;
++	const char **prefix;
+ 	char *vpath;
+ 	void *dlh;
+ 	int i, serrno;
+ 
+ 	dlh = NULL;
+ 
+-	/* Prepend the standard prefix if not an absolute pathname. */
+-	if (path[0] != '/')
+-		prefix = OPENPAM_MODULES_DIR;
+-	else
+-		prefix = "";
+-
+-	/* try versioned module first, then unversioned module */
+-	if (asprintf(&vpath, "%s%s.%d", prefix, path, LIB_MAJ) < 0)
+-		goto err;
+-	if ((dlh = try_dlopen(vpath)) == NULL && errno == ENOENT) {
+-		*strrchr(vpath, '.') = '\0';
+-		dlh = try_dlopen(vpath);
++	/* search for the module */
++	for (prefix = openpam_module_dirpath; *prefix != NULL; ++path) {
++		if (path[0] != '/' && strcmp(*prefix, "") == 0)
++			continue;
++		/* try versioned module first, then unversioned module */
++		if (asprintf(&vpath, "%s%s.%d", *prefix, path, LIB_MAJ) < 0)
++			goto err;
++		if ((dlh = try_dlopen(vpath)) == NULL && errno == ENOENT) {
++			*strrchr(vpath, '.') = '\0';
++			dlh = try_dlopen(vpath);
++		}
++		if (dlh != NULL || path[0] == '/')
++			break;
+ 	}
+ 	if (dlh == NULL)
+ 		goto err;
