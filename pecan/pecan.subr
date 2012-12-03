@@ -52,6 +52,9 @@ pecan_init_vars()
 	# during auto-configuration.
 	#
 	PATH="${pecan_tooldir}/bin:${PECAN_PATH}"; export PATH
+
+	# Force Bourne shell as the shell interpreter.
+	SHELL="/bin/sh"; export SHELL
 }
 
 pecan_do_init()
@@ -588,6 +591,7 @@ pecan_configure_vars()
 
 	# GNU configure
 	: ${pecan_gnu_configure_script:=./configure}
+	: ${pecan_gnu_configure_shell=${SHELL}}
 	if [ -z "${pecan_gnu_configure_args}" ]; then
 		pecan_gnu_configure_args="--prefix=${pecan_pkgdir}"
 	fi
@@ -617,6 +621,7 @@ pecan_gnu_configure_default()
 	cd "${pecan_srcdir}" && \
 	ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
 	CPPFLAGS="${pecan_cppflags}" LDFLAGS="${pecan_ldflags}" \
+	CONFIG_SHELL="${pecan_gnu_configure_shell}" \
 	"${pecan_gnu_configure_script}" ${pecan_gnu_configure_args}
 }
 
