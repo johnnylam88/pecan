@@ -387,7 +387,8 @@ pecan_extract_vars()
 	: ${PECAN_DISTDIR:=${pecan_topdir}}
 	: ${pecan_extract_suffix=.tar.gz}
 	: ${pecan_extract_file:=${pecan_pkgname}-${pecan_swver}${pecan_extract_suffix}}
-	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_file%${pecan_extract_suffix}}}
+	: ${pecan_extract_subdir:=${pecan_extract_file%${pecan_extract_suffix}}}
+	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_subdir}}
 
 	pecan_extract_tools_vars
 }
