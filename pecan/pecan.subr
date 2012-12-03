@@ -614,7 +614,6 @@ pecan_configure_deferred_vars()
 
 pecan_gnu_configure_default()
 {
-	echo "XXX: PATH: ${PATH}"
 	cd "${pecan_srcdir}" && \
 	ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
 	CPPFLAGS="${pecan_cppflags}" LDFLAGS="${pecan_ldflags}" \
