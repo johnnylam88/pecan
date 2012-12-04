@@ -119,8 +119,10 @@ pecan_prereq_vars()
 		_pb_prereq_ldflags="-Wl,-rpath,${pecan_pkgdir}/lib ${_pb_prereq_ldflags}"
 	fi
 
+	: ${pecan_cflags=}
 	: ${pecan_cppflags=${_pb_prereq_cppflags}}
 	: ${pecan_ldflags=${_pb_prereq_ldflags}}
+	: ${pecan_libs=}
 }
 
 pecan_prereq_default()
@@ -636,7 +638,8 @@ pecan_gnu_configure_default()
 {
 	cd "${pecan_srcdir}" && \
 	ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
-	CPPFLAGS="${pecan_cppflags}" LDFLAGS="${pecan_ldflags}" \
+	CFLAGS="${pecan_cflags}" CPPFLAGS="${pecan_cppflags}" \
+	LDFLAGS="${pecan_ldflags}" LIBS="${pecan_libs}" \
 	CONFIG_SHELL="${pecan_gnu_configure_shell}" \
 	"${pecan_gnu_configure_script}" ${pecan_gnu_configure_args}
 }
