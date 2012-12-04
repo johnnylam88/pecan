@@ -175,6 +175,26 @@ pecan_do_prereq()
 	pecan_action_generator prereq
 }
 
+###
+# pecan_prereq_pkgdir pkgname varname
+#
+# Saves the pkgdir (under ${PECAN_SOURCE}) of pkgname into the named
+# variable.
+#
+pecan_prereq_pkgdir()
+{
+	_pb_prereq_pkgdir_pkgname="$1"
+	_pb_prereq_pkgdir_varname="$2"
+
+	[ -f "${pecan_prereq_dir}/${_pb_prereq_pkgdir_pkgname}" ] || return 1
+
+	read _pb_prereq_pkgdir_pkgspec < "${pecan_prereq_dir}/${_pb_prereq_pkgdir_pkgname}"
+	_pb_prereq_pkgdir="${PECAN_SOURCE}/${_pb_prereq_pkgdir_pkgspec}"
+
+	[ -z "${_pb_prereq_pkgdir_varname}" ] || \
+		eval ${_pb_prereq_pkgdir_varname}=\"${_pb_prereq_pkgdir}\"
+}
+
 #########
 # tools #
 #########
@@ -258,8 +278,8 @@ pecan_tools_autoconf()
 
 	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
 		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
-		read _pb_tools_pkgspec < "${_pb_tools_prereq}"
-		_pb_tools_pkgdir="${PECAN_SOURCE}/${_pb_tools_pkgspec}"
+		_pb_tools_pkgname="${_pb_tools_prereq#${pecan_prereq_dir}/}"
+		pecan_prereq_pkgdir "${_pb_tools_pkgname}" _pb_tools_pkgdir
 		if [ -d "${_pb_tools_pkgdir}/share/autoconf" ]; then
 			[ -d "${_pb_tools_ac_macrodir}" ] || \
 				mkdir -p "${_pb_tools_ac_macrodir}"
@@ -342,8 +362,8 @@ pecan_tools_pkg_config()
 
 	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
 		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
-		read _pb_tools_pkgspec < "${_pb_tools_prereq}"
-		_pb_tools_pkgdir="${PECAN_SOURCE}/${_pb_tools_pkgspec}"
+		_pb_tools_pkgname="${_pb_tools_prereq#${pecan_prereq_dir}/}"
+		pecan_prereq_pkgdir "${_pb_tools_pkgname}" _pb_tools_pkgdir
 		if [ -d "${_pb_tools_pkgdir}/lib/pkgconfig" ]; then
 			[ -d "${_pb_tools_pkg_config_libdir}" ] || \
 				mkdir -p "${_pb_tools_pkg_config_libdir}"
@@ -362,12 +382,7 @@ pecan_tools_pkg_config()
 #
 pecan_tools_link_bin()
 {
-	_pb_tools_pkgname="$1"
-
-	[ -f "${pecan_prereq_dir}/${_pb_tools_pkgname}" ] || return
-
-	read _pb_tools_pkgspec < "${pecan_prereq_dir}/${_pb_tools_pkgname}"
-	_pb_tools_pkgdir="${PECAN_SOURCE}/${_pb_tools_pkgspec}"
+	pecan_prereq_pkgdir "$1" _pb_tools_pkgdir || return 1
 	if [ -d "${_pb_tools_pkgdir}/bin" ]; then
 		pecan_lndir "${_pb_tools_pkgdir}/bin" "${pecan_tooldir}/bin"
 	fi
