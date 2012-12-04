@@ -1,11 +1,12 @@
 #!/bin/sh
 
-PECAN_PKGNAME="epkg-2.3.9+2"
+PECAN_PKGNAME="epkg-2.3.9+3"
 
 pecan_description="Encap package manager"
 
-pecan_prereq_lib=">= curl-7.28.0"
+pecan_prereq_lib=">= curl-7.28.0+1"
 pecan_prereq_lib="${pecan_prereq_lib} >= expat-2.1.0"
+pecan_prereq_lib="${pecan_prereq_lib} >= libidn-1.25"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"
 pecan_prereq_pkg=">= m4-1.4"
