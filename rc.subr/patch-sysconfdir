@@ -1,0 +1,24 @@
+Try loading the config files from ${ENCAP_TARGET}/etc before falling
+back to /etc.
+
+--- rc.subr.orig	2012-12-05 14:37:40.000000000 -0500
++++ rc.subr	2012-12-05 14:42:52.000000000 -0500
+@@ -834,11 +834,16 @@
+ 
+ 	if ${_rc_conf_loaded:-false}; then
+ 		:
+-	else
++	elif [ -f "@sysconfdir@"/rc.conf ]; then
++		. "@sysconfdir@"/rc.conf
++		_rc_conf_loaded=true
++	elif [ -f /etc/rc.conf ]; then
+ 		. /etc/rc.conf
+ 		_rc_conf_loaded=true
+ 	fi
+-	if [ -f /etc/rc.conf.d/"$_command" ]; then
++	if [ -f "@sysconfdir@"/rc.conf.d/"$_command" ]; then
++		. "@sysconfdir@"/rc.conf.d/"$_command"
++	elif [ -f /etc/rc.conf.d/"$_command" ]; then
+ 		. /etc/rc.conf.d/"$_command"
+ 	fi
+ }
