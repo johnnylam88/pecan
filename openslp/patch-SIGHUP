@@ -1,0 +1,47 @@
+Make slpd(8) reopen its log file on HUP.
+
+--- slpd/slpd_main.c.orig	2005-02-08 18:24:53.000000000 -0500
++++ slpd/slpd_main.c	2012-12-04 19:43:02.000000000 -0500
+@@ -208,6 +208,14 @@
+ void HandleSigHup()
+ /*------------------------------------------------------------------------*/
+ {
++    /*------------------------------*/
++    /* Reinitialize the log file    */
++    /*------------------------------*/
++    if(SLPDLogFileOpen(G_SlpdCommandLine.logfile, 1))
++    {
++        SLPDFatal("Could not open logfile %s\n",G_SlpdCommandLine.logfile);
++    }
++
+     /* Reinitialize */
+     SLPDLog("****************************************\n");
+     SLPDLogTime();
+--- slpd/slpd_process.c.orig	2005-02-08 01:12:24.000000000 -0500
++++ slpd/slpd_process.c	2012-12-04 19:44:04.000000000 -0500
+@@ -1438,10 +1438,12 @@
+                     break;
+                 }
+             }
++#ifdef DEBUG
+             else
+             {
+                 SLPDLogParseWarning(peerinfo, recvbuf);
+             }
++#endif
+                             
+             if (header.functionid == SLP_FUNCT_SRVREG ||
+                 header.functionid == SLP_FUNCT_DAADVERT )
+@@ -1470,10 +1472,12 @@
+             errorcode = SLP_ERROR_INTERNAL_ERROR;
+         }
+     }
++#ifdef DEBUG
+     else
+     {
+         SLPDLogParseWarning(peerinfo,recvbuf);
+     }
++#endif
+ 
+     FINISHED:
+ 

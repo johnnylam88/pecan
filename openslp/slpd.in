@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+# Service Location Protocol daemon
+#
+# PROVIDE: slpd
+# REQUIRE: DAEMON
+
+if [ -f "@ENCAP_TARGET@/etc/rc.subr" ]; then
+	. "@ENCAP_TARGET@/etc/rc.subr"
+elif [ -f /etc/rc.subr ]; then
+	. /etc/rc.subr
+fi
+
+name="slpd"
+rcvar=${name}
+command="@ENCAP_TARGET@/sbin/${name}"
+pidfile="@ENCAP_TARGET@/var/run/${name}.pid"
+required_files="@ENCAP_TARGET@/etc/slp.conf"
+
+load_rc_config $name
+run_rc_command "$1"

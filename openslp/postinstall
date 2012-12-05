@@ -1,0 +1,31 @@
+#!/bin/sh
+
+openslp_exampledir="${ENCAP_SOURCE}/${ENCAP_PKGNAME}/share/examples/openslp"
+rc_d_exampledir="${ENCAP_SOURCE}/${ENCAP_PKGNAME}/share/examples/rc.d"
+
+if [ ! -d "${ENCAP_TARGET}/etc/rc.d" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/rc.d"
+	mkdir -p "${ENCAP_TARGET}/etc/rc.d"
+fi
+
+if [ ! -f "${ENCAP_TARGET}/etc/slp.conf" ]; then
+	echo "installing: ${ENCAP_TARGET}/etc/slp.conf"
+	cp "${openslp_exampledir}/slp.conf" "${ENCAP_TARGET}/etc/slp.conf"
+fi
+
+if [ ! -f "${ENCAP_TARGET}/etc/slp.reg" ]; then
+	echo "installing: ${ENCAP_TARGET}/etc/slp.reg"
+	cp "${openslp_exampledir}/slp.reg" "${ENCAP_TARGET}/etc/slp.reg"
+fi
+
+if [ ! -f "${ENCAP_TARGET}/etc/slp.spi" ]; then
+	echo "installing: ${ENCAP_TARGET}/etc/slp.spi"
+	cp "${openslp_exampledir}/slp.spi" "${ENCAP_TARGET}/etc/slp.spi"
+fi
+
+if [ ! -f "${ENCAP_TARGET}/etc/rc.d/slpd" ]; then
+	echo "installing: ${ENCAP_TARGET}/etc/rc.d/slpd"
+	sed -e "s,@ENCAP_TARGET@,${ENCAP_TARGET},g" \
+		"${rc_d_exampledir}/slpd.in" > "${ENCAP_TARGET}/etc/rc.d/slpd"
+	chmod +x "${ENCAP_TARGET}/etc/rc.d/slpd"
+fi
