@@ -641,7 +641,7 @@ pecan_gnu_configure_default()
 	CFLAGS="${pecan_cflags}" CPPFLAGS="${pecan_cppflags}" \
 	LDFLAGS="${pecan_ldflags}" LIBS="${pecan_libs}" \
 	CONFIG_SHELL="${pecan_gnu_configure_shell}" \
-	"${pecan_gnu_configure_script}" ${pecan_gnu_configure_args}
+	"${pecan_gnu_configure_shell}" "${pecan_gnu_configure_script}" ${pecan_gnu_configure_args}
 }
 
 pecan_do_configure()
