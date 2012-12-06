@@ -1,0 +1,13 @@
+#!/bin/sh
+
+openldap_exampledir="${ENCAP_SOURCE}/${ENCAP_PKGNAME}/share/examples/openldap"
+
+if [ ! -d "${ENCAP_TARGET}/etc/openldap" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/openldap"
+	mkdir -p "${ENCAP_TARGET}/etc/openldap"
+fi
+
+if [ ! -f "${ENCAP_TARGET}/etc/openldap/ldap.conf" ]; then
+	echo "installing: ${ENCAP_TARGET}/etc/openldap/ldap.conf"
+	cp "${ENCAP_SOURCE}/${ENCAP_PKGNAME}/share/examples/openldap/ldap.conf" "${ENCAP_TARGET}/etc/openldap/ldap.conf"
+fi

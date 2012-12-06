@@ -1,0 +1,39 @@
+Fix pthread(3) usage.
+
+--- libraries/libldap/init.c.orig	2012-10-10 08:18:49.000000000 -0400
++++ libraries/libldap/init.c	2012-12-05 16:25:45.000000000 -0500
+@@ -643,7 +643,11 @@
+ #if defined(HAVE_TLS) || defined(HAVE_CYRUS_SASL)
+ 	LDAP_MUTEX_LOCK( &ldap_int_hostname_mutex );
+ 	{
+-		char	*name = ldap_int_hostname;
++		char	*name;
++#if defined(LDAP_R_COMPILE)
++		ldap_pvt_thread_initialize();
++#endif
++		name = ldap_int_hostname;
+ 
+ 		ldap_int_hostname = ldap_pvt_get_fqdn( name );
+ 
+--- libraries/libldap_r/thr_posix.c.orig	2012-10-10 08:18:49.000000000 -0400
++++ libraries/libldap_r/thr_posix.c	2012-12-05 16:21:47.000000000 -0500
+@@ -19,6 +19,7 @@
+ #if defined( HAVE_PTHREADS )
+ 
+ #include <ac/errno.h>
++#include <ac/unistd.h>
+ 
+ #ifdef REPLACE_BROKEN_YIELD
+ #ifndef HAVE_NANOSLEEP
+@@ -146,9 +147,11 @@
+ #endif
+ 
+ #ifdef LDAP_PVT_THREAD_SET_STACK_SIZE
++#if defined(_POSIX_THREAD_ATTR_STACKSIZE)
+ 	/* this should be tunable */
+ 	pthread_attr_setstacksize( &attr, LDAP_PVT_THREAD_STACK_SIZE );
+ #endif
++#endif
+ 
+ #if HAVE_PTHREADS > 5
+ 	detach = detach ? PTHREAD_CREATE_DETACHED : PTHREAD_CREATE_JOINABLE;

@@ -1,0 +1,15 @@
+Don't rebuild manpages during installation.
+
+--- Makefile.in.orig	2012-10-10 08:18:49.000000000 -0400
++++ Makefile.in	2012-12-05 17:08:26.000000000 -0500
+@@ -20,10 +20,6 @@
+ makefiles:	FORCE
+ 	./config.status
+ 
+-# force a make all before make install
+-#	only done at the top-level
+-install-common: all FORCE
+-
+ clean-local: FORCE
+ 	$(RM) config.cache config.log configure.lineno
+ 	$(RM) -r autom4te.cache
