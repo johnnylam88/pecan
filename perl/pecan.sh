@@ -25,7 +25,7 @@ pecan_post_extract()
 
 pecan_configure()
 {
-	cd "${pecan_srcdir}" && ./Configure -des
+	( cd "${pecan_srcdir}" && ./Configure -des )
 }
 
 pecan_post_stage()

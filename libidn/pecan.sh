@@ -23,8 +23,8 @@ pecan_pre_build()
 	# touch the downstream documentation files generated from the
 	# file so that they aren't regenerated.
 	#
-	cd "${pecan_srcdir}/doc"
-	touch Makefile.gdoc texi/toutf8.c.texi \
+	( cd "${pecan_srcdir}/doc" &&
+	  touch Makefile.gdoc texi/toutf8.c.texi \
 		texi/stringprep_locale_charset.texi \
 		man/stringprep_locale_charset.3 \
 		texi/stringprep_convert.texi \
@@ -32,7 +32,7 @@ pecan_pre_build()
 		texi/stringprep_locale_to_utf8.texi \
 		man/stringprep_locale_to_utf8.3 \
 		texi/stringprep_utf8_to_locale.texi \
-		man/stringprep_utf8_to_locale.3
+		man/stringprep_utf8_to_locale.3 )
 }
 
 pecan_test_style=make

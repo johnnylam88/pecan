@@ -45,8 +45,8 @@ pecan_post_stage()
 
 	# Extract the manpages into the staging area.
 	mkdir -p "${pecan_stagedir}/share/man"
-	cd "${pecan_stagedir}/share/man" &&
-	tar zxvf "${PECAN_DISTDIR}/git-manpages-${pecan_swver}.tar.gz"
+	( cd "${pecan_stagedir}/share/man" &&
+	  tar zxvf "${PECAN_DISTDIR}/git-manpages-${pecan_swver}.tar.gz" )
 }
 
 pecan_post_install()

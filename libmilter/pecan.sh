@@ -22,21 +22,20 @@ fi
 
 pecan_configure()
 {
-	cd "${pecan_srcdir}"
-	(
-	  echo "define(\`confDEPEND_TYPE', \`generic')"
+	( echo "define(\`confDEPEND_TYPE', \`generic')"
 	  echo "define(\`confINCLUDEDIR', \`${pecan_pkgdir}/inc\`'lude')"
 	  echo "define(\`confINCOWN', \`root')"
 	  echo "define(\`confINCGRP', \`wheel')"
 	  echo "define(\`confLIBDIR', \`${pecan_pkgdir}/lib')"
 	  echo "define(\`confLIBOWN', \`root')"
 	  echo "define(\`confLIBGRP', \`wheel')"
-	) > ../devtools/Site/site.config.m4
+	) > "${pecan_srcdir}/../devtools/Site/site.config.m4"
 
-	cp "${pecan_topdir}/libtool.m4" ../devtools/M4/UNIX
-	mv -f Makefile.m4 Makefile.m4.presed
+	cp "${pecan_topdir}/libtool.m4" "${pecan_srcdir}/../devtools/M4/UNIX"
+	mv -f "${pecan_srcdir}/Makefile.m4" "${pecan_srcdir}/Makefile.m4.presed"
 	sed -e "/bldPRODUCT_START/s/library/libtool/" \
- 		Makefile.m4.presed > Makefile.m4
+ 		"${pecan_srcdir}/Makefile.m4.presed" \
+		> "${pecan_srcdir}/Makefile.m4"
 }
 
 pecan_post_stage()

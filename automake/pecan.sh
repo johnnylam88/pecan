@@ -19,10 +19,10 @@ fi
 pecan_pre_configure()
 {
 	# Add ${PECAN_TARGET}/share/aclocal to the m4 search path.
-	cd "${pecan_srcdir}"
-	mv aclocal.in aclocal.in.presed
-	sed -e "/system_includes/s|@datadir@|${PECAN_TARGET}/share|" \
-		aclocal.in.presed > aclocal.in
+	( cd "${pecan_srcdir}" &&
+	  mv aclocal.in aclocal.in.presed &&
+	  sed -e "/system_includes/s|@datadir@|${PECAN_TARGET}/share|" \
+		aclocal.in.presed > aclocal.in )
 }
 
 pecan_post_stage()

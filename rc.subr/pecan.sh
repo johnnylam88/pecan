@@ -34,9 +34,9 @@ rc_subr_exampledir="${pecan_pkgdir}/share/examples/rc.subr"
 pecan_install()
 {
 	mkdir -p "${rc_subr_exampledir}"
-	cd "${pecan_srcdir}"
-	cp rc.subr "${rc_subr_exampledir}"
-	cp rc.conf.example "${rc_subr_exampledir}/rc.conf"
+	( cd "${pecan_srcdir}" &&
+	  cp rc.subr "${rc_subr_exampledir}" &&
+	  cp rc.conf.example "${rc_subr_exampledir}/rc.conf" )
 
 	mkdir -p "${pecan_pkgdir}/share/examples/rc.d"
 	cp -R "${pecan_srcdir}/rc.d/"* "${pecan_pkgdir}/share/examples/rc.d"

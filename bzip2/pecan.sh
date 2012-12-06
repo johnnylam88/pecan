@@ -18,7 +18,7 @@ fi
 
 pecan_pre_configure()
 {
-	cd "${pecan_srcdir}" && sh ./autogen.sh
+	( cd "${pecan_srcdir}" && sh ./autogen.sh )
 }
 
 pecan_test_style=make

@@ -18,9 +18,9 @@ fi
 
 pecan_post_configure()
 {
-	cd "${pecan_srcdir}"
-	mv priv.1 priv.1.orig
-	sed -e "s|/usr/local/etc/|${pecan_etcdir}/|g" priv.1.orig > priv.1
+	( cd "${pecan_srcdir}" &&
+	  mv priv.1 priv.1.orig &&
+	  sed -e "s|/usr/local/etc/|${pecan_etcdir}/|g" priv.1.orig > priv.1 )
 }
 
 pecan_post_stage()

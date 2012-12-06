@@ -20,9 +20,8 @@ fi
 #
 pecan_pre_configure()
 {
-	cd "${pecan_tooldir}"
-	mkdir -p include
-	echo > include/iconv.h
+	mkdir -p "${pecan_tooldir}/include
+	echo > "${pecan_tooldir}/include/iconv.h"
 }
 
 pecan_cppflags="-I${pecan_tooldir}/include"

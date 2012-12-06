@@ -351,16 +351,23 @@ pecan_tools_perl_vars()
 pecan_tools_registry="${pecan_tools_registry} pkg_config"
 pecan_tools_pkg_config_pkgname="pkg-config"
 
-pecan_tools_pkg_config_vars()
-{
-	_pb_tools_pkg_config_libdir="${pecan_tooldir}/lib/pkgconfig"
-	PKG_CONFIG_LIBDIR="${_pb_tools_pkg_config_libdir}"
-	export PKG_CONFIG_LIBDIR
-}
-
 pecan_tools_pkg_config()
 {
 	[ -f "${pecan_prereq_dir}/pkg-config" ] || return 0
+
+	# Replace symlink to pkg-config with a shell script that points
+	# to the right location to find the prereq *.pc files.
+	#
+	_pb_tools_pkg_config_libdir="${pecan_tooldir}/lib/pkgconfig"
+	pecan_prereq_pkgdir "${pecan_tools_pkg_config_pkgname}" \
+		_pb_tools_pkgdir
+	rm -f "${pecan_tooldir}/bin/pkg-config"
+	( echo "#!/bin/sh"
+	  echo "PKG_CONFIG_LIBDIR=\"${_pb_tools_pkg_config_libdir}\""
+	  echo "export PKG_CONFIG_LIBDIR"
+	  echo "exec \"${_pb_tools_pkgdir}/bin/pkg-config\" \"\$@\""
+	) > "${pecan_tooldir}/bin/pkg-config"
+	chmod +x "${pecan_tooldir}/bin/pkg-config"
 
 	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
 		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
@@ -433,8 +440,8 @@ pecan_extract_tools_vars()
 
 pecan_extract_default()
 {
-	cd "${pecan_workdir}" && \
-		pecan_extract_file "${PECAN_DISTDIR}/${pecan_extract_file}"
+	( cd "${pecan_workdir}" &&
+	  pecan_extract_file "${PECAN_DISTDIR}/${pecan_extract_file}" )
 }
 
 pecan_do_extract()
@@ -542,11 +549,11 @@ pecan_patchdist_tools_vars()
 
 pecan_patchdist_default()
 {
-	cd "${pecan_srcdir}"
-	for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
+	( cd "${pecan_srcdir}" &&
+	  for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
 		[ "${_pb_patchdist_file}" != "${pecan_topdir}/patchdist-*" ] || break
 		patch -b < "${_pb_patchdist_file}"
-	done
+	  done )
 }
 
 pecan_do_patchdist()
@@ -582,11 +589,11 @@ pecan_patch_tools_vars()
 
 pecan_patch_default()
 {
-	cd "${pecan_srcdir}"
-	for _pb_patch_file in "${pecan_topdir}"/patch-*; do
+	( cd "${pecan_srcdir}" &&
+	  for _pb_patch_file in "${pecan_topdir}"/patch-*; do
 		[ "${_pb_patch_file}" != "${pecan_topdir}/patch-*" ] || break
 		patch -b -p0 < "${_pb_patch_file}"
-	done
+	  done )
 }
 
 pecan_do_patch()
@@ -636,12 +643,13 @@ pecan_configure_deferred_vars()
 
 pecan_gnu_configure_default()
 {
-	cd "${pecan_srcdir}" && \
-	ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
-	CFLAGS="${pecan_cflags}" CPPFLAGS="${pecan_cppflags}" \
-	LDFLAGS="${pecan_ldflags}" LIBS="${pecan_libs}" \
-	CONFIG_SHELL="${pecan_gnu_configure_shell}" \
-	"${pecan_gnu_configure_shell}" "${pecan_gnu_configure_script}" ${pecan_gnu_configure_args}
+	( cd "${pecan_srcdir}" &&
+	  ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
+	  CFLAGS="${pecan_cflags}" CPPFLAGS="${pecan_cppflags}" \
+	  LDFLAGS="${pecan_ldflags}" LIBS="${pecan_libs}" \
+	  CONFIG_SHELL="${pecan_gnu_configure_shell}" \
+	  "${pecan_gnu_configure_shell}" "${pecan_gnu_configure_script}" \
+		${pecan_gnu_configure_args} )
 }
 
 pecan_do_configure()
@@ -678,8 +686,9 @@ pecan_build_deferred_vars()
 
 pecan_make_build_default()
 {
-	cd "${pecan_srcdir}" && \
-	make -f "${pecan_build_makefile}" ${pecan_build_target} ${pecan_build_args}
+	( cd "${pecan_srcdir}" &&
+	  make -f "${pecan_build_makefile}" ${pecan_build_target} \
+		${pecan_build_args} )
 }
 
 pecan_do_build()
@@ -716,8 +725,8 @@ pecan_test_deferred_vars()
 
 pecan_make_test_default()
 {
-	cd "${pecan_srcdir}" && \
-	make -f "${pecan_test_makefile}" ${pecan_test_target}
+	( cd "${pecan_srcdir}" &&
+	  make -f "${pecan_test_makefile}" ${pecan_test_target} )
 }
 
 pecan_do_test()
@@ -823,13 +832,14 @@ pecan_install_deferred_vars()
 
 pecan_make_install_default()
 {
-	cd "${pecan_srcdir}" && \
-	make -f "${pecan_install_makefile}" ${pecan_install_target} ${pecan_install_args}
+	( cd "${pecan_srcdir}" &&
+	  make -f "${pecan_install_makefile}" ${pecan_install_target} \
+		${pecan_install_args} )
 }
 
 pecan_install_stage()
 {
-	cd "${pecan_stagedir}" && cp -Rv . "${pecan_pkgdir}"
+	( cd "${pecan_stagedir}" && cp -Rv . "${pecan_pkgdir}" )
 }
 
 pecan_do_install()
@@ -1311,15 +1321,15 @@ pecan_action_generator()
 
 	eval _pb_gen_action_cookie=\"\${pecan_${_pb_gen_name}_cookie}\"
 	if [ -z "${_pb_gen_action_cookie}" ]; then
-		( ${_pb_gen_preaction} ) && \
-		( ${_pb_gen_action} ) && \
-		( ${_pb_gen_postaction} ) && \
-		( ${_pb_gen_extra_actions} )
+		( ${_pb_gen_preaction} &&
+		  ${_pb_gen_action} &&
+		  ${_pb_gen_postaction} &&
+		  ${_pb_gen_extra_actions} )
 	elif [ ! -f "${_pb_gen_action_cookie}" ]; then
-		( ${_pb_gen_preaction} ) && \
-		( ${_pb_gen_action} ) && \
-		( ${_pb_gen_postaction} ) && \
-		( ${_pb_gen_extra_actions} ) && \
+		( ${_pb_gen_preaction} &&
+		  ${_pb_gen_action} &&
+		  ${_pb_gen_postaction} &&
+		  ${_pb_gen_extra_actions} ) &&
 		echo > "${_pb_gen_action_cookie}"
 	fi
 }

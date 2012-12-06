@@ -20,7 +20,7 @@ fi
 pecan_post_extract()
 {
 	# Remove *.o files that were included in the tarball.
-	cd "${pecan_srcdir}" && rm gnu/*.o
+	rm "${pecan_srcdir}"/gnu/*.o
 }
 
 pecan_configure_style=
@@ -29,11 +29,11 @@ make_args="prefix=${pecan_pkgdir} mandir=${pecan_mandir}"
 
 pecan_build()
 {
-	cd "${pecan_srcdir}" && \
-	make all ${make_args} \
+	( cd "${pecan_srcdir}" && \
+	  make all ${make_args} \
 		EXTRA_CPPFLAGS="${pecan_cppflags}" \
 		EXTRA_LDFLAGS="${pecan_ldflags}" \
-		EXTRA_LIBS="-lintl -iconv"
+		EXTRA_LIBS="-lintl -iconv" )
 }
 
 pecan_install_args="${pecan_install_args} ${make_args}"

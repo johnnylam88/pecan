@@ -18,7 +18,7 @@ fi
 # gzip-1.2.4 has a very old GNU configure script.
 pecan_configure()
 {
-	cd "${pecan_srcdir}" && ./configure --prefix="${pecan_pkgdir}"
+	( cd "${pecan_srcdir}" && ./configure --prefix="${pecan_pkgdir}" )
 }
 
 # Make some top-level directories for the install targets.

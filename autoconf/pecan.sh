@@ -19,9 +19,9 @@ fi
 pecan_pre_configure()
 {
 	# Add ${PECAN_TARGET}/share/autoconf to the m4 search path.
-	cd "${pecan_srcdir}/bin"
-	mv autom4te.in autom4te.in.presed
-	sed -e "s|^my [@]include|my @include = (\"${PECAN_TARGET}/share/autoconf\")|" autom4te.in.presed > autom4te.in
+	( cd "${pecan_srcdir}/bin" &&
+	  mv autom4te.in autom4te.in.presed &&
+	  sed -e "s|^my [@]include|my @include = (\"${PECAN_TARGET}/share/autoconf\")|" autom4te.in.presed > autom4te.in )
 }
 
 pecan_post_stage()

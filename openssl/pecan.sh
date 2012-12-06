@@ -17,11 +17,11 @@ fi
 
 pecan_configure()
 {
-	cd "${pecan_srcdir}"
-	./config --prefix="${pecan_pkgdir}" \
+	( cd "${pecan_srcdir}" &&
+	  ./config --prefix="${pecan_pkgdir}" \
 		--openssldir="${pecan_etcdir}/ssl" \
 		threads zlib-dynamic shared \
-		${pecan_cppflags} ${pecan_ldflags}
+		${pecan_cppflags} ${pecan_ldflags} )
 }
 
 pecan_test_style=make

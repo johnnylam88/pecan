@@ -18,7 +18,7 @@ pecan_test_style=make
 
 pecan_configure()
 {
-	cd "${pecan_srcdir}" && ./configure --prefix="${pecan_pkgdir}"
+	( cd "${pecan_srcdir}" && ./configure --prefix="${pecan_pkgdir}" )
 }
 
 pecan_post_stage()

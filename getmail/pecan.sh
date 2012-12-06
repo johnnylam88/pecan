@@ -22,7 +22,7 @@ pecan_install_style=
 
 pecan_build()
 {
-	cd "${pecan_srcdir}" && "${python}" setup.py build
+	( cd "${pecan_srcdir}" && "${python}" setup.py build )
 }
 
 pecan_post_stage()
@@ -32,8 +32,8 @@ pecan_post_stage()
 
 pecan_install()
 {
-	cd "${pecan_srcdir}" && \
-	"${python}" setup.py install --prefix="${pecan_pkgdir}"
+	( cd "${pecan_srcdir}" && \
+	 "${python}" setup.py install --prefix="${pecan_pkgdir}" )
 }
 
 pecan_main "$@"
