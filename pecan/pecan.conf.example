@@ -1,0 +1,83 @@
+# pecan.conf
+#
+# This file should be located in the same directory as pecan.subr.
+#
+
+###
+# PECAN_TARGET
+#
+# The directory path under which all symlinks to package files are created.
+#
+# Default: /usr/local
+#
+#PECAN_TARGET="/usr/local"
+
+###
+# PECAN_SOURCE
+#
+# The directory path under which all of the packages are stored, i.e.,
+# ${PECAN_SOURCE}/<pkgspec>.
+#
+# Default: ${PECAN_TARGET}/pecan
+#
+#PECAN_SOURCE="${PECAN_TARGET}/pecan"
+
+###
+# PECAN_DISTDIR
+#
+# The directory path under which the source archives for a package is
+# located.  If this is left unspecified, then by default, pecan looks
+# for the source archives in the same directory as the pecan.sh script.
+#
+#PECAN_DISTDIR=/var/chroot/ftp/pub/distfiles
+
+###
+# PECAN_SUDO_CMD
+#
+# The path to the command used to automatically gain root privileges.  If
+# the path is set, then actions that require elevated privileges are
+# automatically run using ${PECAN_SUDO_CMD}.
+#
+# Default: empty
+#
+#PECAN_SUDO_CMD="/usr/bin/sudo"
+
+###
+# PECAN_PATH
+#
+# A colon-separated list of directories containing system binaries
+# used during the build process.
+#
+# Default: /bin:/sbin:/usr/bin:/usr/sbin
+#
+#PECAN_PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+###
+# PECAN_PLATFORM
+#
+# The platform name to use for binary packages and stored in the package's
+# ``encapinfo'' file.  It must satisfy section 2.5 of the Encap 2.1
+# specification:
+#
+#     <platform_name> := <base_platform>[-<platform_suffix>]
+#     <base_platform> := <architecture>-<operatingsystem><osversion>
+#
+# The optional <platform_suffix> component is used to further differentiate
+# between packages built for the same version of the operating system, e.g.,
+# "glibc2.0" for Linux packages built using that specific version of glibc.
+#
+# By default, PECAN_PLATFORM is computed from the contents of uname(1)
+# and converted to lowercase.
+#
+#PECAN_PLATFORM="i386-netbsd-6.0"
+
+###
+# PECAN_CONTACT
+#
+# The contact information of the person who creates packages and stored in
+# the ``contact'' field of the package's ``encapinfo'' file.  It is
+# recommended that this be a user's name and email address.
+#
+# Default: The username returned by whoami(1).
+#
+#PECAN_CONTACT="root"
