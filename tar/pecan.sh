@@ -20,7 +20,7 @@ fi
 #
 pecan_pre_configure()
 {
-	mkdir -p "${pecan_tooldir}/include
+	mkdir -p "${pecan_tooldir}/include"
 	echo > "${pecan_tooldir}/include/iconv.h"
 }
 
