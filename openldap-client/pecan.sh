@@ -1,7 +1,7 @@
 #!/bin/sh
 
 openldap_version=2.4.33
-PECAN_PKGNAME="openldap-client-${openldap_version}"
+PECAN_PKGNAME="openldap-client-${openldap_version}+1"
 
 pecan_description="Lightweight Directory Access Protocol (LDAP) client & libraries"
 
@@ -31,16 +31,17 @@ pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
 
 pecan_post_stage()
 {
+	echo "exclude etc" >> "${pecan_stage_encapinfo}"
 	cp "${pecan_srcdir}/COPYRIGHT" "${pecan_stagedir}"
 	cp "${pecan_srcdir}/LICENSE" "${pecan_stagedir}"
 }
 
-openldap_exampledir="${pecan_pkgdir}/share/examples/openldap"
-pecan_install_args="${pecan_install_args} sysconfdir=${openldap_exampledir}"
+openldap_sysconfdir="${pecan_pkgdir}/etc/openldap"
+pecan_install_args="${pecan_install_args} sysconfdir=${openldap_sysconfdir}"
 
 pecan_post_install()
 {
-	rm -f "${openldap_exampledir}"/*.default
+	rm -f "${openldap_sysconfdir}"/*.default
 }
 
 pecan_main "$@"

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+openssl_pkgdir="${ENCAP_SOURCE}/${ENCAP_PKGNAME}"
+
 if [ ! -d "${ENCAP_TARGET}/etc/ssl" ]; then
 	echo "creating directory: ${ENCAP_TARGET}/etc/ssl"
 	mkdir -p "${ENCAP_TARGET}/etc/ssl"
@@ -10,6 +12,11 @@ if [ ! -d "${ENCAP_TARGET}/etc/ssl/certs" ]; then
 	mkdir -p "${ENCAP_TARGET}/etc/ssl/certs"
 fi
 
+if [ ! -d "${ENCAP_TARGET}/etc/ssl/misc" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/ssl/misc"
+	mkdir -p "${ENCAP_TARGET}/etc/ssl/misc"
+fi
+
 if [ ! -d "${ENCAP_TARGET}/etc/ssl/private" ]; then
 	echo "creating directory: ${ENCAP_TARGET}/etc/ssl/private"
 	mkdir -p "${ENCAP_TARGET}/etc/ssl/private"
@@ -17,5 +24,17 @@ fi
 
 if [ ! -f "${ENCAP_TARGET}/etc/ssl/openssl.cnf" ]; then
 	echo "installing: ${ENCAP_TARGET}/etc/ssl/openssl.cnf"
-	cp "${ENCAP_SOURCE}/${ENCAP_PKGNAME}/share/examples/openssl/openssl.cnf" "${ENCAP_TARGET}/etc/ssl/openssl.cnf"
+	cp "${openssl_pkgdir}/etc/ssl/openssl.cnf" \
+		"${ENCAP_TARGET}/etc/ssl/openssl.cnf"
 fi
+
+for script in \
+	CA.pl CA.sh c_hash c_info c_issuer c_name tsget
+do
+	if [ ! -f "${ENCAP_TARGET}/etc/ssl/misc/$script" ]; then
+		echo "installing: ${ENCAP_TARGET}/etc/ssl/misc/$script"
+		cp "${openssl_pkgdir}/etc/ssl/misc/$script" \
+			"${ENCAP_TARGET}/etc/ssl/misc/$script"
+		chmod +x "${ENCAP_TARGET}/etc/ssl/misc/$script"
+	fi
+done

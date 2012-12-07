@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="openssl-1.0.1c"
+PECAN_PKGNAME="openssl-1.0.1c+1"
 
 pecan_description="SSLv2/v3 & TLSv1 protocol & cryptography library"
 
@@ -29,16 +29,11 @@ pecan_test_target=test
 
 pecan_post_stage()
 {
+	echo "exclude etc" >> "${pecan_stage_encapinfo}"
 	cp "${pecan_srcdir}/LICENSE" "${pecan_stagedir}"
 }
 
-pecan_install_args="OPENSSLDIR=${pecan_pkgdir}/share/examples/openssl"
+pecan_install_args="OPENSSLDIR=${pecan_pkgdir}/etc/ssl"
 pecan_install_args="${pecan_install_args} MANDIR=${pecan_mandir}"
-
-pecan_post_install()
-{
-	rmdir "${pecan_pkgdir}/share/examples/openssl/certs"
-	rmdir "${pecan_pkgdir}/share/examples/openssl/private"
-}
 
 pecan_main "$@"

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="openslp-1.2.1"
+PECAN_PKGNAME="openslp-1.2.1+1"
 
 pecan_description="Service Location Protocol (SLP) client & libraries"
 
@@ -28,14 +28,16 @@ pecan_post_stage()
 {
 	cp "${pecan_srcdir}/AUTHORS" "${pecan_stagedir}"
 	cp "${pecan_srcdir}/COPYING" "${pecan_stagedir}"
-	mkdir -p "${pecan_stagedir}/share/examples/rc.d"
-	cp "${pecan_topdir}/slpd.in" "${pecan_stagedir}/share/examples/rc.d"
+
+	mkdir -p "${pecan_stagedir}/etc/rc.d"
+	cp "${pecan_topdir}/slpd.in" "${pecan_stagedir}/etc/rc.d"
+	echo "exclude etc" >> "${pecan_stage_encapinfo}"
 }
 
 openslp_docdir="${pecan_pkgdir}/share/doc/openslp"
-openslp_exampledir="${pecan_pkgdir}/share/examples/openslp"
+openslp_sysconfdir="${pecan_pkgdir}/etc"
 
-pecan_install_args="${pecan_install_args} sysconfdir=${openslp_exampledir}"
+pecan_install_args="${pecan_install_args} sysconfdir=${openslp_sysconfdir}"
 pecan_install_args="${pecan_install_args} DOC_DIR=${openslp_docdir}"
 
 pecan_main "$@"
