@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+# PROVIDE: kadmind
+# REQUIRE: NETWORKING
+# BEFORE:  SERVERS
+
+if [ -f "@ENCAP_TARGET@/etc/rc.subr" ]; then
+	. "@ENCAP_TARGET@/etc/rc.subr"
+elif [ -f /etc/rc.subr ]; then
+	. /etc/rc.subr
+fi
+
+name="kadmind"
+rcvar=$name
+command="@ENCAP_TARGET@/libexec/${name}"
+command_args="& sleep 2"
+required_files="@ENCAP_TARGET@/etc/krb5.conf"
+required_vars="kdc"
+
+load_rc_config $name
+load_rc_config_var kdc kdc
+run_rc_command "$1"

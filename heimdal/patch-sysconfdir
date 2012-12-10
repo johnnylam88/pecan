@@ -1,0 +1,13 @@
+Fix the path to the GSS mech(5) file to be relative to $(sysconfdir).
+
+--- lib/gssapi/Makefile.in.orig	2012-01-11 08:04:25.000000000 -0500
++++ lib/gssapi/Makefile.in	2012-12-10 14:53:51.000000000 -0500
+@@ -330,7 +330,7 @@
+ CYGPATH_W = @CYGPATH_W@
+ DBHEADER = @DBHEADER@
+ DBLIB = @DBLIB@
+-DEFS = @DEFS@
++DEFS = @DEFS@ -D_PATH_GSS_MECH=\"$(sysconfdir)/gss/mech\"
+ DEPDIR = @DEPDIR@
+ DIR_com_err = @DIR_com_err@
+ DIR_hcrypto = @DIR_hcrypto@

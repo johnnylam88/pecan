@@ -1,0 +1,42 @@
+#!/bin/sh
+
+heimdal_pkgdir="${ENCAP_SOURCE}/${ENCAP_PKGNAME}"
+
+if [ ! -d "${ENCAP_TARGET}/etc/gss" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/gss"
+	mkdir -p "${ENCAP_TARGET}/etc/gss"
+fi
+
+if [ ! -d "${ENCAP_TARGET}/etc/rc.d" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/rc.d"
+	mkdir -p "${ENCAP_TARGET}/etc/rc.d"
+fi
+
+if [ ! -d "${ENCAP_TARGET}/etc/openldap/schema" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/etc/openldap/schema"
+	mkdir -p "${ENCAP_TARGET}/etc/openldap/schema"
+fi
+
+if [ ! -f "${ENCAP_TARGET}/etc/openldap/schema/hdb.schema" ]; then
+	echo "installing: ${ENCAP_TARGET}/etc/openldap/schema/hdb.schema"
+	cp "${heimdal_pkgdir}/etc/openldap/schema/hdb.schema" \
+		"${ENCAP_TARGET}/etc/openldap/schema/hdb.schema"
+fi
+
+for script in \
+	kadmind kcm kdc kpasswdd
+do
+	if [ ! -f "${ENCAP_TARGET}/etc/rc.d/$script" ]; then
+		echo "installing: ${ENCAP_TARGET}/etc/rc.d/$script"
+		sed -e "s,@ENCAP_TARGET@,${ENCAP_TARGET},g" \
+			"${heimdal_pkgdir}/etc/rc.d/$script.in" \
+			> "${ENCAP_TARGET}/etc/rc.d/$script"
+		chmod +x "${ENCAP_TARGET}/etc/rc.d/$script"
+	fi
+done
+
+if [ ! -d "${ENCAP_TARGET}/var/heimdal" ]; then
+	echo "creating directory: ${ENCAP_TARGET}/var/heimdal"
+	mkdir -p "${ENCAP_TARGET}/var/heimdal"
+	chmod 0700 "${ENCAP_TARGET}/var/heimdal"
+fi

@@ -1,0 +1,23 @@
+Fix some pthread mutex issues that prevented tests from passing.
+
+--- lib/gssapi/krb5/creds.c.orig	2012-12-10 12:38:26.000000000 -0500
++++ lib/gssapi/krb5/creds.c	2012-12-10 13:05:04.000000000 -0500
+@@ -243,6 +243,7 @@
+ 	*minor_status = ENOMEM;
+ 	return GSS_S_FAILURE;
+     }
++    HEIMDAL_MUTEX_init(&handle->cred_id_mutex);
+ 
+     handle->usage = GSS_C_INITIATE;
+     krb5_cc_get_principal(context, id, &handle->principal);
+--- lib/gssapi/spnego/external.c.orig	2012-01-10 16:53:51.000000000 -0500
++++ lib/gssapi/spnego/external.c	2012-12-10 10:48:24.000000000 -0500
+@@ -84,7 +84,7 @@
+     _gss_spnego_init_sec_context,
+     _gss_spnego_accept_sec_context,
+     _gss_spnego_process_context_token,
+-    _gss_spnego_internal_delete_sec_context,
++    _gss_spnego_delete_sec_context,
+     _gss_spnego_context_time,
+     _gss_spnego_get_mic,
+     _gss_spnego_verify_mic,
