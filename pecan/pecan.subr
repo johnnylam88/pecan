@@ -23,7 +23,7 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-pecan_build_version=1
+pecan_build_version=2
 
 if [ -f ./pecan.conf ]; then
 	. ./pecan.conf
@@ -234,6 +234,19 @@ pecan_tools_vars()
 	pecan_tools_cookie="${pecan_workdir}/.tools_cookie"
 	pecan_tools_require="prereq"
 
+	for _pb_tools_buildtool in ${pecan_tools_build}; do
+		pecan_tools_prereq "${_pb_tools_buildtool}" _pb_tools_buildtool_prereq
+		if [ -n "${_pb_tools_buildtool_prereq}" ]; then
+			pecan_prereq_build="${pecan_prereq_build} ${_pb_tools_buildtool_prereq}"
+		fi
+	done
+	for _pb_tools_pkgtool in ${pecan_tools_pkg}; do
+		pecan_tools_prereq "${_pb_tools_pkgtool}" _pb_tools_pkgtool_prereq
+		if [ -n "${_pb_tools_pkgtool_prereq}" ]; then
+			pecan_prereq_pkg="${pecan_prereq_pkg} ${_pb_tools_pkgtool_prereq}"
+		fi
+	done
+
 	# Run the *_vars function for each tool that matches a prereq.
 
 	[ -z "${pecan_prereq_build}" ] || set -o noglob
@@ -289,6 +302,60 @@ pecan_do_tools()
 }
 
 ###
+# pecan_tools_prereq tool varname
+#
+# Look up the prereq associated with the given tool and store it in the given variable.
+#
+pecan_tools_prereq()
+{
+	_pb_tools_prereq_tool="$1"
+	_pb_tools_prereq_varname="$2"
+
+	for _pb_tools_tool in ${pecan_tools_registry}; do
+		eval _pb_tools_toolname=\"\${pecan_tools_${_pb_tools_tool}_toolname}\"
+		: ${_pb_tools_toolname:=${_pb_tools_tool}}
+		if [ "${_pb_tools_toolname}" = "${_pb_tools_prereq_tool}" ]; then
+			_pb_tools_prereq="pecan_tools_${_pb_tools_tool}_prereq"
+			eval "_pb_tools_prereq_value=\"\$${_pb_tools_prereq}\""
+			break
+		fi
+	done
+	[ -z "${_pb_tools_prereq_varname}" ] ||
+		eval "${_pb_tools_prereq_varname}=\"${_pb_tools_prereq_value}\""
+}
+
+###
+# _pecan_tools_add_prereq type tool
+#
+# Internal function. Add the prereq of the named type for the given tool and run the
+# associated *_vars() function for that tool if it exists.
+#
+_pecan_tools_add_prereq()
+{
+	__pb_tools_prereq_type="$1"
+	__pb_tools_prereq_tool="$2"
+
+	pecan_tools_prereq "${__pb_tools_prereq_tool}" __pb_tools_prereq
+	if [ -n "${__pb_tools_prereq}" ]; then
+		case "${__pb_tools_prereq_type}" in
+		build)	pecan_prereq_build="${pecan_prereq_build} ${__pb_tools_prereq}" ;;
+		pkg)	pecan_prereq_pkg="${pecan_prereq_pkg} ${__pb_tools_prereq}" ;;
+		esac
+		for __pb_tools_tool in ${pecan_tools_registry}; do
+			eval __pb_tools_toolname=\"\${pecan_tools_${__pb_tools_tool}_toolname}\"
+			: ${__pb_tools_toolname:=${__pb_tools_tool}}
+			if [ "${__pb_tools_toolname}" = "${__pb_tools_prereq_tool}" ]; then
+				__pb_tools_vars="pecan_tools_${__pb_tools_tool}_vars"
+				if pecan_is_function_defined "${__pb_tools_vars}"; then
+					${__pb_tools_vars}
+				fi
+				break
+			fi
+		done
+	fi
+}
+
+###
 # tools: autoconf
 #
 pecan_tools_registry="${pecan_tools_registry} autoconf"
@@ -321,11 +388,18 @@ pecan_tools_autoconf()
 # tools: bash
 #
 pecan_tools_registry="${pecan_tools_registry} bash"
+pecan_tools_bash_prereq="* bash"
 
 pecan_tools_bash_vars()
 {
 	BASH="${PECAN_TARGET}/bin/bash"; export BASH
 }
+
+###
+# tools: bzip2
+#
+pecan_tools_registry="${pecan_tools_registry} bzip2"
+pecan_tools_bzip2_prereq="* bzip2"
 
 ###
 # tools: getopt
@@ -341,6 +415,7 @@ pecan_tools_getopt_vars()
 # tools: gmake
 #
 pecan_tools_registry="${pecan_tools_registry} gmake"
+pecan_tools_gmake_prereq="* gmake"
 
 pecan_tools_gmake()
 {
@@ -350,9 +425,22 @@ pecan_tools_gmake()
 }
 
 ###
+# tools: gzip
+#
+pecan_tools_registry="${pecan_tools_registry} gzip"
+pecan_tools_gzip_prereq="* gzip"
+
+###
+# tools: libtool
+#
+pecan_tools_registry="${pecan_tools_registry} libtool"
+pecan_tools_libtool_prereq=">= libtool-2.4.2"
+
+###
 # tools: m4
 #
 pecan_tools_registry="${pecan_tools_registry} m4"
+pecan_tools_m4_prereq=">= m4-1.4"
 
 pecan_tools_m4_vars()
 {
@@ -360,9 +448,22 @@ pecan_tools_m4_vars()
 }
 
 ###
+# tools: msgfmt
+#
+pecan_tools_registry="${pecan_tools_registry} msgfmt"
+pecan_tools_msgfmt_prereq=">= gettext-tools-0.18.1"
+
+###
+# tools: patch
+#
+pecan_tools_registry="${pecan_tools_registry} patch"
+pecan_tools_patch_prereq="* patch"
+
+###
 # tools: perl
 #
 pecan_tools_registry="${pecan_tools_registry} perl"
+pecan_tools_perl_prereq=">= perl-5.8"
 
 pecan_tools_perl_vars()
 {
@@ -375,6 +476,7 @@ pecan_tools_perl_vars()
 #
 pecan_tools_registry="${pecan_tools_registry} pkg_config"
 pecan_tools_pkg_config_pkgname="pkg-config"
+pecan_tools_pkg_config_prereq=">= pkg-config-0.27"
 
 pecan_tools_pkg_config()
 {
@@ -409,6 +511,24 @@ pecan_tools_pkg_config()
 }
 
 ###
+# tools: sed
+#
+pecan_tools_registry="${pecan_tools_registry} sed"
+pecan_tools_sed_prereq="* sed"
+
+###
+# tools: tar
+#
+pecan_tools_registry="${pecan_tools_registry} tar"
+pecan_tools_tar_prereq="* tar"
+
+###
+# tools: xz
+#
+pecan_tools_registry="${pecan_tools_registry} xz"
+pecan_tools_xz_prereq="* xz"
+
+###
 # pecan_tools_link_bin pkgname
 #
 # Links the files under the pkgname's bin directory (if it exists)
@@ -439,26 +559,18 @@ pecan_extract_vars()
 	: ${pecan_extract_subdir:=${pecan_extract_file%${pecan_extract_suffix}}}
 	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_subdir}}
 
-	pecan_extract_tools_vars
-}
-
-pecan_extract_tools_vars()
-{
-	[ -z "${_pb_extract_tools_vars_runonce}" ] || return 0
-	_pb_extract_tools_vars_runonce=true
-
 	if [ -n "${pecan_extract_file}" ]; then
 		pecan_extract_compression_format ${pecan_extract_file} _pb_extract_vars_cformat
 		pecan_extract_archive_format ${pecan_extract_file} _pb_extract_vars_aformat
 
 		case "${_pb_extract_vars_cformat}" in
-		bzip)		pecan_prereq_build="${pecan_prereq_build} * bzip2" ;;
-		compress|gzip)	pecan_prereq_build="${pecan_prereq_build} * gzip" ;;
-		lzma|xz)	pecan_prereq_build="${pecan_prereq_build} * xz" ;;
+		bzip)		_pecan_tools_add_prereq build bzip2 ;;
+		compress|gzip)	_pecan_tools_add_prereq build gzip ;;
+		lzma|xz)	_pecan_tools_add_prereq build xz ;;
 		esac
 
 		case "${_pb_extract_vars_aformat}" in
-		tar)	pecan_prereq_build="${pecan_prereq_build} * tar" ;;
+		tar)	_pecan_tools_add_prereq build tar ;;
 		esac
 	fi
 }
@@ -557,17 +669,9 @@ pecan_patchdist_vars()
 	pecan_patchdist_cookie="${pecan_workdir}/.patchdist_cookie"
 	pecan_patchdist_require="extract"
 
-	pecan_patchdist_tools_vars
-}
-
-pecan_patchdist_tools_vars()
-{
-	[ -z "${_pb_patchdist_tools_vars_runonce}" ] || return 0
-	_pb_patchdist_tools_vars_runonce=true
-
 	for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
 		[ "${_pb_patchdist_file}" != "${pecan_topdir}/patchdist-*" ] || break
-		pecan_prereq_build="${pecan_prereq_build} * patch"
+		_pecan_tools_add_prereq build patch
 		break
 	done
 }
@@ -597,17 +701,9 @@ pecan_patch_vars()
 	pecan_patch_cookie="${pecan_workdir}/.patch_cookie"
 	pecan_patch_require="patchdist"
 
-	pecan_patch_tools_vars
-}
-
-pecan_patch_tools_vars()
-{
-	[ -z "${_pb_patch_tools_vars_runonce}" ] || return 0
-	_pb_patch_tools_vars_runonce=true
-
 	for _pb_patch_file in "${pecan_topdir}"/patch-*; do
 		[ "${_pb_patch_file}" != "${pecan_topdir}/patch-*" ] || break
-		pecan_prereq_build="${pecan_prereq_build} * patch"
+		_pecan_tools_add_prereq build patch
 		break
 	done
 }
