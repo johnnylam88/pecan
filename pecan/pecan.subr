@@ -281,6 +281,20 @@ pecan_tools_default()
 {
 	[ -d "${pecan_tooldir}/bin" ] || mkdir -p "${pecan_tooldir}/bin"
 
+	for _pb_tools_prereq_tool in ${pecan_tools_build} ${pecan_tools_pkg}; do
+		for _pb_tools_tool in ${pecan_tools_registry}; do
+			eval _pb_tools_toolname=\"\${pecan_tools_${_pb_tools_tool}_toolname}\"
+			: ${_pb_tools_toolname:=${_pb_tools_tool}}
+			if [ "${_pb_tools_toolname}" = "${_pb_tools_prereq_tool}" ]; then
+				eval _pb_tools_path=\"\${pecan_tools_${_pb_tools_tool}_path}\"
+				if [ -n "${_pb_tools_path}" ]; then
+					ln -s "${_pb_tools_path}" "${pecan_tooldir}/bin"
+				fi
+				break
+			fi
+		done
+	done
+
 	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
 		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
 		_pb_tools_pkgname="${_pb_tools_prereq#${pecan_prereq_dir}/}"
@@ -315,8 +329,13 @@ pecan_tools_prereq()
 		eval _pb_tools_toolname=\"\${pecan_tools_${_pb_tools_tool}_toolname}\"
 		: ${_pb_tools_toolname:=${_pb_tools_tool}}
 		if [ "${_pb_tools_toolname}" = "${_pb_tools_prereq_tool}" ]; then
-			_pb_tools_prereq="pecan_tools_${_pb_tools_tool}_prereq"
-			eval "_pb_tools_prereq_value=\"\$${_pb_tools_prereq}\""
+			eval _pb_tools_path=\"\${pecan_tools_${_pb_tools_tool}_path}\"
+			if [ -z "${_pb_tools_path}" ]; then
+				_pb_tools_prereq="pecan_tools_${_pb_tools_tool}_prereq"
+				eval "_pb_tools_prereq_value=\"\$${_pb_tools_prereq}\""
+			else
+				_pb_tools_prereq_value=
+			fi
 			break
 		fi
 	done
@@ -335,24 +354,33 @@ _pecan_tools_add_prereq()
 	__pb_tools_prereq_type="$1"
 	__pb_tools_prereq_tool="$2"
 
+	# Add to the proper pecan_tools_* variable so it's found later by pecan_tools().
+	case "${__pb_tools_prereq_type}" in
+	build)	pecan_tools_build="${pecan_tools_build} ${__pb_tools_prereq_tool}" ;;
+	pkg)	pecan_tools_pkg="${pecan_tools_pkg} ${__pb_tools_prereq_tool}" ;;
+	esac
+
+	# Add to the proper pecan_prereq_* variable so it's found later by pecan_prereq().
 	pecan_tools_prereq "${__pb_tools_prereq_tool}" __pb_tools_prereq
 	if [ -n "${__pb_tools_prereq}" ]; then
 		case "${__pb_tools_prereq_type}" in
 		build)	pecan_prereq_build="${pecan_prereq_build} ${__pb_tools_prereq}" ;;
 		pkg)	pecan_prereq_pkg="${pecan_prereq_pkg} ${__pb_tools_prereq}" ;;
 		esac
-		for __pb_tools_tool in ${pecan_tools_registry}; do
-			eval __pb_tools_toolname=\"\${pecan_tools_${__pb_tools_tool}_toolname}\"
-			: ${__pb_tools_toolname:=${__pb_tools_tool}}
-			if [ "${__pb_tools_toolname}" = "${__pb_tools_prereq_tool}" ]; then
-				__pb_tools_vars="pecan_tools_${__pb_tools_tool}_vars"
-				if pecan_is_function_defined "${__pb_tools_vars}"; then
-					${__pb_tools_vars}
-				fi
-				break
-			fi
-		done
 	fi
+
+	# Run the *_vars() function for the tool if it exists.
+	for __pb_tools_tool in ${pecan_tools_registry}; do
+		eval __pb_tools_toolname=\"\${pecan_tools_${__pb_tools_tool}_toolname}\"
+		: ${__pb_tools_toolname:=${__pb_tools_tool}}
+		if [ "${__pb_tools_toolname}" = "${__pb_tools_prereq_tool}" ]; then
+			__pb_tools_vars="pecan_tools_${__pb_tools_tool}_vars"
+			if pecan_is_function_defined "${__pb_tools_vars}"; then
+				${__pb_tools_vars}
+			fi
+			break
+		fi
+	done
 }
 
 ###
