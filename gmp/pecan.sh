@@ -14,6 +14,12 @@ else
 	exit 1
 fi
 
+pecan_pre_configure()
+{
+	# config.guess guesses incorrectly sometimes.
+	( cd "${pecan_srcdir}" && mv -f configfsf.guess config.guess )
+}
+
 pecan_test_style=make
 
 pecan_post_stage()
