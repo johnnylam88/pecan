@@ -488,6 +488,18 @@ pecan_tools_registry="${pecan_tools_registry} patch"
 pecan_tools_patch_prereq="* patch"
 
 ###
+# tools: pdksh
+#
+pecan_tools_registry="${pecan_tools_registry} pdksh"
+pecan_tools_pdksh_prereq="* pdksh"
+
+pecan_tools_pdksh_vars()
+{
+	# Use pdksh as the shell interpreter.
+	SHELL="${PECAN_TARGET}/bin/pdksh"; export SHELL
+}
+
+###
 # tools: perl
 #
 pecan_tools_registry="${pecan_tools_registry} perl"
@@ -709,7 +721,7 @@ pecan_patchdist_default()
 	( cd "${pecan_srcdir}" &&
 	  for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
 		[ "${_pb_patchdist_file}" != "${pecan_topdir}/patchdist-*" ] || break
-		patch -b < "${_pb_patchdist_file}"
+		patch < "${_pb_patchdist_file}"
 	  done )
 }
 
@@ -741,7 +753,7 @@ pecan_patch_default()
 	( cd "${pecan_srcdir}" &&
 	  for _pb_patch_file in "${pecan_topdir}"/patch-*; do
 		[ "${_pb_patch_file}" != "${pecan_topdir}/patch-*" ] || break
-		patch -b -p0 < "${_pb_patch_file}"
+		patch -p0 < "${_pb_patch_file}"
 	  done )
 }
 
@@ -764,8 +776,6 @@ pecan_configure_vars()
 	: ${pecan_configure_style=gnu}
 
 	# GNU configure
-	: ${pecan_gnu_configure_script:=./configure}
-	: ${pecan_gnu_configure_shell=${SHELL}}
 	if [ -z "${pecan_gnu_configure_args}" ]; then
 		pecan_gnu_configure_args="--prefix=${pecan_pkgdir}"
 	fi
@@ -774,12 +784,26 @@ pecan_configure_vars()
 pecan_configure_deferred_vars()
 {
 	case "${pecan_configure_style}" in
-	gnu)	pecan_configure_default=pecan_gnu_configure_default ;;
-	*)	pecan_configure_default= ;;
+	gnu)
+		pecan_configure_default="pecan_gnu_configure_default"
+		case "${pecan_pkgname}" in
+		gzip|tar|patch|pdksh|sed)
+			: These are possible prereqs for pdksh.
+			;;
+		*)
+			# Use pdksh as the SHELL.
+			_pecan_tools_add_prereq build pdksh
+			;;
+		esac
+		;;
+	*)
+		pecan_configure_default=
+		;;
 	esac
 
 	# gnu configure
 	: ${pecan_gnu_configure_script:=./configure}
+	: ${pecan_gnu_configure_shell=${SHELL}}
 	[ -z "${pecan_etcdir}" ] || \
 		pecan_gnu_configure_args="${pecan_gnu_configure_args} --sysconfdir=${pecan_etcdir}"
 	[ -z "${pecan_vardir}" ] || \
