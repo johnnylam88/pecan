@@ -1,11 +1,8 @@
 #!/bin/sh
 
-PECAN_PKGNAME="sed-4.2.1"
+PECAN_PKGNAME="sed-4.2.1+1"
 
 pecan_description="GNU stream editor"
-
-pecan_prereq_lib=">= gettext-runtime-0.18.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr
@@ -14,6 +11,12 @@ elif [ -f ../pecan/pecan.subr ]; then
 else
 	exit 1
 fi
+
+# This sed package is used as a bootstrap for modifying files for
+# other packages, so remove dependencies on iconv and gettext.
+#
+pecan_gnu_configure_args="${pecan_gnu_configure_args} --disable-nls"
+pecan_gnu_configure_args="${pecan_gnu_configure_args} --disable-i18n"
 
 pecan_test_style=make
 
