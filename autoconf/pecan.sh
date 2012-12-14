@@ -4,9 +4,10 @@ PECAN_PKGNAME="autoconf-2.69"
 
 pecan_description="GNU automatic source configuration system"
 
-pecan_prereq_build="* sed"
 pecan_prereq_pkg=">= m4-1.4.16"
-pecan_prereq_pkg="${pecan_prereq_pkg} >= perl-5.006"
+
+pecan_tools_build="sed"
+pecan_tools_pkg="perl"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr

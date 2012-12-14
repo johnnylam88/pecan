@@ -4,7 +4,7 @@ PECAN_PKGNAME="perl-5.16.2"
 
 pecan_description="Perl 5 scripting language interpreter"
 
-pecan_prereq_build="* sed"
+pecan_tools_build="sed"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr

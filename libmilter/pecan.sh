@@ -8,9 +8,7 @@ pecan_extract_subdir="sendmail-${sendmail_version}/libmilter"
 
 pecan_description="Sendmail mail filter API (milter)"
 
-pecan_prereq_build="* libtool"
-pecan_prereq_build="${pecan_prereq_build} * m4"
-pecan_prereq_build="${pecan_prereq_build} * sed"
+pecan_tools_build="libtool m4 sed"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr

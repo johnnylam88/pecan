@@ -6,7 +6,8 @@ pecan_description="Patent-free data compressor"
 
 pecan_prereq_build="* autoconf"
 pecan_prereq_build="${pecan_prereq_build} * automake"
-pecan_prereq_build="${pecan_prereq_build} * libtool"
+
+pecan_tools_build="libtool"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr

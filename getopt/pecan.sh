@@ -4,10 +4,10 @@ PECAN_PKGNAME="getopt-1.1.5"
 
 pecan_description="GNU getopt(3)-compatible tool for shell scripts"
 
-pecan_prereq_build=">= gettext-tools-0.18.1"
-pecan_prereq_build="${pecan_prereq_build} * gmake"
 pecan_prereq_lib=">= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
+
+pecan_tools_build="gmake msgfmt"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr

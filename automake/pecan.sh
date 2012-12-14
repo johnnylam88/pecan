@@ -4,9 +4,9 @@ PECAN_PKGNAME="automake-1.12.5"
 
 pecan_description="GNU automatic Makefile.in generation"
 
-pecan_prereq_build=">= perl-5.006"
-pecan_prereq_build="${pecan_prereq_build} * sed"
 pecan_prereq_pkg=">= autoconf-2.62"
+
+pecan_tools_build="perl sed"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr

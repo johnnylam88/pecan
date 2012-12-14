@@ -7,7 +7,6 @@ pecan_description="Python 2.x scripting langauge interpreter"
 pecan_extract_file=Python-2.7.3.tgz
 pecan_extract_suffix=.tgz
 
-pecan_prereq_build=">= pkg-config-0.27"
 pecan_prereq_lib=">= bzip2-1.0.6"
 pecan_prereq_lib="${pecan_prereq_lib} >= expat-2.1.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= gdbm-1.10"
@@ -18,6 +17,8 @@ pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 pecan_prereq_lib="${pecan_prereq_lib} >= readline-6.2"
 pecan_prereq_lib="${pecan_prereq_lib} >= sqlite-3.7.14"
 pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"
+
+pecan_tools_build="pkg-config"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr

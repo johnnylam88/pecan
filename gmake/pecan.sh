@@ -6,9 +6,10 @@ pecan_description="GNU 'make' utility"
 
 pecan_extract_file="make-3.82.tar.gz"
 
-pecan_prereq_build=">= gettext-tools-0.18.1"
 pecan_prereq_lib=">= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
+
+pecan_tools_build="msgfmt"
 
 if [ -f ./pecan.subr ]; then
 	. ./pecan.subr

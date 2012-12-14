@@ -6,7 +6,6 @@ pecan_description="GNU find utilities for basic directory searches"
 
 pecan_extract_suffix=".tar.xz"
 
-pecan_prereq_build="* bash"
 pecan_prereq_lib=">= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= gmp-5.0.5"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
@@ -19,7 +18,6 @@ else
 	exit 1
 fi
 
-pecan_gnu_configure_shell="${pecan_tooldir}/bin/bash"
 pecan_test_style=make
 
 pecan_pre_build()
