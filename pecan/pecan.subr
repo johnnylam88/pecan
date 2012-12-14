@@ -495,8 +495,12 @@ pecan_tools_pdksh_prereq="* pdksh"
 
 pecan_tools_pdksh_vars()
 {
-	# Use pdksh as the shell interpreter.
-	SHELL="${PECAN_TARGET}/bin/pdksh"; export SHELL
+	# Use pdksh to replace Bourne shell as the shell interpreter.
+	case "${SHELL}" in
+	/bin/sh)
+		SHELL="${PECAN_TARGET}/bin/pdksh"; export SHELL
+		;;
+	esac
 }
 
 ###
