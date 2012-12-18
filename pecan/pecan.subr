@@ -459,6 +459,12 @@ pecan_tools_registry="${pecan_tools_registry} gzip"
 pecan_tools_gzip_prereq="* gzip"
 
 ###
+# tools: id
+#
+pecan_tools_registry="${pecan_tools_registry} id"
+pecan_tools_id_prereq="* coreutils"
+
+###
 # tools: libtool
 #
 pecan_tools_registry="${pecan_tools_registry} libtool"
