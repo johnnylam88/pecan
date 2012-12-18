@@ -95,7 +95,7 @@ pecan_main()
 				fi
 				;;
 			*)
-				echo "$0: unknown action \`${_pb_main_top}'." 1>&2
+				pecan_errmsg "unknown action \`${_pb_main_top}'."
 				exit 1
 				;;
 			esac

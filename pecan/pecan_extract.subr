@@ -134,7 +134,7 @@ pecan_extract_file()
 		${_pb_extract_zcat} "${_pb_extract_distfile}" | tar -xf -
 		;;
 	*)
-		echo "$0: archive format \`${_pb_extract_format}' not recognized." 1>&2
+		pecan_errmsg "archive format \`${_pb_extract_format}' not recognized."
 		return 1
 		;;
 	esac

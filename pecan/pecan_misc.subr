@@ -89,5 +89,5 @@ pecan_action_registry="${pecan_action_registry} lint"
 pecan_do_lint()
 {
 	[ -n "${pecan_description}" ] ||
-		echo "$0: \`pecan_description' should be defined."
+		pecan_msg "\`pecan_description' should be defined."
 }

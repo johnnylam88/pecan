@@ -25,6 +25,27 @@
 #
 
 ###
+# pecan_msg string
+#
+# Print the string to standard output with the pkgname as the preamble.
+#
+pecan_msg()
+{
+	echo "$0 [${pecan_pkgname}]:" $*
+}
+
+###
+# pecan_errmsg string
+#
+# Print the string to standard error with the pkgname as the preamble.
+#
+pecan_errmsg()
+{
+	echo 1>&2 "$0 [${pecan_pkgname}]:" $*
+}
+
+
+###
 # pecan_is_function_defined symbol
 #
 # Returns 0 if there is a shell function with the given symbol name;
@@ -68,7 +89,7 @@ pecan_action_generator()
 	if [ -n "${_pb_gen_action}" ]; then
 		if [ "${_pb_gen_action}" != ":" ] && \
 		   ! pecan_is_function_defined "${_pb_gen_action}"; then
-			echo "$0: \`${_pb_gen_action}' function not found." 1>&2
+			pecan_errmsg "\`${_pb_gen_action}' function not found."
 			return 1
 		fi
 	elif pecan_is_function_defined "pecan_${_pb_gen_name}"; then
@@ -82,7 +103,7 @@ pecan_action_generator()
 	if [ -n "${_pb_gen_preaction}" ]; then
 		if [ "${_pb_gen_preaction}" != ":" ] && \
 		   ! pecan_is_function_defined "${_pb_gen_preaction}"; then
-			echo "$0: \`${_pb_gen_preaction}' function not found." 1>&2
+			pecan_errmsg "\`${_pb_gen_preaction}' function not found."
 			return 1
 		fi
 	elif pecan_is_function_defined "pecan_pre_${_pb_gen_name}"; then
@@ -94,7 +115,7 @@ pecan_action_generator()
 	if [ -n "${_pb_gen_postaction}" ]; then
 		if [ "${_pb_gen_postaction}" != ":" ] && \
 		   ! pecan_is_function_defined "${_pb_gen_postaction}"; then
-			echo "$0: \`${_pb_gen_postaction}' function not found." 1>&2
+			pecan_errmsg "\`${_pb_gen_postaction}' function not found."
 			return 1
 		fi
 	elif pecan_is_function_defined "pecan_post_${_pb_gen_name}"; then
@@ -106,7 +127,7 @@ pecan_action_generator()
 	if [ -n "${_pb_gen_extra_actions}" ]; then
 		for _pb_gen_extra_action in ${_pb_gen_extra_actions}; do
 			if ! pecan_is_function_defined "${_pb_gen_extra_action}"; then
-				echo "$0: \`${_pb_gen_extra_action}' function not found." 1>&2
+				pecan_errmsg "\`${_pb_gen_extra_action}' function not found."
 				return 1
 			fi
 		done
@@ -115,13 +136,16 @@ pecan_action_generator()
 	fi
 
 	eval _pb_gen_action_cookie=\"\${pecan_${_pb_gen_name}_cookie}\"
+	_pb_gen_action_msg="pecan_msg \"doing action \\\`\\\`\${_pb_gen_name}''\""
 	if [ -z "${_pb_gen_action_cookie}" ]; then
-		( ${_pb_gen_preaction} &&
+		( eval "${_pb_gen_action_msg}" &&
+		  ${_pb_gen_preaction} &&
 		  ${_pb_gen_action} &&
 		  ${_pb_gen_postaction} &&
 		  ${_pb_gen_extra_actions} )
 	elif [ ! -f "${_pb_gen_action_cookie}" ]; then
-		( ${_pb_gen_preaction} &&
+		( eval "${_pb_gen_action_msg}" &&
+		  ${_pb_gen_preaction} &&
 		  ${_pb_gen_action} &&
 		  ${_pb_gen_postaction} &&
 		  ${_pb_gen_extra_actions} ) &&
@@ -183,7 +207,7 @@ pecan_pkgspec_parse()
 	_pb_parse_pkgname="${_pb_parse_pkgname%-${_pb_parse_swver}}"
 	case "${_pb_parse_swver}" in
 	.*|*[/+]*)
-		echo "$0: pkgspec \`${_pb_parse_pkgspec}' has bad <swver> \`${_pb_parse_swver}'." 1>&2
+		pecan_errmsg "pkgspec \`${_pb_parse_pkgspec}' has bad <swver> \`${_pb_parse_swver}'."
 		return 1
 		;;
 	esac
@@ -196,7 +220,7 @@ pecan_pkgspec_parse()
 
 	case "${_pb_parse_pkgname}" in
 	*/*)
-		echo "$0: pkgspec \`${_pb_parse_pkgspec}' has bad <pkgname> \`${_pb_parse_pkgname}'." 1>&2
+		pecan_errmsg "pkgspec \`${_pb_parse_pkgspec}' has bad <pkgname> \`${_pb_parse_pkgname}'."
 		return 1
 		;;
 	esac
@@ -337,7 +361,7 @@ pecan_pkgspec_match()
 	[*]|"<="|"<"|">="|">"|=)
 		;;
 	*)
-		echo "$0: unknown pkgspec comparison operator \`${_pb_match_cmp}'." 1>&2
+		${pecan_errmsg} "unknown pkgspec comparison operator \`${_pb_match_cmp}'."
 		return 1
 		;;
 	esac

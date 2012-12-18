@@ -100,25 +100,25 @@ pecan_prereq_default()
 			continue
 		fi
 		if ! pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
-			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' not matched for \`${pecan_pkgname}'." 1>&2
+			pecan_msg "prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' not matched."
 			pecan_pkgspec_parse "${_pb_prereq_pkgspec}" _pb_prereq_pkgname || return 1
 			if [ ! -d "../${_pb_prereq_pkgname}" ]; then
-				echo "$0: \`../${_pb_prereq_pkgname}' directory not found." 1>&2
+				pecan_errmsg "\`../${_pb_prereq_pkgname}' directory not found."
 				return 1
 			elif [ ! -x "../${_pb_prereq_pkgname}/pecan.sh" ]; then
-				echo "$0: \`../${_pb_prereq_pkgname}/pecan.sh' not found." 1>&2
+				pecan_errmsg "\`../${_pb_prereq_pkgname}/pecan.sh' not found."
 				return 1
 			fi
 			( set -e;
 			  if cd "../${_pb_prereq_pkgname}"; then
-				echo "$0: installing prereq \`${_pb_prereq_pkgname}' for \`${pecan_pkgname}'." &&
+				pecan_msg "installing prereq \`${_pb_prereq_pkgname}'." &&
 				./pecan.sh install && ./pecan.sh encap &&
-				echo "$0: returning to \`${pecan_pkgname}'"
+				pecan_msg "returning to \`${pecan_pkgname}'."
 			  fi ) || return 1
 			exec $0 ${pecan_main_args}
 		fi
 		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
-			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' matches \`${_pb_prereq_match}' for \`${pecan_pkgname}'." 1>&2
+			pecan_msg "prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' matches \`${_pb_prereq_match}'."
 			if pecan_pkgspec_parse "${_pb_prereq_match}" _pb_prereq_pkgname; then
 				_pb_prereq_file="${pecan_prereq_dir}/${_pb_prereq_pkgname}"
 				echo "${_pb_prereq_match}" > "${_pb_prereq_file}"
@@ -127,7 +127,7 @@ pecan_prereq_default()
 		_pb_prereq_cmp=
 	done
 	if [ -n "${_pb_prereq_cmp}" ]; then
-		echo "$0: prereq \`${_pb_prereq_cmp}' incomplete for \`${pecan_pkgname}'." 1>&2
+		pecan_errmsg "prereq \`${_pb_prereq_cmp}' incomplete."
 		return 1
 	fi
 }
