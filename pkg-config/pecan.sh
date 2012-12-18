@@ -4,8 +4,8 @@ PECAN_PKGNAME="pkg-config-0.27.1"
 
 pecan_description="Utility that details how to compile and link against a library"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

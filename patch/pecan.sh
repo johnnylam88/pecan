@@ -4,8 +4,8 @@ PECAN_PKGNAME="patch-2.7.1"
 
 pecan_description="GNU patch utility to apply diffs"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

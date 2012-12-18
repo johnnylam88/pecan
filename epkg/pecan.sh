@@ -11,8 +11,8 @@ pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"
 pecan_prereq_pkg=">= m4-1.4"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

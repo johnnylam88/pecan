@@ -4,8 +4,8 @@ PECAN_PKGNAME="pdksh-5.2.14"
 
 pecan_description="Public Domain Korn Shell"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

@@ -7,8 +7,8 @@ pecan_description="GNU compression program"
 pecan_extract_file="gzip-1.2.4a.shar"
 pecan_extract_suffix=".shar"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

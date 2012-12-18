@@ -4,8 +4,8 @@ PECAN_PKGNAME="pcre-8.31"
 
 pecan_description="Perl-compatible regular expression library"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

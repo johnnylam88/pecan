@@ -11,8 +11,8 @@ pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 pecan_extract_file="openldap-${openldap_version}.tgz"
 pecan_extract_suffix=".tgz"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

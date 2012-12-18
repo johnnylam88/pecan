@@ -4,8 +4,8 @@ PECAN_PKGNAME="sed-4.2.1+1"
 
 pecan_description="GNU stream editor"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

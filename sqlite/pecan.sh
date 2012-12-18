@@ -9,8 +9,8 @@ pecan_extract_file="sqlite-autoconf-3071401.tar.gz"
 pecan_prereq_lib=">= ncurses-5.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= readline-6.2"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

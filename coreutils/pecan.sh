@@ -10,8 +10,8 @@ pecan_prereq_lib=">= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= gmp-5.0.5"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

@@ -8,8 +8,8 @@ pecan_extract_file="priv-1.0-beta2.tar.gz"
 
 pecan_tools_build="sed"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

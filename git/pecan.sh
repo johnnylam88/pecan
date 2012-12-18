@@ -17,8 +17,8 @@ pecan_prereq_pkg=">= python-2.7"
 pecan_tools_build="gmake msgfmt"
 pecan_tools_pkg="bash perl"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

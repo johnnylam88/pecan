@@ -4,8 +4,8 @@ PECAN_PKGNAME="libffi-3.0.11"
 
 pecan_description="Foreign function interface library"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

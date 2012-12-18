@@ -25,8 +25,8 @@
 #
 pecan_build_version=2
 
-if [ -f ./pecan.conf ]; then
-	. ./pecan.conf
+if [ -f ./pecan/pecan.conf ]; then
+	. ./pecan/pecan.conf
 elif [ -f ../pecan/pecan.conf ]; then
 	. ../pecan/pecan.conf
 fi

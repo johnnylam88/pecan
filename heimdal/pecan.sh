@@ -14,8 +14,8 @@ pecan_prereq_lib="${pecan_prereq_lib} >= sqlite-3.7.14"
 
 pecan_tools_build="msgfmt pkg-config sed"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

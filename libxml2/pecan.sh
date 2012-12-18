@@ -8,8 +8,8 @@ pecan_prereq_lib=">= libiconv-1.14"
 pecan_prereq_lib="${pecan_prereq_lib} >= xz-5.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

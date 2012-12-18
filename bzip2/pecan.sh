@@ -9,8 +9,8 @@ pecan_prereq_build="${pecan_prereq_build} * automake"
 
 pecan_tools_build="libtool"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

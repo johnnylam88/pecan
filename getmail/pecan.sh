@@ -6,8 +6,8 @@ pecan_description="Mail retriever from POP3/IMAP4 mailboxes"
 
 pecan_prereq_pkg=">= python-2.6"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

@@ -4,8 +4,8 @@ PECAN_PKGNAME="expat-2.1.0"
 
 pecan_description="XML stream-oriented parser library"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

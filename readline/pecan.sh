@@ -6,8 +6,8 @@ pecan_description="GNU command-line editing library"
 
 pecan_prereq_lib=">= ncurses-5.0"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

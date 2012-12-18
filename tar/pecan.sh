@@ -7,8 +7,8 @@ pecan_description="GNU tar archive program"
 pecan_extract_file="tar-1.26.shar.gz"
 pecan_extract_suffix=".shar.gz"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

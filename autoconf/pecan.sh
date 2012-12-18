@@ -9,8 +9,8 @@ pecan_prereq_pkg=">= m4-1.4.16"
 pecan_tools_build="sed"
 pecan_tools_pkg="perl"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

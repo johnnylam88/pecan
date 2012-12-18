@@ -7,8 +7,8 @@ pecan_description="SSLv2/v3 & TLSv1 protocol & cryptography library"
 pecan_prereq_lib=">= zlib-1.2.7"
 pecan_prereq_pkg=">= perl-5.005"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

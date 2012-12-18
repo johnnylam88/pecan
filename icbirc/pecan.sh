@@ -6,8 +6,8 @@ pecan_description="Proxy IRC client and ICB server"
 
 pecan_extract_subdir="icbirc"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

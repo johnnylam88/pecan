@@ -4,8 +4,8 @@ PECAN_PKGNAME="ncurses-5.9"
 
 pecan_description="SVr4-compatible curses library"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

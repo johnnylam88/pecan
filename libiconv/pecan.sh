@@ -4,8 +4,8 @@ PECAN_PKGNAME="libiconv-1.14"
 
 pecan_description="GNU character set conversion library"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

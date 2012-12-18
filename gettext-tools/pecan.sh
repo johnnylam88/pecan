@@ -11,8 +11,8 @@ pecan_prereq_lib="${pecan_prereq_lib} >= ncurses-5.0"
 
 pecan_extract_file="gettext-0.18.1.1.tar.gz"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else

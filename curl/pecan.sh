@@ -10,8 +10,8 @@ pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"
 
 pecan_tools_build="pkg-config sed"
 
-if [ -f ./pecan.subr ]; then
-	. ./pecan.subr
+if [ -f ./pecan/pecan.subr ]; then
+	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
 	. ../pecan/pecan.subr
 else
