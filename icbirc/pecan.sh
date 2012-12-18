@@ -14,6 +14,9 @@ else
 	exit 1
 fi
 
+# ``icbirc'' has a simplistic build and install process, so just
+# do it ourselves in pecan_build() and pecan_install() hooks.
+
 pecan_configure=:
 
 pecan_build()
