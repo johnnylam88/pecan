@@ -1,0 +1,159 @@
+# Copyright (c) 2012, Johnny C. Lam
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+##########
+# prereq #
+##########
+
+pecan_action_registry="${pecan_action_registry} prereq"
+
+pecan_prereq_vars()
+{
+	pecan_prereq_cookie="${pecan_workdir}/.prereq_cookie"
+	pecan_prereq_require="init"
+
+	: ${pecan_prereq_dir:=${pecan_workdir}/.prereq}
+
+	_pb_prereq_cppflags=
+	_pb_prereq_ldflags=
+
+	[ -z "${pecan_prereq_lib}" ] || set -o noglob
+
+	_pb_prereq_cmp=
+	for _pb_prereq_pkgspec in ${pecan_prereq_lib}; do
+		set +o noglob
+		if [ -z "${_pb_prereq_cmp}" ]; then
+			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
+			continue
+		fi
+		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			_pb_prereq_pkgdir="${PECAN_SOURCE}/${_pb_prereq_match}"
+			if [ -z "${_pb_prereq_cppflags}" ]; then
+				_pb_prereq_cppflags="-I${_pb_prereq_pkgdir}/include"
+			else
+				_pb_prereq_cppflags="${_pb_prereq_cppflags} -I${_pb_prereq_pkgdir}/include"
+			fi
+			if [ -z "${_pb_prereq_ldflags}" ]; then
+				_pb_prereq_ldflags="-L${_pb_prereq_pkgdir}/lib"
+			else
+				_pb_prereq_ldflags="${_pb_prereq_ldflags} -L${_pb_prereq_pkgdir}/lib"
+			fi
+			_pb_prereq_ldflags="${_pb_prereq_ldflags} -Wl,-rpath,${_pb_prereq_pkgdir}/lib"
+		fi
+		_pb_prereq_cmp=
+	done
+
+	# Add ${PECAN_TARGET}/lib to the end of the library run-time search path
+	# only if there are other library pre-requisites.
+	#
+	if [ -n "${_pb_prereq_ldflags}" ]; then
+		_pb_prereq_ldflags="${_pb_prereq_ldflags} -Wl,-rpath,${PECAN_TARGET}/lib"
+	fi
+
+	# Add this package's directory to the head of the library run-time search path.
+	if [ -z "${_pb_prereq_ldflags}" ]; then
+		_pb_prereq_ldflags="-Wl,-rpath,${pecan_pkgdir}/lib"
+	else
+		_pb_prereq_ldflags="-Wl,-rpath,${pecan_pkgdir}/lib ${_pb_prereq_ldflags}"
+	fi
+
+	: ${pecan_cflags=}
+	: ${pecan_cppflags=${_pb_prereq_cppflags}}
+	: ${pecan_ldflags=${_pb_prereq_ldflags}}
+	: ${pecan_libs=}
+}
+
+pecan_prereq_default()
+{
+	[ -z "${pecan_prereq_build}" ] || set -o noglob
+	[ -z "${pecan_prereq_pkg}" ] || set -o noglob
+	[ -z "${pecan_prereq_lib}" ] || set -o noglob
+
+	_pb_prereq_cmp=
+	for _pb_prereq_pkgspec in ${pecan_prereq_build} ${pecan_prereq_lib} ${pecan_prereq_pkg}; do
+		set +o noglob
+		if [ -z "${_pb_prereq_cmp}" ]; then
+			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
+			continue
+		fi
+		if ! pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' not matched for \`${pecan_pkgname}'." 1>&2
+			pecan_pkgspec_parse "${_pb_prereq_pkgspec}" _pb_prereq_pkgname || return 1
+			if [ ! -d "../${_pb_prereq_pkgname}" ]; then
+				echo "$0: \`../${_pb_prereq_pkgname}' directory not found." 1>&2
+				return 1
+			elif [ ! -x "../${_pb_prereq_pkgname}/pecan.sh" ]; then
+				echo "$0: \`../${_pb_prereq_pkgname}/pecan.sh' not found." 1>&2
+				return 1
+			fi
+			( set -e;
+			  if cd "../${_pb_prereq_pkgname}"; then
+				echo "$0: installing prereq \`${_pb_prereq_pkgname}' for \`${pecan_pkgname}'." &&
+				./pecan.sh install && ./pecan.sh encap &&
+				echo "$0: returning to \`${pecan_pkgname}'"
+			  fi ) || return 1
+			exec $0 ${pecan_main_args}
+		fi
+		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			echo "$0: prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' matches \`${_pb_prereq_match}' for \`${pecan_pkgname}'." 1>&2
+			if pecan_pkgspec_parse "${_pb_prereq_match}" _pb_prereq_pkgname; then
+				_pb_prereq_file="${pecan_prereq_dir}/${_pb_prereq_pkgname}"
+				echo "${_pb_prereq_match}" > "${_pb_prereq_file}"
+			fi
+		fi
+		_pb_prereq_cmp=
+	done
+	if [ -n "${_pb_prereq_cmp}" ]; then
+		echo "$0: prereq \`${_pb_prereq_cmp}' incomplete for \`${pecan_pkgname}'." 1>&2
+		return 1
+	fi
+}
+
+pecan_do_prereq()
+{
+	[ -d "${pecan_prereq_dir}" ] || mkdir -p "${pecan_prereq_dir}"
+	pecan_action_generator prereq
+}
+
+###
+# pecan_prereq_pkgdir pkgname varname
+#
+# Saves the pkgdir (under ${PECAN_SOURCE}) of pkgname into the named
+# variable.
+#
+pecan_prereq_pkgdir()
+{
+	_pb_prereq_pkgdir_pkgname="$1"
+	_pb_prereq_pkgdir_varname="$2"
+
+	[ -f "${pecan_prereq_dir}/${_pb_prereq_pkgdir_pkgname}" ] || return 1
+
+	read _pb_prereq_pkgdir_pkgspec < "${pecan_prereq_dir}/${_pb_prereq_pkgdir_pkgname}"
+	_pb_prereq_pkgdir="${PECAN_SOURCE}/${_pb_prereq_pkgdir_pkgspec}"
+
+	[ -z "${_pb_prereq_pkgdir_varname}" ] || \
+		eval ${_pb_prereq_pkgdir_varname}=\"${_pb_prereq_pkgdir}\"
+}

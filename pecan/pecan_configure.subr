@@ -1,0 +1,93 @@
+# Copyright (c) 2012, Johnny C. Lam
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#############
+# configure #
+#############
+
+pecan_action_registry="${pecan_action_registry} configure"
+
+pecan_configure_vars()
+{
+	pecan_configure_cookie="${pecan_workdir}/.configure_cookie"
+	pecan_configure_require="patch"
+
+	: ${pecan_configure_style=gnu}
+
+	# GNU configure
+	if [ -z "${pecan_gnu_configure_args}" ]; then
+		pecan_gnu_configure_args="--prefix=${pecan_pkgdir}"
+	fi
+}
+
+pecan_configure_deferred_vars()
+{
+	case "${pecan_configure_style}" in
+	gnu)
+		pecan_configure_default="pecan_gnu_configure_default"
+		case "${pecan_pkgname}" in
+		gzip|tar|patch|pdksh|sed)
+			: These are possible prereqs for pdksh.
+			;;
+		*)
+			# Use pdksh as the SHELL.
+			_pecan_tools_add_prereq build pdksh
+			;;
+		esac
+		;;
+	*)
+		pecan_configure_default=
+		;;
+	esac
+
+	# gnu configure
+	: ${pecan_gnu_configure_script:=./configure}
+	: ${pecan_gnu_configure_shell=${SHELL}}
+	[ -z "${pecan_etcdir}" ] || \
+		pecan_gnu_configure_args="${pecan_gnu_configure_args} --sysconfdir=${pecan_etcdir}"
+	[ -z "${pecan_vardir}" ] || \
+		pecan_gnu_configure_args="${pecan_gnu_configure_args} --localstatedir=${pecan_vardir}"
+	[ -z "${pecan_infodir}" ] || \
+		pecan_gnu_configure_args="${pecan_gnu_configure_args} --infodir=${pecan_infodir}"
+	[ -z "${pecan_mandir}" ] || \
+		pecan_gnu_configure_args="${pecan_gnu_configure_args} --mandir=${pecan_mandir}"
+}
+
+pecan_gnu_configure_default()
+{
+	( cd "${pecan_srcdir}" &&
+	  ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
+	  CFLAGS="${pecan_cflags}" CPPFLAGS="${pecan_cppflags}" \
+	  LDFLAGS="${pecan_ldflags}" LIBS="${pecan_libs}" \
+	  CONFIG_SHELL="${pecan_gnu_configure_shell}" \
+	  "${pecan_gnu_configure_shell}" "${pecan_gnu_configure_script}" \
+		${pecan_gnu_configure_args} )
+}
+
+pecan_do_configure()
+{
+	pecan_action_generator configure
+}

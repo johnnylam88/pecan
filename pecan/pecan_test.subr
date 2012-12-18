@@ -24,43 +24,40 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-pecan_build_version=2
+########
+# test #
+########
 
-if [ -f ./pecan/pecan.conf ]; then
-	. ./pecan/pecan.conf
-elif [ -f ../pecan/pecan.conf ]; then
-	. ../pecan/pecan.conf
-fi
+pecan_action_registry="${pecan_action_registry} test"
 
-# List of registered actions that can be given to pecan_main().
-pecan_action_registry=
+pecan_test_vars()
+{
+	pecan_test_require="build"
 
-# Load the sub-scripts in the proper order.
-for _pb_script_file in		\
-	pecan_init.subr		\
-	pecan_prereq.subr	\
-	pecan_tools.subr	\
-	pecan_extract.subr	\
-	pecan_patch.subr	\
-	pecan_configure.subr	\
-	pecan_build.subr	\
-	pecan_test.subr		\
-	pecan_stage.subr	\
-	pecan_install.subr	\
-	pecan_encap.subr	\
-	pecan_misc.subr		\
-	pecan_lib.subr		\
-	pecan_main.subr
-do
-	_pb_script_file="pecan/${_pb_script_file}"
-	if [ -f ./${_pb_script_file} ]; then
-		. ./${_pb_script_file}
-	elif [ -f ../${_pb_script_file} ]; then
-		. ../${_pb_script_file}
-	fi
-done
+	: ${pecan_test_style}
 
-# Ensure all *_vars() functions are run when ``pecan.subr'' is loaded.
-# This sets variables that may be used within the ``pecan.sh'' scripts.
-#
-pecan_vars
+	# make
+	: ${pecan_test_target:=check}
+}
+
+pecan_test_deferred_vars()
+{
+	case "${pecan_test_style}" in
+	make)	pecan_test_default=pecan_make_test_default ;;
+	*)	pecan_test_default= ;;
+	esac
+
+	# make
+	: ${pecan_test_makefile:=${pecan_build_makefile}}
+}
+
+pecan_make_test_default()
+{
+	( cd "${pecan_srcdir}" &&
+	  make -f "${pecan_test_makefile}" ${pecan_test_target} )
+}
+
+pecan_do_test()
+{
+	pecan_action_generator test
+}

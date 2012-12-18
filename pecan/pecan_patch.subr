@@ -24,43 +24,66 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-pecan_build_version=2
+#############
+# patchdist #
+#############
 
-if [ -f ./pecan/pecan.conf ]; then
-	. ./pecan/pecan.conf
-elif [ -f ../pecan/pecan.conf ]; then
-	. ../pecan/pecan.conf
-fi
+pecan_action_registry="${pecan_action_registry} patchdist"
 
-# List of registered actions that can be given to pecan_main().
-pecan_action_registry=
+pecan_patchdist_vars()
+{
+	pecan_patchdist_cookie="${pecan_workdir}/.patchdist_cookie"
+	pecan_patchdist_require="extract"
 
-# Load the sub-scripts in the proper order.
-for _pb_script_file in		\
-	pecan_init.subr		\
-	pecan_prereq.subr	\
-	pecan_tools.subr	\
-	pecan_extract.subr	\
-	pecan_patch.subr	\
-	pecan_configure.subr	\
-	pecan_build.subr	\
-	pecan_test.subr		\
-	pecan_stage.subr	\
-	pecan_install.subr	\
-	pecan_encap.subr	\
-	pecan_misc.subr		\
-	pecan_lib.subr		\
-	pecan_main.subr
-do
-	_pb_script_file="pecan/${_pb_script_file}"
-	if [ -f ./${_pb_script_file} ]; then
-		. ./${_pb_script_file}
-	elif [ -f ../${_pb_script_file} ]; then
-		. ../${_pb_script_file}
-	fi
-done
+	for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
+		[ "${_pb_patchdist_file}" != "${pecan_topdir}/patchdist-*" ] || break
+		_pecan_tools_add_prereq build patch
+		break
+	done
+}
 
-# Ensure all *_vars() functions are run when ``pecan.subr'' is loaded.
-# This sets variables that may be used within the ``pecan.sh'' scripts.
-#
-pecan_vars
+pecan_patchdist_default()
+{
+	( cd "${pecan_srcdir}" &&
+	  for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
+		[ "${_pb_patchdist_file}" != "${pecan_topdir}/patchdist-*" ] || break
+		patch < "${_pb_patchdist_file}"
+	  done )
+}
+
+pecan_do_patchdist()
+{
+	pecan_action_generator patchdist
+}
+
+#########
+# patch #
+#########
+
+pecan_action_registry="${pecan_action_registry} patch"
+
+pecan_patch_vars()
+{
+	pecan_patch_cookie="${pecan_workdir}/.patch_cookie"
+	pecan_patch_require="patchdist"
+
+	for _pb_patch_file in "${pecan_topdir}"/patch-*; do
+		[ "${_pb_patch_file}" != "${pecan_topdir}/patch-*" ] || break
+		_pecan_tools_add_prereq build patch
+		break
+	done
+}
+
+pecan_patch_default()
+{
+	( cd "${pecan_srcdir}" &&
+	  for _pb_patch_file in "${pecan_topdir}"/patch-*; do
+		[ "${_pb_patch_file}" != "${pecan_topdir}/patch-*" ] || break
+		patch -p0 < "${_pb_patch_file}"
+	  done )
+}
+
+pecan_do_patch()
+{
+	pecan_action_generator patch
+}

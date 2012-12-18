@@ -1,0 +1,91 @@
+# Copyright (c) 2012, Johnny C. Lam
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#########
+# stage #
+#########
+
+pecan_action_registry="${pecan_action_registry} stage"
+
+pecan_stage_vars()
+{
+	pecan_stage_cookie="${pecan_workdir}/.stage_cookie"
+	pecan_stage_require="build"
+
+	: ${pecan_stagedir:=${pecan_workdir}/.stage}
+	: ${pecan_stage_encapinfo:=${pecan_stagedir}/encapinfo}
+
+	: ${pecan_version=2.1}
+	[ -n "${PECAN_PLATFORM}" ] || pecan_platform_name PECAN_PLATFORM
+	: ${pecan_description}
+	: ${pecan_date=`date '+%a %b %d %H:%M:%S %Z %Y'`}
+	: ${PECAN_CONTACT=`whoami`}
+}
+
+pecan_stage_default()
+{
+	# encapinfo
+	echo "encap ${pecan_version}" > ${pecan_stage_encapinfo}
+	[ -z "${PECAN_PLATFORM}" ] || \
+		echo "platform ${PECAN_PLATFORM}" >> ${pecan_stage_encapinfo}
+	[ -z "${pecan_description}" ] || \
+		echo "description ${pecan_description}" >> ${pecan_stage_encapinfo}
+	[ -z "${pecan_date}" ] || \
+		echo "date ${pecan_date}" >> ${pecan_stage_encapinfo}
+	[ -z "${PECAN_CONTACT}" ] || \
+		echo "contact ${PECAN_CONTACT}" >> ${pecan_stage_encapinfo}
+
+	[ -z "${pecan_prereq_pkg}" ] || set -o noglob
+	[ -z "${pecan_prereq_lib}" ] || set -o noglob
+
+	_pb_prereq_cmp=
+	for _pb_prereq_pkgspec in ${pecan_prereq_pkg} ${pecan_prereq_lib}; do
+		set +o noglob
+		if [ -z "${_pb_prereq_cmp}" ]; then
+			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
+			continue
+		fi
+		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			echo "prereq pkgspec ${_pb_prereq_cmp} ${_pb_prereq_pkgspec}" >> ${pecan_stage_encapinfo}
+		fi
+		_pb_prereq_cmp=
+	done
+
+	# preinstall, postinstall, preremove, postremove
+	for _pb_stage_script in preinstall postinstall preremove postremove; do
+		if [ -f "${pecan_topdir}/${_pb_stage_script}" ]; then
+			cp -f "${pecan_topdir}/${_pb_stage_script}" \
+				"${pecan_stagedir}/${_pb_stage_script}"
+			chmod +x "${pecan_stagedir}/${_pb_stage_script}"
+		fi
+	done
+}
+
+pecan_do_stage()
+{
+	[ -d "${pecan_stagedir}" ] || mkdir -p "${pecan_stagedir}"
+	pecan_action_generator stage
+}

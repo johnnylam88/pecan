@@ -24,43 +24,57 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-pecan_build_version=2
+###########
+# install #
+###########
 
-if [ -f ./pecan/pecan.conf ]; then
-	. ./pecan/pecan.conf
-elif [ -f ../pecan/pecan.conf ]; then
-	. ../pecan/pecan.conf
-fi
+pecan_action_registry="${pecan_action_registry} install"
 
-# List of registered actions that can be given to pecan_main().
-pecan_action_registry=
+pecan_install_vars()
+{
+	pecan_install_cookie="${pecan_workdir}/.install_cookie"
+	pecan_install_require="stage"
+	pecan_install_extra_actions="pecan_install_stage"
 
-# Load the sub-scripts in the proper order.
-for _pb_script_file in		\
-	pecan_init.subr		\
-	pecan_prereq.subr	\
-	pecan_tools.subr	\
-	pecan_extract.subr	\
-	pecan_patch.subr	\
-	pecan_configure.subr	\
-	pecan_build.subr	\
-	pecan_test.subr		\
-	pecan_stage.subr	\
-	pecan_install.subr	\
-	pecan_encap.subr	\
-	pecan_misc.subr		\
-	pecan_lib.subr		\
-	pecan_main.subr
-do
-	_pb_script_file="pecan/${_pb_script_file}"
-	if [ -f ./${_pb_script_file} ]; then
-		. ./${_pb_script_file}
-	elif [ -f ../${_pb_script_file} ]; then
-		. ../${_pb_script_file}
+	: ${pecan_install_style=make}
+
+	# make
+	: ${pecan_install_target=install}
+	: ${pecan_install_args=}
+}
+
+pecan_install_deferred_vars()
+{
+	case "${pecan_install_style}" in
+	make)	pecan_install_default=pecan_make_install_default ;;
+	*)	pecan_install_default= ;;
+	esac
+
+	# make
+	: ${pecan_install_makefile:=${pecan_build_makefile}}
+}
+
+pecan_make_install_default()
+{
+	( cd "${pecan_srcdir}" &&
+	  make -f "${pecan_install_makefile}" ${pecan_install_target} \
+		${pecan_install_args} )
+}
+
+pecan_install_stage()
+{
+	( cd "${pecan_stagedir}" && cp -Rv . "${pecan_pkgdir}" )
+}
+
+pecan_do_install()
+{
+	# If PECAN_SUDO_CMD is set, then re-invoke the install after
+	# gaining root credentials.
+	#
+	_pb_install_id=`id -u`
+	if [ -z "${PECAN_SUDO_CMD}" -o ${_pb_install_id} -eq 0 ]; then
+		pecan_action_generator install
+	else
+		${PECAN_SUDO_CMD} $0 install
 	fi
-done
-
-# Ensure all *_vars() functions are run when ``pecan.subr'' is loaded.
-# This sets variables that may be used within the ``pecan.sh'' scripts.
-#
-pecan_vars
+}

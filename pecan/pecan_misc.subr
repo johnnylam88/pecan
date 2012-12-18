@@ -1,0 +1,93 @@
+# Copyright (c) 2012, Johnny C. Lam
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#########
+# clean #
+#########
+
+pecan_action_registry="${pecan_action_registry} clean"
+
+pecan_clean_default()
+{
+	rm -fr ${pecan_workdir}
+}
+
+pecan_do_clean()
+{
+	pecan_action_generator clean
+}
+
+#########
+# debug #
+#########
+
+pecan_action_registry="${pecan_action_registry} debug"
+
+pecan_do_debug()
+{
+	echo "pecan_build_version: ${pecan_build_version}"
+	echo "pecan_action_registry: ${pecan_action_registry}"
+	echo "PECAN_PLATFORM: ${PECAN_PLATFORM}"
+	echo "PECAN_PKGNAME: ${PECAN_PKGNAME}"
+	echo "PECAN_TARGET: ${PECAN_TARGET}"
+	echo "PECAN_SOURCE: ${PECAN_SOURCE}"
+	echo "pecan_pkgname: ${pecan_pkgname}"
+	echo "pecan_swver: ${pecan_swver}"
+	echo "pecan_pkgver: ${pecan_pkgver}"
+	echo "pecan_topdir: ${pecan_topdir}"
+	echo "pecan_srcdir: ${pecan_srcdir}"
+	echo "pecan_cppflags: ${pecan_cppflags}"
+	echo "pecan_ldflags: ${pecan_ldflags}"
+	echo "PATH: ${PATH}"
+	echo "pecan_configure_style: ${pecan_configure_style}"
+	echo "pecan_build_style: ${pecan_build_style}"
+	echo "pecan_install_style: ${pecan_install_style}"
+	echo "pecan_install_args: ${pecan_install_args}"
+}
+
+########
+# info #
+########
+
+pecan_action_registry="${pecan_action_registry} info"
+
+pecan_do_info()
+{
+	echo "Name: ${PECAN_PKGNAME}"
+	echo "Description: ${pecan_description}"
+}
+
+########
+# lint #
+########
+
+pecan_action_registry="${pecan_action_registry} lint"
+
+pecan_do_lint()
+{
+	[ -n "${pecan_description}" ] ||
+		echo "$0: \`pecan_description' should be defined."
+}

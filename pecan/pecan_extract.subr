@@ -1,0 +1,141 @@
+# Copyright (c) 2012, Johnny C. Lam
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+###########
+# extract #
+###########
+
+pecan_action_registry="${pecan_action_registry} extract"
+
+pecan_extract_vars()
+{
+	pecan_extract_cookie="${pecan_workdir}/.extract_cookie"
+	pecan_extract_require="tools"
+
+	: ${PECAN_DISTDIR:=${pecan_topdir}}
+	: ${pecan_extract_suffix=.tar.gz}
+	: ${pecan_extract_file:=${pecan_pkgname}-${pecan_swver}${pecan_extract_suffix}}
+	: ${pecan_extract_subdir:=${pecan_extract_file%${pecan_extract_suffix}}}
+	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_subdir}}
+
+	if [ -n "${pecan_extract_file}" ]; then
+		pecan_extract_compression_format ${pecan_extract_file} _pb_extract_vars_cformat
+		pecan_extract_archive_format ${pecan_extract_file} _pb_extract_vars_aformat
+
+		case "${_pb_extract_vars_cformat}" in
+		bzip)		_pecan_tools_add_prereq build bzip2 ;;
+		compress|gzip)	_pecan_tools_add_prereq build gzip ;;
+		lzma|xz)	_pecan_tools_add_prereq build xz ;;
+		esac
+
+		case "${_pb_extract_vars_aformat}" in
+		tar)	_pecan_tools_add_prereq build tar ;;
+		esac
+	fi
+}
+
+pecan_extract_default()
+{
+	( cd "${pecan_workdir}" &&
+	  pecan_extract_file "${PECAN_DISTDIR}/${pecan_extract_file}" )
+}
+
+pecan_do_extract()
+{
+	pecan_action_generator extract
+}
+
+pecan_extract_compression_format()
+{
+	_pb_extract_cformat_distfile="$1"
+	_pb_extract_cformat_varname="$2"
+
+	case "${_pb_extract_cformat_distfile}" in
+	*.Z)				_pb_extract_cformat_fmt=compress ;;
+	*.bz2|*.tbz|*.tbz2|*.bz)	_pb_extract_cformat_fmt=bzip ;;
+	*.gz|*.tgz|*.z)			_pb_extract_cformat_fmt=gzip ;;
+	*.lzma)				_pb_extract_cformat_fmt=lzma ;;
+	*.xz)				_pb_extract_cformat_fmt=xz ;;
+	*)				_pb_extract_cformat_fmt=none ;;
+	esac
+
+	[ -z "${_pb_extract_cformat_varname}" ] || \
+		eval ${_pb_extract_cformat_varname}=\"${_pb_extract_cformat_fmt}\"
+}
+
+pecan_extract_archive_format()
+{
+	_pb_extract_aformat_distfile="$1"
+	_pb_extract_aformat_varname="$2"
+
+	case "${_pb_extract_aformat_distfile}" in
+	*.tar|*.tar.*|*.t[bg]z|*-tar.*|*_tar.*)	_pb_extract_aformat_fmt=tar ;;
+	*.shar|*.shar.*|*.shr|*.shr.*)		_pb_extract_aformat_fmt=shar ;;
+	*.Z|*.bz|*.bz2|*.gz|*.z)		_pb_extract_aformat_fmt=compressed ;;
+	*)					_pb_extract_aformat_fmt=none ;;
+	esac
+
+	[ -z "${_pb_extract_aformat_varname}" ] || \
+		eval ${_pb_extract_aformat_varname}=\"${_pb_extract_aformat_fmt}\"
+}
+
+pecan_extract_file()
+{
+	_pb_extract_distfile="$1"
+
+	pecan_extract_compression_format "${_pb_extract_distfile}" _pb_extract_cformat
+	pecan_extract_archive_format "${_pb_extract_distfile}" _pb_extract_format
+
+	case "${_pb_extract_cformat}" in
+	compress|gzip)	_pb_extract_zcat="gzip -cd" ;;
+	bzip)		_pb_extract_zcat="bzcat" ;;
+	lzma)		_pb_extract_zcat="lzcat" ;;
+	xz)		_pb_extract_zcat="xzcat" ;;
+	none)		_pb_extract_zcat="cat" ;;
+	esac
+
+	case "${_pb_extract_format}" in
+	compressed)
+		_pb_extract_target="${_pb_extract_distfile##*/}"
+		_pb_extract_target="${_pb_extract_target%.*}"
+		${_pb_extract_zcat} "${_pb_extract_distfile}" \
+			> "${_pb_extract_target}"
+		;;
+	none)
+		cp "${_pb_extract_distfile}" .
+		;;
+	shar)
+		${_pb_extract_zcat} "${_pb_extract_distfile}" | sh
+		;;
+	tar)
+		${_pb_extract_zcat} "${_pb_extract_distfile}" | tar -xf -
+		;;
+	*)
+		echo "$0: archive format \`${_pb_extract_format}' not recognized." 1>&2
+		return 1
+		;;
+	esac
+}

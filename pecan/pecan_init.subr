@@ -1,0 +1,79 @@
+# Copyright (c) 2012, Johnny C. Lam
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+########
+# init #
+########
+
+pecan_action_registry="${pecan_action_registry} init"
+
+pecan_init_vars()
+{
+	if [ -z "${PECAN_PKGNAME}" ]; then
+		echo "$0: \`PECAN_PKGNAME' must be set." 1>&2
+		return 1
+	fi
+
+	: ${PECAN_TARGET:=/usr/local}
+	: ${PECAN_SOURCE:=${PECAN_TARGET}/pecan}
+	: ${PECAN_PATH:=/bin:/sbin:/usr/bin:/usr/sbin}
+	: ${PECAN_SUDO_CMD=}
+	: ${PECAN_EPKG_CMD:=${PECAN_TARGET}/bin/epkg}
+
+	pecan_pkgspec_parse "${PECAN_PKGNAME}" _pb_init_pkgname \
+		_pb_init_version _pb_init_swver _pb_init_pkgver || return 1
+
+	: ${pecan_pkgname:=${_pb_init_pkgname}}
+	: ${pecan_swver:=${_pb_init_swver}}
+	: ${pecan_pkgver:=${_pb_init_pkgver}}
+
+	: ${pecan_topdir:=`pwd`}
+	: ${pecan_workdir:=${pecan_topdir}/work}
+	: ${pecan_tooldir:=${pecan_workdir}/.tools}
+
+	: ${pecan_pkgdir:=${PECAN_SOURCE}/${PECAN_PKGNAME}}
+	: ${pecan_infodir:=${pecan_pkgdir}/share/info}
+	: ${pecan_mandir:=${pecan_pkgdir}/share/man}
+	: ${pecan_etcdir:=${PECAN_TARGET}/etc}
+	: ${pecan_vardir:=${PECAN_TARGET}/var}
+
+	pecan_init_cookie="${pecan_workdir}/.init_cookie"
+	pecan_init_require=
+
+	# Restrict the PATH to avoid picking up extra programs
+	# during auto-configuration.
+	#
+	PATH="${pecan_tooldir}/bin:${PECAN_PATH}"; export PATH
+
+	# Force Bourne shell as the shell interpreter.
+	SHELL="/bin/sh"; export SHELL
+}
+
+pecan_do_init()
+{
+	[ -d "${pecan_workdir}" ] || mkdir -p "${pecan_workdir}"
+	pecan_action_generator init
+}

@@ -24,43 +24,41 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-pecan_build_version=2
+#########
+# build #
+#########
 
-if [ -f ./pecan/pecan.conf ]; then
-	. ./pecan/pecan.conf
-elif [ -f ../pecan/pecan.conf ]; then
-	. ../pecan/pecan.conf
-fi
+pecan_action_registry="${pecan_action_registry} build"
 
-# List of registered actions that can be given to pecan_main().
-pecan_action_registry=
+pecan_build_vars()
+{
+	pecan_build_cookie="${pecan_workdir}/.build_cookie"
+	pecan_build_require="configure"
 
-# Load the sub-scripts in the proper order.
-for _pb_script_file in		\
-	pecan_init.subr		\
-	pecan_prereq.subr	\
-	pecan_tools.subr	\
-	pecan_extract.subr	\
-	pecan_patch.subr	\
-	pecan_configure.subr	\
-	pecan_build.subr	\
-	pecan_test.subr		\
-	pecan_stage.subr	\
-	pecan_install.subr	\
-	pecan_encap.subr	\
-	pecan_misc.subr		\
-	pecan_lib.subr		\
-	pecan_main.subr
-do
-	_pb_script_file="pecan/${_pb_script_file}"
-	if [ -f ./${_pb_script_file} ]; then
-		. ./${_pb_script_file}
-	elif [ -f ../${_pb_script_file} ]; then
-		. ../${_pb_script_file}
-	fi
-done
+	: ${pecan_build_style=make}
 
-# Ensure all *_vars() functions are run when ``pecan.subr'' is loaded.
-# This sets variables that may be used within the ``pecan.sh'' scripts.
-#
-pecan_vars
+	# make
+	: ${pecan_build_makefile:=Makefile}
+	: ${pecan_build_target=}
+	: ${pecan_build_args=}
+}
+
+pecan_build_deferred_vars()
+{
+	case "${pecan_build_style}" in
+	make)	pecan_build_default=pecan_make_build_default ;;
+	*)	pecan_build_default= ;;
+	esac
+}
+
+pecan_make_build_default()
+{
+	( cd "${pecan_srcdir}" &&
+	  make -f "${pecan_build_makefile}" ${pecan_build_target} \
+		${pecan_build_args} )
+}
+
+pecan_do_build()
+{
+	pecan_action_generator build
+}

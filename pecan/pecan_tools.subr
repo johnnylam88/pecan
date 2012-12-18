@@ -1,0 +1,395 @@
+# Copyright (c) 2012, Johnny C. Lam
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#########
+# tools #
+#########
+
+pecan_action_registry="${pecan_action_registry} tools"
+pecan_tools_registry=
+
+pecan_tools_vars()
+{
+	pecan_tools_cookie="${pecan_workdir}/.tools_cookie"
+	pecan_tools_require="prereq"
+
+	for _pb_tools_buildtool in ${pecan_tools_build}; do
+		pecan_tools_prereq "${_pb_tools_buildtool}" _pb_tools_buildtool_prereq
+		if [ -n "${_pb_tools_buildtool_prereq}" ]; then
+			pecan_prereq_build="${pecan_prereq_build} ${_pb_tools_buildtool_prereq}"
+		fi
+	done
+	for _pb_tools_pkgtool in ${pecan_tools_pkg}; do
+		pecan_tools_prereq "${_pb_tools_pkgtool}" _pb_tools_pkgtool_prereq
+		if [ -n "${_pb_tools_pkgtool_prereq}" ]; then
+			pecan_prereq_pkg="${pecan_prereq_pkg} ${_pb_tools_pkgtool_prereq}"
+		fi
+	done
+
+	# Run the *_vars function for each tool that matches a prereq.
+
+	[ -z "${pecan_prereq_build}" ] || set -o noglob
+	[ -z "${pecan_prereq_pkg}" ] || set -o noglob
+	[ -z "${pecan_prereq_lib}" ] || set -o noglob
+
+	_pb_tools_cmp=
+	for _pb_tools_pkgspec in ${pecan_prereq_build} ${pecan_prereq_lib} ${pecan_prereq_pkg}; do
+		set +o noglob
+		if [ -z "${_pb_tools_cmp}" ]; then
+			_pb_tools_cmp="${_pb_tools_pkgspec}"
+			continue
+		fi
+		if pecan_pkgspec_match "${_pb_tools_cmp}" "${_pb_tools_pkgspec}" _pb_tools_match; then
+			pecan_pkgspec_parse "${_pb_tools_match}" _pb_tools_match_pkgname
+			for _pb_tools_tool in ${pecan_tools_registry}; do
+				eval _pb_tools_pkgname=\"\${pecan_tools_${_pb_tools_tool}_pkgname}\"
+				: ${_pb_tools_pkgname:=${_pb_tools_tool}}
+				if [ "${_pb_tools_pkgname}" = "${_pb_tools_match_pkgname}" ]; then
+					_pb_tools_vars="pecan_tools_${_pb_tools_tool}_vars"
+					if pecan_is_function_defined "${_pb_tools_vars}"; then
+						${_pb_tools_vars}
+					fi
+				fi
+			done
+		fi
+		_pb_tools_cmp=
+	done
+}
+
+pecan_tools_default()
+{
+	[ -d "${pecan_tooldir}/bin" ] || mkdir -p "${pecan_tooldir}/bin"
+
+	for _pb_tools_prereq_tool in ${pecan_tools_build} ${pecan_tools_pkg}; do
+		for _pb_tools_tool in ${pecan_tools_registry}; do
+			eval _pb_tools_toolname=\"\${pecan_tools_${_pb_tools_tool}_toolname}\"
+			: ${_pb_tools_toolname:=${_pb_tools_tool}}
+			if [ "${_pb_tools_toolname}" = "${_pb_tools_prereq_tool}" ]; then
+				eval _pb_tools_path=\"\${pecan_tools_${_pb_tools_tool}_path}\"
+				if [ -n "${_pb_tools_path}" ]; then
+					ln -s "${_pb_tools_path}" "${pecan_tooldir}/bin"
+				fi
+				break
+			fi
+		done
+	done
+
+	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
+		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
+		_pb_tools_pkgname="${_pb_tools_prereq#${pecan_prereq_dir}/}"
+		pecan_tools_link_bin "${_pb_tools_pkgname}"
+	done
+
+	for _pb_tools_tool in ${pecan_tools_registry}; do
+		_pb_tools_fn="pecan_tools_${_pb_tools_tool}"
+		if pecan_is_function_defined "${_pb_tools_fn}"; then
+			${_pb_tools_fn} || return 1
+		fi
+	done
+}
+
+pecan_do_tools()
+{
+	[ -d "${pecan_tooldir}" ] || mkdir -p "${pecan_tooldir}"
+	pecan_action_generator tools
+}
+
+###
+# pecan_tools_prereq tool varname
+#
+# Look up the prereq associated with the given tool and store it in the given variable.
+#
+pecan_tools_prereq()
+{
+	_pb_tools_prereq_tool="$1"
+	_pb_tools_prereq_varname="$2"
+
+	for _pb_tools_tool in ${pecan_tools_registry}; do
+		eval _pb_tools_toolname=\"\${pecan_tools_${_pb_tools_tool}_toolname}\"
+		: ${_pb_tools_toolname:=${_pb_tools_tool}}
+		if [ "${_pb_tools_toolname}" = "${_pb_tools_prereq_tool}" ]; then
+			eval _pb_tools_path=\"\${pecan_tools_${_pb_tools_tool}_path}\"
+			if [ -z "${_pb_tools_path}" ]; then
+				_pb_tools_prereq="pecan_tools_${_pb_tools_tool}_prereq"
+				eval "_pb_tools_prereq_value=\"\$${_pb_tools_prereq}\""
+			else
+				_pb_tools_prereq_value=
+			fi
+			break
+		fi
+	done
+	[ -z "${_pb_tools_prereq_varname}" ] ||
+		eval "${_pb_tools_prereq_varname}=\"${_pb_tools_prereq_value}\""
+}
+
+###
+# _pecan_tools_add_prereq type tool
+#
+# Internal function. Add the prereq of the named type for the given tool and run the
+# associated *_vars() function for that tool if it exists.
+#
+_pecan_tools_add_prereq()
+{
+	__pb_tools_prereq_type="$1"
+	__pb_tools_prereq_tool="$2"
+
+	# Add to the proper pecan_tools_* variable so it's found later by pecan_tools().
+	case "${__pb_tools_prereq_type}" in
+	build)	pecan_tools_build="${pecan_tools_build} ${__pb_tools_prereq_tool}" ;;
+	pkg)	pecan_tools_pkg="${pecan_tools_pkg} ${__pb_tools_prereq_tool}" ;;
+	esac
+
+	# Add to the proper pecan_prereq_* variable so it's found later by pecan_prereq().
+	pecan_tools_prereq "${__pb_tools_prereq_tool}" __pb_tools_prereq
+	if [ -n "${__pb_tools_prereq}" ]; then
+		case "${__pb_tools_prereq_type}" in
+		build)	pecan_prereq_build="${pecan_prereq_build} ${__pb_tools_prereq}" ;;
+		pkg)	pecan_prereq_pkg="${pecan_prereq_pkg} ${__pb_tools_prereq}" ;;
+		esac
+	fi
+
+	# Run the *_vars() function for the tool if it exists.
+	for __pb_tools_tool in ${pecan_tools_registry}; do
+		eval __pb_tools_toolname=\"\${pecan_tools_${__pb_tools_tool}_toolname}\"
+		: ${__pb_tools_toolname:=${__pb_tools_tool}}
+		if [ "${__pb_tools_toolname}" = "${__pb_tools_prereq_tool}" ]; then
+			__pb_tools_vars="pecan_tools_${__pb_tools_tool}_vars"
+			if pecan_is_function_defined "${__pb_tools_vars}"; then
+				${__pb_tools_vars}
+			fi
+			break
+		fi
+	done
+}
+
+###
+# tools: autoconf
+#
+pecan_tools_registry="${pecan_tools_registry} autoconf"
+
+pecan_tools_autoconf_vars()
+{
+	_pb_tools_ac_macrodir="${pecan_tooldir}/share/autoconf"
+	AC_MACRODIR="${_pb_tools_ac_macrodir}"; export AC_MACRODIR
+}
+
+pecan_tools_autoconf()
+{
+	[ -f "${pecan_prereq_dir}/autoconf" ] || return 0
+
+	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
+		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
+		_pb_tools_pkgname="${_pb_tools_prereq#${pecan_prereq_dir}/}"
+		pecan_prereq_pkgdir "${_pb_tools_pkgname}" _pb_tools_pkgdir
+		if [ -d "${_pb_tools_pkgdir}/share/autoconf" ]; then
+			[ -d "${_pb_tools_ac_macrodir}" ] || \
+				mkdir -p "${_pb_tools_ac_macrodir}"
+			[ -d "${_pb_tools_pkgdir}/share/autoconf" ] && \
+				pecan_lndir "${_pb_tools_pkgdir}/share/autoconf" \
+					"${_pb_tools_ac_macrodir}"
+		fi
+	done
+}
+
+###
+# tools: bash
+#
+pecan_tools_registry="${pecan_tools_registry} bash"
+pecan_tools_bash_prereq="* bash"
+
+pecan_tools_bash_vars()
+{
+	BASH="${PECAN_TARGET}/bin/bash"; export BASH
+}
+
+###
+# tools: bzip2
+#
+pecan_tools_registry="${pecan_tools_registry} bzip2"
+pecan_tools_bzip2_prereq="* bzip2"
+
+###
+# tools: getopt
+#
+pecan_tools_registry="${pecan_tools_registry} getopt"
+
+pecan_tools_getopt_vars()
+{
+	GETOPT="${PECAN_TARGET}/bin/getopt"; export GETOPT
+}
+
+###
+# tools: gmake
+#
+pecan_tools_registry="${pecan_tools_registry} gmake"
+pecan_tools_gmake_prereq="* gmake"
+
+pecan_tools_gmake()
+{
+	if [ -x "${pecan_tooldir}/bin/gmake" ]; then
+		ln -s gmake "${pecan_tooldir}/bin/make"
+	fi
+}
+
+###
+# tools: gzip
+#
+pecan_tools_registry="${pecan_tools_registry} gzip"
+pecan_tools_gzip_prereq="* gzip"
+
+###
+# tools: id
+#
+pecan_tools_registry="${pecan_tools_registry} id"
+pecan_tools_id_prereq="* coreutils"
+
+###
+# tools: libtool
+#
+pecan_tools_registry="${pecan_tools_registry} libtool"
+pecan_tools_libtool_prereq=">= libtool-2.4.2"
+
+###
+# tools: m4
+#
+pecan_tools_registry="${pecan_tools_registry} m4"
+pecan_tools_m4_prereq=">= m4-1.4"
+
+pecan_tools_m4_vars()
+{
+	M4="${PECAN_TARGET}/bin/m4"; export M4
+}
+
+###
+# tools: msgfmt
+#
+pecan_tools_registry="${pecan_tools_registry} msgfmt"
+pecan_tools_msgfmt_prereq=">= gettext-tools-0.18.1"
+
+###
+# tools: patch
+#
+pecan_tools_registry="${pecan_tools_registry} patch"
+pecan_tools_patch_prereq="* patch"
+
+###
+# tools: pdksh
+#
+pecan_tools_registry="${pecan_tools_registry} pdksh"
+pecan_tools_pdksh_prereq="* pdksh"
+
+pecan_tools_pdksh_vars()
+{
+	# Use pdksh to replace Bourne shell as the shell interpreter.
+	case "${SHELL}" in
+	/bin/sh)
+		SHELL="${PECAN_TARGET}/bin/pdksh"; export SHELL
+		;;
+	esac
+}
+
+###
+# tools: perl
+#
+pecan_tools_registry="${pecan_tools_registry} perl"
+pecan_tools_perl_prereq=">= perl-5.8"
+
+pecan_tools_perl_vars()
+{
+	PERL="${PECAN_TARGET}/bin/perl"; export PERL
+	PERL5="${PECAN_TARGET}/bin/perl"; export PERL5
+}
+
+###
+# tools: pkg-config
+#
+pecan_tools_registry="${pecan_tools_registry} pkg_config"
+pecan_tools_pkg_config_pkgname="pkg-config"
+pecan_tools_pkg_config_prereq=">= pkg-config-0.27"
+
+pecan_tools_pkg_config()
+{
+	[ -f "${pecan_prereq_dir}/pkg-config" ] || return 0
+
+	# Replace symlink to pkg-config with a shell script that points
+	# to the right location to find the prereq *.pc files.
+	#
+	_pb_tools_pkg_config_libdir="${pecan_tooldir}/lib/pkgconfig"
+	pecan_prereq_pkgdir "${pecan_tools_pkg_config_pkgname}" \
+		_pb_tools_pkgdir
+	rm -f "${pecan_tooldir}/bin/pkg-config"
+	( echo "#!/bin/sh"
+	  echo "PKG_CONFIG_LIBDIR=\"${_pb_tools_pkg_config_libdir}\""
+	  echo "export PKG_CONFIG_LIBDIR"
+	  echo "exec \"${_pb_tools_pkgdir}/bin/pkg-config\" \"\$@\""
+	) > "${pecan_tooldir}/bin/pkg-config"
+	chmod +x "${pecan_tooldir}/bin/pkg-config"
+
+	for _pb_tools_prereq in ${pecan_prereq_dir}/*; do
+		[ "${_pb_tools_prereq}" != "${pecan_prereq_dir}/*" ] || break
+		_pb_tools_pkgname="${_pb_tools_prereq#${pecan_prereq_dir}/}"
+		pecan_prereq_pkgdir "${_pb_tools_pkgname}" _pb_tools_pkgdir
+		if [ -d "${_pb_tools_pkgdir}/lib/pkgconfig" ]; then
+			[ -d "${_pb_tools_pkg_config_libdir}" ] || \
+				mkdir -p "${_pb_tools_pkg_config_libdir}"
+			[ -d "${_pb_tools_pkgdir}/lib/pkgconfig" ] && \
+				pecan_lndir "${_pb_tools_pkgdir}/lib/pkgconfig" \
+					"${_pb_tools_pkg_config_libdir}"
+		fi
+	done
+}
+
+###
+# tools: sed
+#
+pecan_tools_registry="${pecan_tools_registry} sed"
+pecan_tools_sed_prereq="* sed"
+
+###
+# tools: tar
+#
+pecan_tools_registry="${pecan_tools_registry} tar"
+pecan_tools_tar_prereq="* tar"
+
+###
+# tools: xz
+#
+pecan_tools_registry="${pecan_tools_registry} xz"
+pecan_tools_xz_prereq="* xz"
+
+###
+# pecan_tools_link_bin pkgname
+#
+# Links the files under the pkgname's bin directory (if it exists)
+# into ${pecan_tooldir}/bin.
+#
+pecan_tools_link_bin()
+{
+	pecan_prereq_pkgdir "$1" _pb_tools_pkgdir || return 1
+	if [ -d "${_pb_tools_pkgdir}/bin" ]; then
+		pecan_lndir "${_pb_tools_pkgdir}/bin" "${pecan_tooldir}/bin"
+	fi
+}
