@@ -1,0 +1,203 @@
+#!/bin/sh
+
+###
+# BEGIN: pecan_pkg_script.tmpl
+###
+
+: ${ENCAP_PKGNAME="@ENCAP_PKGNAME@"}
+: ${ENCAP_SOURCE="@ENCAP_SOURCE@"}
+: ${ENCAP_TARGET="@ENCAP_TARGET@"}
+
+ENCAP_PKGDIR="${ENCAP_SOURCE}/${ENCAP_PKGNAME}"
+
+###
+# pecan_make_dir directory [mode [owner [group]]]
+#
+# Creates the named directory. If the directory is a relative path, then
+# it is created relative to ${ENCAP_TARGET}. If the optional parameters
+# mode, owner and group are also specified, then those permissions are
+# set on the directory.
+#
+pecan_make_dir()
+{
+	_pb_dir="$1"
+	_pb_dir_mode="$2"; _pb_dir_owner="$3"; _pb_dir_group="$4"
+
+	case "${_pb_dir}" in
+	/*)	;;
+	*)	_pb_dir="${ENCAP_TARGET}/${_pb_dir}" ;;
+	esac
+
+	if [ ! -d "${_pb_dir}" ]; then
+		echo "creating directory: ${_pb_dir}"
+		mkdir -p "${_pb_dir}"
+	fi
+	if [ -n "${_pb_dir_mode}" ]; then
+		echo "changing mode to ${_pb_dir_mode}: ${_pb_dir}"
+		chmod "${_pb_dir_mode}" "${_pb_dir}"
+	fi
+	if [ -n "${_pb_dir_owner}" ]; then
+		echo "changing owner to ${_pb_dir_owner}: ${_pb_dir}"
+		chown "${_pb_dir_owner}" "${_pb_dir}"
+	fi
+	if [ -n "${_pb_dir_group}" ]; then
+		echo "changing group to ${_pb_dir_group}: ${_pb_dir}"
+		chgrp "${_pb_dir_group}" "${_pb_dir}"
+	fi
+}
+
+###
+# pecan_copy_file source [mode [owner [group]]]
+#
+# Copies the source file specified by a relative path under ${ENCAP_PKGDIR}
+# into ${ENCAP_TARGET}. If the optional parameters mode, owner and group
+# are also specified, then those permissions are set on the target file.
+#
+pecan_copy_file()
+{
+	_pb_copy_src="$1"
+	_pb_copy_mode="$2"; _pb_copy_owner="$3"; _pb_copy_group="$4"
+
+	_pb_copy_dest="${ENCAP_TARGET}/${_pb_copy_src}"
+	_pb_copy_src="${ENCAP_PKGDIR}/${_pb_copy_src}"
+
+	if [ ! -f "${_pb_copy_dest}" ]; then
+		echo "installing: ${_pb_copy_dest}"
+		cp "${_pb_copy_src}" "${_pb_copy_dest}"
+	fi
+	if [ -n "${_pb_copy_mode}" ]; then
+		echo "changing mode to ${_pb_copy_mode}: ${_pb_copy_dest}"
+		chmod "${_pb_copy_mode}" "${_pb_copy_dest}"
+	fi
+	if [ -n "${_pb_copy_owner}" ]; then
+		echo "changing owner to ${_pb_copy_owner}: ${_pb_copy_dest}"
+		chown "${_pb_copy_owner}" "${_pb_copy_dest}"
+	fi
+	if [ -n "${_pb_copy_group}" ]; then
+		echo "changing group to ${_pb_copy_group}: ${_pb_copy_dest}"
+		chgrp "${_pb_copy_group}" "${_pb_copy_dest}"
+	fi
+}
+
+###
+# pecan_copy_file_with_subst source [mode [owner [group]]]
+#
+# Copies the source file specified by a relative path under ${ENCAP_PKGDIR}
+# into ${ENCAP_TARGET} with substitutions. If the source file ends in ".in",
+# then the suffix is stripped from the target file. If the optional
+# parameters mode, owner and group are also specified, then those
+# permissions are set on the target file.
+#
+pecan_copy_file_with_subst()
+{
+	_pb_copy_src="$1"
+	_pb_copy_mode="$2"; _pb_copy_owner="$3"; _pb_copy_group="$4"
+
+	_pb_copy_dest="${ENCAP_TARGET}/${_pb_copy_src}"
+	_pb_copy_dest="${_pb_copy_dest%.in}"
+	_pb_copy_src="${ENCAP_PKGDIR}/${_pb_copy_src}"
+
+	if [ ! -f "${_pb_copy_dest}" ]; then
+		echo "installing: ${_pb_copy_dest}"
+		sed -e "s,@ENCAP_PKGDIR@,${ENCAP_PKGDIR},g" \
+		    -e "s,@ENCAP_PKGNAME@,${ENCAP_PKGNAME},g" \
+		    -e "s,@ENCAP_SOURCE@,${ENCAP_SOURCE},g" \
+		    -e "s,@ENCAP_TARGET@,${ENCAP_TARGET},g" \
+			"${_pb_copy_src}" > "${_pb_copy_dest}"
+	fi
+	if [ -n "${_pb_copy_mode}" ]; then
+		echo "changing mode to ${_pb_copy_mode}: ${_pb_copy_dest}"
+		chmod "${_pb_copy_mode}" "${_pb_copy_dest}"
+	fi
+	if [ -n "${_pb_copy_owner}" ]; then
+		echo "changing owner to ${_pb_copy_owner}: ${_pb_copy_dest}"
+		chown "${_pb_copy_owner}" "${_pb_copy_dest}"
+	fi
+	if [ -n "${_pb_copy_group}" ]; then
+		echo "changing group to ${_pb_copy_group}: ${_pb_copy_dest}"
+		chgrp "${_pb_copy_group}" "${_pb_copy_dest}"
+	fi
+}
+
+###
+# pecan_group_exists group [groupid]
+#
+# Returns 0 if $group exists and has gid $groupid.
+# Returns 1 if neither $group nor $groupid exist.
+# Returns 2 if $group or $groupid exist but don't match.
+# Returns 3 for all other errors.
+#
+pecan_group_exists()
+{
+	_pb_group="$1"; _pb_groupid="$2"
+	[ -n "${_pb_group}" ] || return 3
+
+	_pb_tmpdir="${ENCAP_PKGDIR}/.pkg_script.$$"
+	mkdir -p "$_pb_tmpdir" 2>/dev/null || return 3
+	chmod 0700 "$_pb_tmpdir"
+	_pb_testpath="${_pb_tmpdir}/group_exists"
+	echo > "$_pb_testpath"
+
+	# Check using ``chgrp'' to work properly in an NSS/NIS environment.
+	if chgrp "$_pb_group" "$_pb_testpath" >/dev/null 2>&1; then
+		# $_pb_group exists
+		_pb_id=`ls -ln "$_pb_testpath" | ( read x x x id x; echo $id )`
+		[ -n "$_pb_groupid" ] || _pb_groupid="$_pb_id"
+		if [ "$_pb_groupid" = "$_pb_id" ]; then
+			rm -fr "$_pb_tmpdir"; return 0
+		fi
+		rm -fr "$_pb_tmpdir"; return 2
+	elif [ -z "$_pb_groupid" ]; then
+		# $_pb_group doesn't exist and $_pb_groupid is not set
+		rm -fr "$_pb_tmpdir"; return 1
+	elif chgrp "$_pb_groupid" "$_pb_testpath" >/dev/null 2>&1; then
+		# $_pb_group doesn't exist, but $_pb_groupid exists
+		rm -fr "$_pb_tmpdir"; return 2
+	fi
+	# neither $_pb_group nor $_pb_groupid exist
+	rm -fr "$_pb_tmpdir"; return 1
+}
+
+###
+# pecan_user_exists user [userid]
+#
+# Returns 0 if $user exists and has uid $userid.
+# Returns 1 if neither $user nor $userid exist.
+# Returns 2 if $user or $userid exist but don't match.
+# Returns 3 for all other errors.
+#
+pecan_user_exists()
+{
+	_pb_user="$1"; _pb_userid="$2"
+	[ -n "$_pb_user" ] || return 3
+
+	_pb_tmpdir="${ENCAP_PKGDIR}/.pkg_script.$$"
+	mkdir -p "$_pb_tmpdir" 2>/dev/null || return 3
+	chmod 0700 "$_pb_tmpdir"
+	_pb_testpath="${_pb_tmpdir}/user_exists"
+	echo > "$_pb_testpath"
+
+	# Check using ``chown'' to work properly in an NSS/NIS environment.
+	if chown "$_pb_user" "$_pb_testpath" >/dev/null 2>&1; then
+		# $_pb_user exists
+		_pb_id=`ls -ln "$_pb_testpath" | ( read x x id x; echo $id )`
+		[ -n "$_pb_userid" ] || _pb_userid="$_pb_id"
+		if [ "$_pb_userid" = "$_pb_id" ]; then
+			rm -fr "$_pb_tmpdir"; return 0
+		fi
+		rm -fr "$_pb_tmpdir"; return 2
+	elif [ -z "$_pb_userid" ]; then
+		# $_pb_user doesn't exist and $_pb_userid is not set
+		rm -fr "$_pb_tmpdir"; return 1
+	elif chown "$_pb_userid" "$_pb_testpath" >/dev/null 2>&1; then
+		# $_pb_user doesn't exist, but $_pb_userid exists
+		rm -fr "$_pb_tmpdir"; return 2
+	fi
+	# neither $_pb_user nor $_pb_userid exist
+	rm -fr "$_pb_tmpdir"; return 1
+}
+
+###
+# END: pecan_pkg_script.tmpl
+###
+

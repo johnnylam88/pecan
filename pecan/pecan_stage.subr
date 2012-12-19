@@ -43,6 +43,12 @@ pecan_stage_vars()
 	: ${pecan_description}
 	: ${pecan_date=`date '+%a %b %d %H:%M:%S %Z %Y'`}
 	: ${PECAN_CONTACT=`whoami`}
+
+	if [ -f ./pecan/pecan_pkg_script.tmpl ]; then
+		: ${pecan_pkg_script_template=./pecan/pecan_pkg_script.tmpl}
+	elif [ -f ../pecan/pecan_pkg_script.tmpl ]; then
+		: ${pecan_pkg_script_template=../pecan/pecan_pkg_script.tmpl}
+	fi
 }
 
 pecan_stage_default()
@@ -77,8 +83,11 @@ pecan_stage_default()
 	# preinstall, postinstall, preremove, postremove
 	for _pb_stage_script in preinstall postinstall preremove postremove; do
 		if [ -f "${pecan_topdir}/${_pb_stage_script}" ]; then
-			cp -f "${pecan_topdir}/${_pb_stage_script}" \
-				"${pecan_stagedir}/${_pb_stage_script}"
+			cat ${pecan_pkg_script_template} "${pecan_topdir}/${_pb_stage_script}" |
+			sed -e "s,@ENCAP_PKGNAME@,${PECAN_PKGNAME},g" \
+			    -e "s,@ENCAP_SOURCE@,${PECAN_SOURCE},g" \
+			    -e "s,@ENCAP_TARGET@,${PECAN_TARGET},g" \
+				> "${pecan_stagedir}/${_pb_stage_script}"
 			chmod +x "${pecan_stagedir}/${_pb_stage_script}"
 		fi
 	done
