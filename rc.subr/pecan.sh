@@ -2,7 +2,7 @@
 
 # This package tracks pkgsrc/pkgtools/rc.subr.
 
-PECAN_PKGNAME="rc.subr-20090118"
+PECAN_PKGNAME="rc.subr-20090118+1"
 
 pecan_description="Portable implementation of the NetBSD rc.d subsystem"
 
@@ -25,21 +25,23 @@ pecan_build=:
 
 pecan_post_stage()
 {
+	echo "exclude etc" >> "${pecan_stage_encapinfo}"
 	sed -e '1,/#[ 	]*$/d' -e '/^# rc.subr/,$d' \
 		"${pecan_srcdir}/rc.subr" > "${pecan_stagedir}/COPYRIGHT"
 }
 
-rc_subr_exampledir="${pecan_pkgdir}/share/examples/rc.subr"
-
 pecan_install()
 {
-	mkdir -p "${rc_subr_exampledir}"
+	mkdir -p "${pecan_pkgdir}/etc"
 	( cd "${pecan_srcdir}" &&
-	  cp rc.subr "${rc_subr_exampledir}" &&
-	  cp rc.conf.example "${rc_subr_exampledir}/rc.conf" )
+	  cp rc.subr "${pecan_pkgdir}/etc" &&
+	  cp rc.conf.example "${pecan_pkgdir}/etc/rc.conf" )
 
-	mkdir -p "${pecan_pkgdir}/share/examples/rc.d"
-	cp -R "${pecan_srcdir}/rc.d/"* "${pecan_pkgdir}/share/examples/rc.d"
+	mkdir -p "${pecan_pkgdir}/etc/rc.d"
+	cp -R "${pecan_srcdir}/rc.d/"* "${pecan_pkgdir}/etc/rc.d"
+
+	mkdir -p "${pecan_mandir}/man8"
+	cp "${pecan_srcdir}/rc.subr.8" "${pecan_mandir}/man8"
 }
 
 pecan_main "$@"

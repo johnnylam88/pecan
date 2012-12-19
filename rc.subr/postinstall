@@ -1,40 +1,9 @@
-#!/bin/sh
+pecan_make_dir etc
+pecan_copy_file etc/rc.conf
+pecan_copy_file etc/rc.subr
 
-rc_subr_exampledir="${ENCAP_SOURCE}/${ENCAP_PKGNAME}/share/examples/rc.subr"
-rc_d_exampledir="${ENCAP_SOURCE}/${ENCAP_PKGNAME}/share/examples/rc.d"
-
-if [ ! -d "${ENCAP_TARGET}/etc/rc.d" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/etc/rc.d"
-	mkdir -p "${ENCAP_TARGET}/etc/rc.d"
-fi
-
-if [ ! -f "${ENCAP_TARGET}/etc/rc.conf" ]; then
-	echo "installing: ${ENCAP_TARGET}/etc/rc.conf"
-	cp "${rc_subr_exampledir}/rc.conf" "${ENCAP_TARGET}/etc/rc.conf"
-fi
-
-if [ ! -f "${ENCAP_TARGET}/etc/rc.subr" ]; then
-	echo "installing: ${ENCAP_TARGET}/etc/rc.subr"
-	sed -e "s,@sysconfdir@,${ENCAP_TARGET}/etc,g" \
-		"${rc_subr_exampledir}/rc.subr" > "${ENCAP_TARGET}/etc/rc.subr"
-fi
-
-if [ ! -f "${ENCAP_TARGET}/etc/rc.d/DAEMON" ]; then
-	echo "installing: ${ENCAP_TARGET}/etc/rc.d/DAEMON"
-	cp "${rc_d_exampledir}/DAEMON" "${ENCAP_TARGET}/etc/rc.d/DAEMON"
-fi
-
-if [ ! -f "${ENCAP_TARGET}/etc/rc.d/LOGIN" ]; then
-	echo "installing: ${ENCAP_TARGET}/etc/rc.d/LOGIN"
-	cp "${rc_d_exampledir}/LOGIN" "${ENCAP_TARGET}/etc/rc.d/LOGIN"
-fi
-
-if [ ! -f "${ENCAP_TARGET}/etc/rc.d/NETWORKING" ]; then
-	echo "installing: ${ENCAP_TARGET}/etc/rc.d/NETWORKING"
-	cp "${rc_d_exampledir}/NETWORKING" "${ENCAP_TARGET}/etc/rc.d/NETWORKING"
-fi
-
-if [ ! -f "${ENCAP_TARGET}/etc/rc.d/SERVERS" ]; then
-	echo "installing: ${ENCAP_TARGET}/etc/rc.d/SERVERS"
-	cp "${rc_d_exampledir}/SERVERS" "${ENCAP_TARGET}/etc/rc.d/SERVERS"
-fi
+pecan_make_dir etc/rc.d
+pecan_copy_file etc/rc.d/DAEMON 0555
+pecan_copy_file etc/rc.d/LOGIN 0555
+pecan_copy_file etc/rc.d/NETWORKING 0555
+pecan_copy_file etc/rc.d/SERVERS 0555
