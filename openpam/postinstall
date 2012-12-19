@@ -1,11 +1,5 @@
-#!/bin/sh
+# PAM config directory; optionally used instead of pam.conf(5).
+pecan_make_dir etc/pam.d
 
-if [ ! -d "${ENCAP_TARGET}/etc/pam.d" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/etc/pam.d"
-	mkdir -p "${ENCAP_TARGET}/etc/pam.d"
-fi
-
-if [ ! -d "${ENCAP_TARGET}/lib/security" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/lib/security"
-	mkdir -p "${ENCAP_TARGET}/lib/security"
-fi
+# PAM module directory.
+pecan_make_dir lib/security

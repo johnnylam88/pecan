@@ -1,11 +1,5 @@
-#!/bin/sh
+# Cyrus SASL config directory.
+pecan_make_dir etc/sasl2
 
-if [ ! -d "${ENCAP_TARGET}/etc/sasl2" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/etc/sasl2"
-	mkdir -p "${ENCAP_TARGET}/etc/sasl2"
-fi
-
-if [ ! -d "${ENCAP_TARGET}/lib/sasl2" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/lib/sasl2"
-	mkdir -p "${ENCAP_TARGET}/lib/sasl2"
-fi
+# Cyrus SASL plugin directory.
+pecan_make_dir lib/sasl2

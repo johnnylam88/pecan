@@ -1,6 +1,2 @@
-#!/bin/sh
-
-if [ ! -d "${ENCAP_TARGET}/var/db" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/var/db"
-	mkdir -p "${ENCAP_TARGET}/var/db"
-fi
+# locate(1) database directory.
+pecan_make_dir var/db

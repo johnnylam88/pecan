@@ -1,40 +1,16 @@
-#!/bin/sh
+# OpenSSL config directory.
+pecan_make_dir etc/ssl
+pecan_make_dir etc/ssl/certs
+pecan_make_dir etc/ssl/misc
+pecan_make_dir etc/ssl/private
 
-openssl_pkgdir="${ENCAP_SOURCE}/${ENCAP_PKGNAME}"
+pecan_copy_file etc/ssl/openssl.cnf
 
-if [ ! -d "${ENCAP_TARGET}/etc/ssl" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/etc/ssl"
-	mkdir -p "${ENCAP_TARGET}/etc/ssl"
-fi
-
-if [ ! -d "${ENCAP_TARGET}/etc/ssl/certs" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/etc/ssl/certs"
-	mkdir -p "${ENCAP_TARGET}/etc/ssl/certs"
-fi
-
-if [ ! -d "${ENCAP_TARGET}/etc/ssl/misc" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/etc/ssl/misc"
-	mkdir -p "${ENCAP_TARGET}/etc/ssl/misc"
-fi
-
-if [ ! -d "${ENCAP_TARGET}/etc/ssl/private" ]; then
-	echo "creating directory: ${ENCAP_TARGET}/etc/ssl/private"
-	mkdir -p "${ENCAP_TARGET}/etc/ssl/private"
-fi
-
-if [ ! -f "${ENCAP_TARGET}/etc/ssl/openssl.cnf" ]; then
-	echo "installing: ${ENCAP_TARGET}/etc/ssl/openssl.cnf"
-	cp "${openssl_pkgdir}/etc/ssl/openssl.cnf" \
-		"${ENCAP_TARGET}/etc/ssl/openssl.cnf"
-fi
-
-for script in \
-	CA.pl CA.sh c_hash c_info c_issuer c_name tsget
-do
-	if [ ! -f "${ENCAP_TARGET}/etc/ssl/misc/$script" ]; then
-		echo "installing: ${ENCAP_TARGET}/etc/ssl/misc/$script"
-		cp "${openssl_pkgdir}/etc/ssl/misc/$script" \
-			"${ENCAP_TARGET}/etc/ssl/misc/$script"
-		chmod +x "${ENCAP_TARGET}/etc/ssl/misc/$script"
-	fi
-done
+# OpenSSL miscellaneous scripts for managing a CA.
+pecan_copy_file etc/ssl/misc/CA.pl 0555
+pecan_copy_file etc/ssl/misc/CA.sh 0555
+pecan_copy_file etc/ssl/misc/c_hash 0555
+pecan_copy_file etc/ssl/misc/c_info 0555
+pecan_copy_file etc/ssl/misc/c_issuer 0555
+pecan_copy_file etc/ssl/misc/c_name 0555
+pecan_copy_file etc/ssl/misc/tsget 0555
