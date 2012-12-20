@@ -24,7 +24,7 @@ fi
 
 # Rename some of Heimdal's applications with common names so they won't
 # conflict with other packages or with system applications.
-heimdal_transform='s/ftp/k&/;s/^login/k&/;s/^rcp/k&/;s/^rsh/k&/;s/^su/k&/;s/^telnet/k&/'
+heimdal_transform='s/^ftp/k&/;s/^login/k&/;s/^rcp/k&/;s/^rsh/k&/;s/^su/k&/;s/^telnet/k&/'
 
 configure_args="--program-transform-name=${heimdal_transform}"
 configure_args="${configure_args} --enable-hdb-openldap-module"
