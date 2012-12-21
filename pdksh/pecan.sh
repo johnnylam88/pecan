@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="pdksh-5.2.14"
+PECAN_PKGNAME="pdksh-5.2.14+1"
 
 pecan_description="Public Domain Korn Shell"
 
