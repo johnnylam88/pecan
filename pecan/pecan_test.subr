@@ -42,6 +42,8 @@ pecan_test_vars()
 
 pecan_test_deferred_vars()
 {
+	: ${pecan_test_srcdir=${pecan_build_srcdir}}
+
 	case "${pecan_test_style}" in
 	make)	pecan_test_default=pecan_make_test_default ;;
 	*)	pecan_test_default= ;;
@@ -53,7 +55,7 @@ pecan_test_deferred_vars()
 
 pecan_make_test_default()
 {
-	( cd "${pecan_srcdir}" &&
+	( cd "${pecan_test_srcdir}" &&
 	  make -f "${pecan_test_makefile}" ${pecan_test_target} )
 }
 

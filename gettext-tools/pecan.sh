@@ -19,17 +19,17 @@ else
 	exit 1
 fi
 
-pecan_srcdir="${pecan_workdir}/gettext-${pecan_swver}/${pecan_pkgname}"
 
 pecan_configure_style="gnu"
 pecan_configure_args="${pecan_configure_args} --disable-java"
 pecan_configure_args="${pecan_configure_args} --without-included-gettext"
+pecan_configure_srcdir="${pecan_srcdir}/${pecan_pkgname}"
 
 pecan_post_stage()
 {
 	echo "exclude lib/charset.alias" >> "${pecan_stage_encapinfo}"
 	echo "exclude share/info/dir" >> "${pecan_stage_encapinfo}"
-	cp "${pecan_srcdir}/../COPYING" "${pecan_stagedir}"
+	cp "${pecan_srcdir}/COPYING" "${pecan_stagedir}"
 }
 
 pecan_main "$@"

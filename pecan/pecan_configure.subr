@@ -45,6 +45,8 @@ pecan_configure_vars()
 
 pecan_configure_deferred_vars()
 {
+	: ${pecan_configure_srcdir:=${pecan_srcdir}}
+
 	case "${pecan_configure_style}" in
 	gnu)
 		pecan_configure_default="pecan_gnu_configure_default"
@@ -78,7 +80,7 @@ pecan_configure_deferred_vars()
 
 pecan_gnu_configure_default()
 {
-	( cd "${pecan_srcdir}" &&
+	( cd "${pecan_configure_srcdir}" &&
 	  ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
 	  CFLAGS="${pecan_cflags}" CPPFLAGS="${pecan_cppflags}" \
 	  LDFLAGS="${pecan_ldflags}" LIBS="${pecan_libs}" \

@@ -16,10 +16,9 @@ else
 	exit 1
 fi
 
-pecan_srcdir="${pecan_workdir}/gettext-${pecan_swver}/${pecan_pkgname}"
-
 pecan_configure_style="gnu"
 pecan_configure_args="${pecan_configure_args} --disable-java"
+pecan_configure_srcdir="${pecan_srcdir}/${pecan_pkgname}"
 
 pecan_post_stage()
 {

@@ -45,6 +45,8 @@ pecan_install_vars()
 
 pecan_install_deferred_vars()
 {
+	: ${pecan_install_srcdir=${pecan_build_srcdir}}
+
 	case "${pecan_install_style}" in
 	make)	pecan_install_default=pecan_make_install_default ;;
 	*)	pecan_install_default= ;;
@@ -56,7 +58,7 @@ pecan_install_deferred_vars()
 
 pecan_make_install_default()
 {
-	( cd "${pecan_srcdir}" &&
+	( cd "${pecan_install_srcdir}" &&
 	  make -f "${pecan_install_makefile}" ${pecan_install_target} \
 		${pecan_install_args} )
 }

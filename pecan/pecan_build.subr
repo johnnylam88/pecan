@@ -45,6 +45,8 @@ pecan_build_vars()
 
 pecan_build_deferred_vars()
 {
+	: ${pecan_build_srcdir=${pecan_configure_srcdir}}
+
 	case "${pecan_build_style}" in
 	make)	pecan_build_default=pecan_make_build_default ;;
 	*)	pecan_build_default= ;;
@@ -53,7 +55,7 @@ pecan_build_deferred_vars()
 
 pecan_make_build_default()
 {
-	( cd "${pecan_srcdir}" &&
+	( cd "${pecan_build_srcdir}" &&
 	  make -f "${pecan_build_makefile}" ${pecan_build_target} \
 		${pecan_build_args} )
 }
