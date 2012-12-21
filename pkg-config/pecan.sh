@@ -15,7 +15,8 @@ fi
 configure_args="--with-internal-glib"
 configure_args="${configure_args} --with-pc-path=${PECAN_TARGET}/lib/pkgconfig"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 pecan_post_stage()
 {

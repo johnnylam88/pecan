@@ -35,7 +35,8 @@ configure_args="${configure_args} --with-python=${PECAN_TARGET}/bin/python"
 configure_args="${configure_args} --with-shell=${PECAN_TARGET}/bin/bash"
 configure_args="${configure_args} --without-tcltk"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 pecan_post_stage()
 {

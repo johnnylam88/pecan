@@ -12,11 +12,12 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
 configure_args="${configure_args} --enable-utf8"
 configure_args="${configure_args} --enable-unicode-properties"
 configure_args="${configure_args} --enable-pcre16"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 pecan_test_style=make
 

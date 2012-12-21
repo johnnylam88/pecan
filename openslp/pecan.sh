@@ -14,7 +14,8 @@ else
 	exit 1
 fi
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --enable-slpv2-security"
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} --enable-slpv2-security"
 
 pecan_post_build()
 {

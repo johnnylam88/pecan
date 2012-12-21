@@ -17,6 +17,7 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
 pecan_test_style=make
 
 pecan_post_stage()

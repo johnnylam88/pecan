@@ -26,6 +26,8 @@ fi
 # conflict with other packages or with system applications.
 heimdal_transform='s/^ftp/k&/;s/^login/k&/;s/^rcp/k&/;s/^rsh/k&/;s/^su/k&/;s/^telnet/k&/'
 
+pecan_configure_style="gnu"
+
 configure_args="--program-transform-name=${heimdal_transform}"
 configure_args="${configure_args} --enable-hdb-openldap-module"
 configure_args="${configure_args} --enable-kcm"
@@ -55,7 +57,7 @@ pecan_pre_configure()
 
 	pecan_readline_hack
 
-	pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+	pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 	# Force building Heimdal's compile_et(1).
 	COMPILE_ET=no; export COMPILE_ET

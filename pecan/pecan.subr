@@ -24,7 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-pecan_build_version=2
+pecan_build_version=3
 
 if [ -f ./pecan/pecan.conf ]; then
 	. ./pecan/pecan.conf

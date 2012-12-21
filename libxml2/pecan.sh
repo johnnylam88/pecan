@@ -17,8 +17,9 @@ else
 fi
 
 # This library needs to be usable by non-threaded applications.
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --without-threads"
+pecan_configure_args="${pecan_configure_args} --without-threads"
 
+pecan_configure_style="gnu"
 pecan_test_style=make
 
 pecan_post_stage()

@@ -56,7 +56,8 @@ configure_args="${configure_args} --with-saslauthd=${pecan_vardir}/run/saslauthd
 configure_args="${configure_args} --with-plugindir=${pecan_pkgdir}/lib/sasl2"
 configure_args="${configure_args} --with-configdir=${pecan_etcdir}/sasl2"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 pecan_post_configure()
 {

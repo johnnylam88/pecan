@@ -17,6 +17,8 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
+
 pecan_pre_configure()
 {
 	# Add ${PECAN_TARGET}/share/autoconf to the m4 search path.

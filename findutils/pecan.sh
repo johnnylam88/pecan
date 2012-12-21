@@ -22,6 +22,7 @@ pecan_vardir="${PECAN_TARGET}/var/db"
 # updatedb(1) requires a working sort(1) from `coreutils'.
 SORT="${PECAN_TARGET}/bin/sort"; export SORT
 
+pecan_configure_style="gnu"
 pecan_test_style=make
 
 pecan_post_stage()

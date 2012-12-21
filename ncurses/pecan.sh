@@ -12,6 +12,7 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
 configure_args="${configure_args} --with-shared"
 configure_args="${configure_args} --with-termlib=termcap"
 configure_args="${configure_args} --without-debug"
@@ -21,7 +22,7 @@ configure_args="${configure_args} --enable-rpath"
 configure_args="${configure_args} --enable-pc-files"
 configure_args="${configure_args} --enable-bsdpad"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 pecan_post_stage()
 {

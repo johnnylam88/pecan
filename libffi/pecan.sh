@@ -12,6 +12,8 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
+
 pecan_post_stage()
 {
 	echo "exclude share/info/dir" >> "${pecan_stage_encapinfo}"

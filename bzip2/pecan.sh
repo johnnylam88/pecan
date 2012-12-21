@@ -17,6 +17,8 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
+
 pecan_pre_configure()
 {
 	( cd "${pecan_srcdir}" && sh ./autogen.sh )

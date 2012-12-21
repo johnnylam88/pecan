@@ -17,6 +17,8 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
+
 pecan_pre_build()
 {
 	# toutf8.c was patched to change only the implementation, so

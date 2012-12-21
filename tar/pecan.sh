@@ -29,7 +29,9 @@ pecan_cppflags="-I${pecan_tooldir}/include"
 configure_args="--disable-nls"
 configure_args="${configure_args} --without-libiconv-prefix"
 configure_args="${configure_args} --without-libintl-prefix"
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 pecan_test_style=make
 

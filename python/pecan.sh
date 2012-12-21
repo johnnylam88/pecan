@@ -33,10 +33,11 @@ pecan_ldflags="-L${pecan_srcdir} ${pecan_ldflags}"
 
 python_sitedir="lib/python2.7/site-packages"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --enable-shared"
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --with-system-expat"
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --with-system-ffi"
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --with-threads"
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} --enable-shared"
+pecan_configure_args="${pecan_configure_args} --with-system-expat"
+pecan_configure_args="${pecan_configure_args} --with-system-ffi"
+pecan_configure_args="${pecan_configure_args} --with-threads"
 
 pecan_test_style=make
 pecan_test_target=check

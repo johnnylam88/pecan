@@ -15,6 +15,8 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
+
 # gzip-1.2.4 has a very old GNU configure script.
 pecan_configure()
 {

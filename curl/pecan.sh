@@ -23,7 +23,8 @@ configure_args="${configure_args} --with-libidn"
 configure_args="${configure_args} --with-ssl"
 configure_args="${configure_args} --with-zlib"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 pecan_post_stage()
 {

@@ -19,6 +19,8 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
+
 # Don't build the slapd(8) server.
 configure_args="--disable-slapd"
 
@@ -27,7 +29,7 @@ configure_args="${configure_args} --with-threads"
 configure_args="${configure_args} --with-tls=openssl"
 configure_args="${configure_args} --without-fetch"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 pecan_post_stage()
 {

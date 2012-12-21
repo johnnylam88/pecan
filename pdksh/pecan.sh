@@ -12,8 +12,9 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
 configure_args="--program-transform-name='s/^ksh/pdksh/'"
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
 pecan_post_stage()
 {

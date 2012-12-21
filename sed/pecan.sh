@@ -15,8 +15,9 @@ fi
 # This sed package is used as a bootstrap for modifying files for
 # other packages, so remove dependencies on iconv and gettext.
 #
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --disable-nls"
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --disable-i18n"
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} --disable-nls"
+pecan_configure_args="${pecan_configure_args} --disable-i18n"
 
 pecan_test_style=make
 

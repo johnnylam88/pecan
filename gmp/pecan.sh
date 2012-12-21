@@ -14,6 +14,8 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
+
 pecan_pre_configure()
 {
 	# config.guess guesses incorrectly sometimes.

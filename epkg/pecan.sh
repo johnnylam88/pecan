@@ -22,9 +22,11 @@ fi
 configure_args="--with-encap-source=${PECAN_SOURCE}"
 configure_args="${configure_args} --with-encap-target=${PECAN_TARGET}"
 
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} ${configure_args}"
+
 install_args="docdir=${pecan_pkgdir}/share/doc"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} ${configure_args}"
 pecan_install_args="${pecan_install_args} ${install_args}"
 
 pecan_main "$@"

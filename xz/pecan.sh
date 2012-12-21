@@ -17,6 +17,8 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
+
 pecan_post_stage()
 {
 	cp "${pecan_srcdir}/COPYING" "${pecan_stagedir}"

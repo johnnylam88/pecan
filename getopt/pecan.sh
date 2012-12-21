@@ -23,8 +23,6 @@ pecan_post_extract()
 	rm "${pecan_srcdir}"/gnu/*.o
 }
 
-pecan_configure_style=
-
 make_args="prefix=${pecan_pkgdir} mandir=${pecan_mandir}"
 
 pecan_build()

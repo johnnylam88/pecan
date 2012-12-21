@@ -35,11 +35,11 @@ pecan_configure_vars()
 	pecan_configure_cookie="${pecan_workdir}/.configure_cookie"
 	pecan_configure_require="patch"
 
-	: ${pecan_configure_style=gnu}
+	: ${pecan_configure_style=}
 
 	# GNU configure
-	if [ -z "${pecan_gnu_configure_args}" ]; then
-		pecan_gnu_configure_args="--prefix=${pecan_pkgdir}"
+	if [ -z "${pecan_configure_args}" ]; then
+		pecan_configure_args="--prefix=${pecan_pkgdir}"
 	fi
 }
 
@@ -63,17 +63,17 @@ pecan_configure_deferred_vars()
 		;;
 	esac
 
-	# gnu configure
-	: ${pecan_gnu_configure_script:=./configure}
-	: ${pecan_gnu_configure_shell=${SHELL}}
+	# GNU configure
+	: ${pecan_configure_script:=./configure}
+	: ${pecan_configure_shell=${SHELL}}
 	[ -z "${pecan_etcdir}" ] || \
-		pecan_gnu_configure_args="${pecan_gnu_configure_args} --sysconfdir=${pecan_etcdir}"
+		pecan_configure_args="${pecan_configure_args} --sysconfdir=${pecan_etcdir}"
 	[ -z "${pecan_vardir}" ] || \
-		pecan_gnu_configure_args="${pecan_gnu_configure_args} --localstatedir=${pecan_vardir}"
+		pecan_configure_args="${pecan_configure_args} --localstatedir=${pecan_vardir}"
 	[ -z "${pecan_infodir}" ] || \
-		pecan_gnu_configure_args="${pecan_gnu_configure_args} --infodir=${pecan_infodir}"
+		pecan_configure_args="${pecan_configure_args} --infodir=${pecan_infodir}"
 	[ -z "${pecan_mandir}" ] || \
-		pecan_gnu_configure_args="${pecan_gnu_configure_args} --mandir=${pecan_mandir}"
+		pecan_configure_args="${pecan_configure_args} --mandir=${pecan_mandir}"
 }
 
 pecan_gnu_configure_default()
@@ -82,9 +82,9 @@ pecan_gnu_configure_default()
 	  ENCAP_SOURCE="${PECAN_SOURCE}" ENCAP_TARGET="${PECAN_TARGET}" \
 	  CFLAGS="${pecan_cflags}" CPPFLAGS="${pecan_cppflags}" \
 	  LDFLAGS="${pecan_ldflags}" LIBS="${pecan_libs}" \
-	  CONFIG_SHELL="${pecan_gnu_configure_shell}" \
-	  "${pecan_gnu_configure_shell}" "${pecan_gnu_configure_script}" \
-		${pecan_gnu_configure_args} )
+	  CONFIG_SHELL="${pecan_configure_shell}" \
+	  "${pecan_configure_shell}" "${pecan_configure_script}" \
+		${pecan_configure_args} )
 }
 
 pecan_do_configure()

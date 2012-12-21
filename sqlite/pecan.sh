@@ -19,6 +19,7 @@ fi
 
 pecan_cppflags="-DSQLITE_ENABLE_COLUMN_METADATA=1"
 
+pecan_configure_style="gnu"
 pecan_test_style=make
 pecan_test_style=test
 

@@ -16,7 +16,6 @@ fi
 
 python="${PECAN_TARGET}/bin/python"
 
-pecan_configure_style=
 pecan_build_style=
 pecan_install_style=
 

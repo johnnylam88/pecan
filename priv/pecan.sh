@@ -16,6 +16,8 @@ else
 	exit 1
 fi
 
+pecan_configure_style="gnu"
+
 pecan_post_configure()
 {
 	( cd "${pecan_srcdir}" &&

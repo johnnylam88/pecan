@@ -18,7 +18,8 @@ fi
 
 pecan_srcdir="${pecan_workdir}/gettext-${pecan_swver}/${pecan_pkgname}"
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --disable-java"
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} --disable-java"
 
 pecan_post_stage()
 {

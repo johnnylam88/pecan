@@ -19,7 +19,8 @@ else
 	exit 1
 fi
 
-pecan_gnu_configure_args="${pecan_gnu_configure_args} --program-prefix=g"
+pecan_configure_style="gnu"
+pecan_configure_args="${pecan_configure_args} --program-prefix=g"
 
 #pecan_test_style=make
 
