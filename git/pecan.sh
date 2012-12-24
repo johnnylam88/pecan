@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="git-1.8.0.1"
+PECAN_PKGNAME="git-1.8.0.1+1"
 
 pecan_description="The stupid content tracker"
 
@@ -10,7 +10,7 @@ pecan_prereq_lib="${pecan_prereq_lib} >= expat-2.1.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
-pecan_prereq_lib="${pecan_prereq_lib} >= pcre-5.8"
+pecan_prereq_lib="${pecan_prereq_lib} >= pcre-8.31"
 pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"
 pecan_prereq_pkg=">= python-2.7"
 
