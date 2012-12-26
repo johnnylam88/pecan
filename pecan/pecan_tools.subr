@@ -255,6 +255,12 @@ pecan_tools_gmake()
 }
 
 ###
+# tools: grep
+#
+pecan_tools_registry="${pecan_tools_registry} grep"
+pecan_tools_grep_prereq="* grep"
+
+###
 # tools: gzip
 #
 pecan_tools_registry="${pecan_tools_registry} gzip"
