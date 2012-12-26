@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="heimdal-1.5.2"
+PECAN_PKGNAME="heimdal-1.5.2+1"
 
 pecan_description="Heimdal Kerberos 5 implementation"
 
@@ -12,7 +12,7 @@ pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 pecan_prereq_lib="${pecan_prereq_lib} >= readline-6.2"
 pecan_prereq_lib="${pecan_prereq_lib} >= sqlite-3.7.14"
 
-pecan_tools_build="msgfmt pkg-config sed"
+pecan_tools_build="grep msgfmt pkg-config sed"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
@@ -76,6 +76,11 @@ pecan_pre_configure()
 		    -e '/_PATH_LOGIN/s,/login,/klogin,g' \
 			"$file.presed" > "$file"
 	  done )
+
+	# Only install the manpages that don't conflict with OpenSSL.
+	( cd "${pecan_srcdir}/doc/doxyout/hcrypto" &&
+	  mv manpages manpages.pregrep &&
+	  grep -e "/hcrypto_" -e "/page_" manpages.pregrep > manpages )
 }
 
 pecan_readline_hack()
