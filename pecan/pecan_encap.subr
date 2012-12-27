@@ -161,6 +161,10 @@ pecan_encap_install()
 				echo "    > ${_pb_encap_file}: excluding"
 				break
 				;;
+			${_pb_encap_exclude}/*)
+				_pb_encap_exclude_found=true
+				break
+				;;
 			esac
 		done
 		[ -z "${_pb_encap_exclude_found}" ] || continue
