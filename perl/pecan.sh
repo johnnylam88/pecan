@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="perl-5.16.2"
+PECAN_PKGNAME="perl-5.16.2+1"
 
 pecan_description="Perl 5 scripting language interpreter"
 

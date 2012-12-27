@@ -1,0 +1,12 @@
+# Determine the version and platform compiled into perl.
+perl5dir=`echo ${ENCAP_PKGDIR}/lib/perl5/*/*/CORE`
+perl5dir="${perl5dir%/CORE}"
+perl5dir="${perl5dir#${ENCAP_PKGDIR}/lib/perl5/}"
+perl5version="${perl5dir%/*}"
+perl5platform="${perl5dir#*/}"
+
+pecan_remove_dir lib/perl5/site_perl/${perl5version}/${perl5platform}
+pecan_remove_dir lib/perl5/site_perl/${perl5version}
+pecan_remove_dir lib/perl5/site_perl
+pecan_remove_dir lib/perl5
+pecan_remove_dir lib
