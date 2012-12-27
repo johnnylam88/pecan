@@ -1,14 +1,17 @@
+pecan_make_dir etc
 pecan_make_dir etc/gss
 
 # OpenLDAP schema for HDB backend.
+pecan_make_dir etc/openldap
 pecan_make_dir etc/openldap/schema
 pecan_copy_file etc/openldap/schema/hdb.schema
 
 # rc.d scripts for Heimdal services.
 pecan_make_dir etc/rc.d
-pecan_copy_file_with_subst etc/rc.d/kadmind.in 0555
-pecan_copy_file_with_subst etc/rc.d/kcm.in 0555
-pecan_copy_file_with_subst etc/rc.d/kdc.in 0555
-pecan_copy_file_with_subst etc/rc.d/kpasswdd.in 0555
+pecan_copy_file etc/rc.d/kadmind 0555
+pecan_copy_file etc/rc.d/kcm 0555
+pecan_copy_file etc/rc.d/kdc 0555
+pecan_copy_file etc/rc.d/kpasswdd 0555
 
+pecan_make_dir var
 pecan_make_dir var/heimdal 0700

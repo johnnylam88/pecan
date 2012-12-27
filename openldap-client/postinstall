@@ -1,2 +1,3 @@
+pecan_make_dir etc
 pecan_make_dir etc/openldap
 pecan_copy_file etc/openldap/ldap.conf

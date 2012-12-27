@@ -14,20 +14,30 @@ pecan_group_exists_test()
 	fi
 
 	mkdir -p "${ENCAP_PKGDIR}"
-	if pecan_group_exists wheel; then
-		echo "group \`\`wheel'' exists!"
+	retval=0
+
+	if ! pecan_group_exists wheel; then
+		echo "FAIL: \`\`wheel'' doesn't exist"
+		retval=1
 	fi
-	if pecan_group_exists wheel 0; then
-		echo "group \`\`wheel == 0'' exists!"
+	if ! pecan_group_exists wheel 0; then
+		echo "FAIL: \`\`wheel == 0'' doesn't exist"
+		retval=1
 	fi
-	if ! pecan_group_exists _nOnExIsTeNt_; then
-		echo "group \`\`_nOnExIsTeNt_'' does not exist"
+	if pecan_group_exists _nOnExIsTeNt_; then
+		echo "FAIL: \`\`_nOnExIsTeNt_'' exists"
+		retval=1
 	fi
-	if ! pecan_group_exists wheel 12345; then
-		echo "group \`\`wheel == 12345'' does not exist"
+	if pecan_group_exists wheel 12345; then
+		echo "FAIL: \`\`wheel == 12345'' exists"
+		retval=1
+	fi
+	if [ "${retval}" = 0 ]; then
+		echo "success"
 	fi
 
 	rm -fr "${ENCAP_TARGET}"
+	return ${retval}
 }
 
 pecan_group_exists_test

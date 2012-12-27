@@ -14,20 +14,30 @@ pecan_user_exists_test()
 	fi
 
 	mkdir -p "${ENCAP_PKGDIR}"
-	if pecan_user_exists root; then
-		echo "user \`\`root'' exists!"
+	retval=0
+
+	if ! pecan_user_exists root; then
+		echo "FAIL: \`\`root'' doesn't exist"
+		retval=1
 	fi
-	if pecan_user_exists root 0; then
-		echo "user \`\`root == 0'' exists!"
+	if ! pecan_user_exists root 0; then
+		echo "FAIL: \`\`root == 0'' doesn't exist"
+		retval=1
 	fi
-	if ! pecan_user_exists _nOnExIsTeNt_; then
-		echo "user \`\`_nOnExIsTeNt_'' does not exist"
+	if pecan_user_exists _nOnExIsTeNt_; then
+		echo "FAIL: \`\`_nOnExIsTeNt_'' exists"
+		retval=1
 	fi
-	if ! pecan_user_exists root 12345; then
-		echo "user \`\`root == 12345'' does not exist"
+	if pecan_user_exists root 12345; then
+		echo "FAIL: \`\`root == 12345'' exists"
+		retval=1
+	fi
+	if [ "${retval}" = 0 ]; then
+		echo "success"
 	fi
 
 	rm -fr "${ENCAP_TARGET}"
+	return ${retval}
 }
 
 pecan_user_exists_test

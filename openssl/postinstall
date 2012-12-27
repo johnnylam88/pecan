@@ -1,4 +1,5 @@
 # OpenSSL config directory.
+pecan_make_dir etc
 pecan_make_dir etc/ssl
 pecan_make_dir etc/ssl/certs
 pecan_make_dir etc/ssl/misc

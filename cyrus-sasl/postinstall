@@ -1,5 +1,7 @@
 # Cyrus SASL config directory.
+pecan_make_dir etc
 pecan_make_dir etc/sasl2
 
 # Cyrus SASL plugin directory.
+pecan_make_dir lib
 pecan_make_dir lib/sasl2

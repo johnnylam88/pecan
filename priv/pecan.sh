@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="priv-1.0beta2"
+PECAN_PKGNAME="priv-1.0beta2+1"
 
 pecan_description="Utility to execute commands as a different user"
 

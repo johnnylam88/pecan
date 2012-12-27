@@ -1,0 +1,3 @@
+pecan_remove_copied_file etc/openldap/ldap.conf
+pecan_remove_dir etc/openldap
+pecan_remove_dir etc

@@ -1,0 +1,3 @@
+# locate(1) database directory.
+pecan_remove_dir var/db
+pecan_remove_dir var

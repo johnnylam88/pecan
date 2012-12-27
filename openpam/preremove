@@ -1,0 +1,7 @@
+# PAM config directory; optionally used instead of pam.conf(5).
+pecan_remove_dir etc/pam.d
+pecan_remove_dir etc
+
+# PAM module directory.
+pecan_remove_dir lib/security
+pecan_remove_dir lib

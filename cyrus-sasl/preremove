@@ -1,0 +1,7 @@
+# Cyrus SASL config directory.
+pecan_remove_dir etc/sasl2
+pecan_remove_dir etc
+
+# Cyrus SASL plugin directory.
+pecan_remove_dir lib/sasl2
+pecan_remove_dir lib

@@ -1,0 +1,17 @@
+pecan_remove_dir etc/gss
+
+# OpenLDAP schema for HDB backend.
+pecan_remove_copied_file etc/openldap/schema/hdb.schema
+pecan_remove_dir etc/openldap/schema
+pecan_remove_dir etc/openldap
+
+# rc.d scripts for Heimdal services.
+pecan_remove_copied_file etc/rc.d/kadmind
+pecan_remove_copied_file etc/rc.d/kcm
+pecan_remove_copied_file etc/rc.d/kdc
+pecan_remove_copied_file etc/rc.d/kpasswdd
+pecan_remove_dir etc/rc.d
+pecan_remove_dir etc
+
+pecan_remove_dir var/heimdal
+pecan_remove_dir var

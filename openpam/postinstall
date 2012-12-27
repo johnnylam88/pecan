@@ -1,5 +1,7 @@
 # PAM config directory; optionally used instead of pam.conf(5).
+pecan_make_dir etc
 pecan_make_dir etc/pam.d
 
 # PAM module directory.
+pecan_make_dir lib
 pecan_make_dir lib/security

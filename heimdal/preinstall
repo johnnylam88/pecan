@@ -1,0 +1,5 @@
+# rc.d scripts for Heimdal services.
+pecan_subst_file etc/rc.d/kadmind.in
+pecan_subst_file etc/rc.d/kcm.in
+pecan_subst_file etc/rc.d/kdc.in
+pecan_subst_file etc/rc.d/kpasswdd.in

@@ -1,0 +1,9 @@
+pecan_remove_copied_file etc/rc.conf
+pecan_remove_copied_file etc/rc.subr
+
+pecan_remove_copied_file etc/rc.d/DAEMON
+pecan_remove_copied_file etc/rc.d/LOGIN
+pecan_remove_copied_file etc/rc.d/NETWORKING
+pecan_remove_copied_file etc/rc.d/SERVERS
+pecan_remove_dir etc/rc.d
+pecan_remove_dir etc

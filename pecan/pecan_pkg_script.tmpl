@@ -11,11 +11,41 @@
 ENCAP_PKGDIR="${ENCAP_SOURCE}/${ENCAP_PKGNAME}"
 
 ###
+# pecan_set_perms path mode [owner [group]]
+#
+# Sets the specified file mode and ownership on $path. If the path is
+# a relative path, then it is considered relative to ${ENCAP_PKGDIR}.
+#
+pecan_set_perms()
+{
+	_pb_path="$1"; _pb_path_mode="$2";
+	_pb_path_owner="$3"; _pb_path_group="$4"
+
+	case "${_pb_path}" in
+	/*)	;;
+	*)	_pb_path="${ENCAP_PKGDIR}/${_pb_path}" ;;
+	esac
+
+	if [ -n "${_pb_path_mode}" ]; then
+		echo "changing mode: ${_pb_path} [${_pb_path_mode}]"
+		chmod "${_pb_path_mode}" "${_pb_path}"
+	fi
+	if [ -n "${_pb_path_owner}" ]; then
+		echo "changing owner: ${_pb_path} [${_pb_path_owner}]"
+		chown "${_pb_path_owner}" "${_pb_path}"
+	fi
+	if [ -n "${_pb_path_group}" ]; then
+		echo "changing group: ${_pb_path} [${_pb_path_group}]"
+		chgrp "${_pb_path_group}" "${_pb_path}"
+	fi
+}
+
+###
 # pecan_make_dir directory [mode [owner [group]]]
 #
 # Creates the named directory. If the directory is a relative path, then
 # it is created relative to ${ENCAP_TARGET}. If the optional parameters
-# mode, owner and group are also specified, then those permissions are
+# $mode, $owner and $group are also specified, then those permissions are
 # set on the directory.
 #
 pecan_make_dir()
@@ -33,16 +63,38 @@ pecan_make_dir()
 		mkdir -p "${_pb_dir}"
 	fi
 	if [ -n "${_pb_dir_mode}" ]; then
-		echo "changing mode to ${_pb_dir_mode}: ${_pb_dir}"
-		chmod "${_pb_dir_mode}" "${_pb_dir}"
+		pecan_set_perms "${_pb_dir}" "${_pb_dir_mode}" \
+			"${_pb_dir_owner}" "${_pb_dir_group}"
 	fi
-	if [ -n "${_pb_dir_owner}" ]; then
-		echo "changing owner to ${_pb_dir_owner}: ${_pb_dir}"
-		chown "${_pb_dir_owner}" "${_pb_dir}"
-	fi
-	if [ -n "${_pb_dir_group}" ]; then
-		echo "changing group to ${_pb_dir_group}: ${_pb_dir}"
-		chgrp "${_pb_dir_group}" "${_pb_dir}"
+}
+
+###
+# pecan_subst_file source
+#
+# Copies the source file specified by a relative path under ${ENCAP_PKGDIR}
+# into the same path with substitutions. The source file must end in ".in",
+# and the suffix is stripped from the target file path.
+# 
+pecan_subst_file()
+{
+	_pb_subst_src="$1"
+
+	case "${_pb_subst_src}" in
+	*.in)	;;
+	*)	return 1 ;;
+	esac
+
+	_pb_subst_dest="${ENCAP_PKGDIR}/${_pb_subst_src}"
+	_pb_subst_dest="${_pb_subst_dest%.in}"
+	_pb_subst_src="${ENCAP_PKGDIR}/${_pb_subst_src}"
+
+	if [ ! -f "${_pb_subst_dest}" ]; then
+		echo "creating: ${_pb_subst_dest}"
+		sed -e "s,@ENCAP_PKGDIR@,${ENCAP_PKGDIR},g" \
+		    -e "s,@ENCAP_PKGNAME@,${ENCAP_PKGNAME},g" \
+		    -e "s,@ENCAP_SOURCE@,${ENCAP_SOURCE},g" \
+		    -e "s,@ENCAP_TARGET@,${ENCAP_TARGET},g" \
+			"${_pb_subst_src}" > "${_pb_subst_dest}"
 	fi
 }
 
@@ -50,7 +102,7 @@ pecan_make_dir()
 # pecan_copy_file source [mode [owner [group]]]
 #
 # Copies the source file specified by a relative path under ${ENCAP_PKGDIR}
-# into ${ENCAP_TARGET}. If the optional parameters mode, owner and group
+# into ${ENCAP_TARGET}. If the optional parameters $mode, $owner and $group
 # are also specified, then those permissions are set on the target file.
 #
 pecan_copy_file()
@@ -66,56 +118,60 @@ pecan_copy_file()
 		cp "${_pb_copy_src}" "${_pb_copy_dest}"
 	fi
 	if [ -n "${_pb_copy_mode}" ]; then
-		echo "changing mode to ${_pb_copy_mode}: ${_pb_copy_dest}"
-		chmod "${_pb_copy_mode}" "${_pb_copy_dest}"
-	fi
-	if [ -n "${_pb_copy_owner}" ]; then
-		echo "changing owner to ${_pb_copy_owner}: ${_pb_copy_dest}"
-		chown "${_pb_copy_owner}" "${_pb_copy_dest}"
-	fi
-	if [ -n "${_pb_copy_group}" ]; then
-		echo "changing group to ${_pb_copy_group}: ${_pb_copy_dest}"
-		chgrp "${_pb_copy_group}" "${_pb_copy_dest}"
+		pecan_set_perms "${_pb_copy_dest}" "${_pb_copy_mode}" \
+			"${_pb_copy_owner}" "${_pb_copy_group}"
 	fi
 }
 
 ###
-# pecan_copy_file_with_subst source [mode [owner [group]]]
+# pecan_remove_copied_file file
 #
-# Copies the source file specified by a relative path under ${ENCAP_PKGDIR}
-# into ${ENCAP_TARGET} with substitutions. If the source file ends in ".in",
-# then the suffix is stripped from the target file. If the optional
-# parameters mode, owner and group are also specified, then those
-# permissions are set on the target file.
+# Remove the file specified by a relative path under ${ENCAP_TARGET} if
+# the file also exists under ${ENCAP_PKGDIR} and the contents of the two
+# files match exactly. Always remove the relative path under ${ENCAP_PKGDIR}
+# if it exists.
 #
-pecan_copy_file_with_subst()
+pecan_remove_copied_file()
 {
-	_pb_copy_src="$1"
-	_pb_copy_mode="$2"; _pb_copy_owner="$3"; _pb_copy_group="$4"
+	_pb_remove_src="$1"
 
-	_pb_copy_dest="${ENCAP_TARGET}/${_pb_copy_src}"
-	_pb_copy_dest="${_pb_copy_dest%.in}"
-	_pb_copy_src="${ENCAP_PKGDIR}/${_pb_copy_src}"
+	_pb_remove_dest="${ENCAP_TARGET}/${_pb_remove_src}"
+	_pb_remove_src="${ENCAP_PKGDIR}/${_pb_remove_src}"
 
-	if [ ! -f "${_pb_copy_dest}" ]; then
-		echo "installing: ${_pb_copy_dest}"
-		sed -e "s,@ENCAP_PKGDIR@,${ENCAP_PKGDIR},g" \
-		    -e "s,@ENCAP_PKGNAME@,${ENCAP_PKGNAME},g" \
-		    -e "s,@ENCAP_SOURCE@,${ENCAP_SOURCE},g" \
-		    -e "s,@ENCAP_TARGET@,${ENCAP_TARGET},g" \
-			"${_pb_copy_src}" > "${_pb_copy_dest}"
+	if [ -f "${_pb_remove_src}" ]; then
+		if [ -f "${_pb_remove_dest}" ]; then
+			if cmp -s "${_pb_remove_src}" "${_pb_remove_dest}"; then
+				echo "removing: ${_pb_remove_dest}"
+				rm "${_pb_remove_dest}"
+			else
+				echo "changed: ${_pb_remove_dest}"
+			fi
+		fi
+		echo "removing: ${_pb_remove_src}"
+		rm "${_pb_remove_src}"
 	fi
-	if [ -n "${_pb_copy_mode}" ]; then
-		echo "changing mode to ${_pb_copy_mode}: ${_pb_copy_dest}"
-		chmod "${_pb_copy_mode}" "${_pb_copy_dest}"
-	fi
-	if [ -n "${_pb_copy_owner}" ]; then
-		echo "changing owner to ${_pb_copy_owner}: ${_pb_copy_dest}"
-		chown "${_pb_copy_owner}" "${_pb_copy_dest}"
-	fi
-	if [ -n "${_pb_copy_group}" ]; then
-		echo "changing group to ${_pb_copy_group}: ${_pb_copy_dest}"
-		chgrp "${_pb_copy_group}" "${_pb_copy_dest}"
+}
+
+###
+# pecan_remove_dir directory
+#
+# Removes the named directory if it is empty. If the directory is a relative
+# path, then it is considered relative to ${ENCAP_TARGET}.
+#
+pecan_remove_dir()
+{
+	_pb_remove_dir="$1"
+
+	case "${_pb_remove_dir}" in
+	/*)	;;
+	*)	_pb_remove_dir="${ENCAP_TARGET}/${_pb_remove_dir}" ;;
+	esac
+
+	if [ -d "${_pb_remove_dir}" ]; then
+		rmdir "${_pb_remove_dir}" 2>/dev/null || true
+		if [ ! -d "${_pb_remove_dir}" ]; then
+			echo "removed directory: ${_pb_remove_dir}"
+		fi
 	fi
 }
 

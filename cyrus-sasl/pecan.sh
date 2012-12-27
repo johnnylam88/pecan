@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="cyrus-sasl-2.1.26"
+PECAN_PKGNAME="cyrus-sasl-2.1.26+1"
 
 pecan_description="Cyrus Simple Authentication Security Layer (SASL) library"
 

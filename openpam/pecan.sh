@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="openpam-20120526"
+PECAN_PKGNAME="openpam-20120526+1"
 
 pecan_description="Pluggable authentication mechanism (PAM) library"
 

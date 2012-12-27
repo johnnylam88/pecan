@@ -1,2 +1,3 @@
 # locate(1) database directory.
+pecan_make_dir var
 pecan_make_dir var/db

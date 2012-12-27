@@ -1,0 +1,17 @@
+pecan_remove_copied_file etc/ssl/openssl.cnf
+
+# OpenSSL miscellaneous scripts for managing a CA.
+pecan_remove_copied_file etc/ssl/misc/CA.pl
+pecan_remove_copied_file etc/ssl/misc/CA.sh
+pecan_remove_copied_file etc/ssl/misc/c_hash
+pecan_remove_copied_file etc/ssl/misc/c_info
+pecan_remove_copied_file etc/ssl/misc/c_issuer
+pecan_remove_copied_file etc/ssl/misc/c_name
+pecan_remove_copied_file etc/ssl/misc/tsget
+
+# OpenSSL config directory.
+pecan_remove_dir etc/ssl/certs
+pecan_remove_dir etc/ssl/misc
+pecan_remove_dir etc/ssl/private
+pecan_remove_dir etc/ssl
+pecan_remove_dir etc

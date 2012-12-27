@@ -1,6 +1,7 @@
+pecan_make_dir etc
 pecan_copy_file etc/slp.conf
 pecan_copy_file etc/slp.reg
 pecan_copy_file etc/slp.spi
 
 pecan_make_dir etc/rc.d
-pecan_copy_file_with_subst etc/rc.d/slpd.in 0555
+pecan_copy_file etc/rc.d/slpd 0555
