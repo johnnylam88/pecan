@@ -115,7 +115,7 @@ pecan_copy_file()
 
 	if [ ! -f "${_pb_copy_dest}" ]; then
 		echo "installing: ${_pb_copy_dest}"
-		cp "${_pb_copy_src}" "${_pb_copy_dest}"
+		cp -f "${_pb_copy_src}" "${_pb_copy_dest}"
 	fi
 	if [ -n "${_pb_copy_mode}" ]; then
 		pecan_set_perms "${_pb_copy_dest}" "${_pb_copy_mode}" \
@@ -142,13 +142,13 @@ pecan_remove_copied_file()
 		if [ -f "${_pb_remove_dest}" ]; then
 			if cmp -s "${_pb_remove_src}" "${_pb_remove_dest}"; then
 				echo "removing: ${_pb_remove_dest}"
-				rm "${_pb_remove_dest}"
+				rm -f "${_pb_remove_dest}"
 			else
 				echo "changed: ${_pb_remove_dest}"
 			fi
 		fi
 		echo "removing: ${_pb_remove_src}"
-		rm "${_pb_remove_src}"
+		rm -f "${_pb_remove_src}"
 	fi
 }
 
