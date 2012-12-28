@@ -1,7 +1,7 @@
 #!/bin/sh
 
 openldap_version=2.4.33
-PECAN_PKGNAME="openldap-client-${openldap_version}+2"
+PECAN_PKGNAME="openldap-client-${openldap_version}+3"
 
 pecan_description="Lightweight Directory Access Protocol (LDAP) client & libraries"
 

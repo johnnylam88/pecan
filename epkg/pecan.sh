@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="epkg-2.3.9+4"
+PECAN_PKGNAME="epkg-2.3.9+5"
 
 pecan_description="Encap package manager"
 

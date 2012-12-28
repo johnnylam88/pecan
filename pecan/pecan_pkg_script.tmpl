@@ -128,8 +128,7 @@ pecan_copy_file()
 #
 # Remove the file specified by a relative path under ${ENCAP_TARGET} if
 # the file also exists under ${ENCAP_PKGDIR} and the contents of the two
-# files match exactly. Always remove the relative path under ${ENCAP_PKGDIR}
-# if it exists.
+# files match exactly.
 #
 pecan_remove_copied_file()
 {
@@ -138,17 +137,32 @@ pecan_remove_copied_file()
 	_pb_remove_dest="${ENCAP_TARGET}/${_pb_remove_src}"
 	_pb_remove_src="${ENCAP_PKGDIR}/${_pb_remove_src}"
 
-	if [ -f "${_pb_remove_src}" ]; then
-		if [ -f "${_pb_remove_dest}" ]; then
-			if cmp -s "${_pb_remove_src}" "${_pb_remove_dest}"; then
-				echo "removing: ${_pb_remove_dest}"
-				rm -f "${_pb_remove_dest}"
-			else
-				echo "changed: ${_pb_remove_dest}"
-			fi
+	if [ -f "${_pb_remove_src}" -a -f "${_pb_remove_dest}" ]; then
+		if cmp -s "${_pb_remove_src}" "${_pb_remove_dest}"; then
+			echo "removing: ${_pb_remove_dest}"
+			rm -f "${_pb_remove_dest}"
+		else
+			echo "changed: ${_pb_remove_dest}"
 		fi
-		echo "removing: ${_pb_remove_src}"
-		rm -f "${_pb_remove_src}"
+	fi
+}
+
+###
+# pecan_remove_subst_file file
+#
+# Remove the file specified by a relative path under ${ENCAP_PKGDIR} if
+# the same file ending in ".in" also exists.
+#
+pecan_remove_subst_file()
+{
+	_pb_remove_dest="$1"
+
+	_pb_remove_src="${ENCAP_PKGDIR}/${_pb_remove_dest}.in"
+	_pb_remove_dest="${ENCAP_PKGDIR}/${_pb_remove_dest}"
+
+	if [ -f "${_pb_remove_src}" -a -f "${_pb_remove_dest}" ]; then
+		echo "removing: ${_pb_remove_dest}"
+		rm -f "${_pb_remove_dest}"
 	fi
 }
 

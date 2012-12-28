@@ -2,7 +2,7 @@
 
 # This package tracks pkgsrc/pkgtools/rc.subr.
 
-PECAN_PKGNAME="rc.subr-20090118+2"
+PECAN_PKGNAME="rc.subr-20090118+3"
 
 pecan_description="Portable implementation of the NetBSD rc.d subsystem"
 

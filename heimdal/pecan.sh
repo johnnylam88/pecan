@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="heimdal-1.5.2+2"
+PECAN_PKGNAME="heimdal-1.5.2+3"
 
 pecan_description="Heimdal Kerberos 5 implementation"
 
@@ -107,6 +107,7 @@ pecan_test_style="make"
 
 pecan_post_stage()
 {
+	echo "exclude etc" >> "${pecan_stage_encapinfo}"
 	echo "exclude share/info/dir" >> "${pecan_stage_encapinfo}"
 	cp "${pecan_srcdir}/LICENSE" "${pecan_stagedir}"
 

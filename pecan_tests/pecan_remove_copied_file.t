@@ -33,16 +33,8 @@ pecan_remove_copied_file_test()
 		echo "FAIL: ${ENCAP_TARGET}/etc/file1 exists"
 		retval=1
 	fi
-	if [ -f "${ENCAP_PKGDIR}/etc/file1" ]; then 
-		echo "FAIL: ${ENCAP_PKGDIR}/etc/file1 exists"
-		retval=1
-	fi
 	if [ ! -f "${ENCAP_TARGET}/etc/file2" ]; then 
 		echo "FAIL: ${ENCAP_TARGET}/etc/file2 doesn't exist"
-		retval=1
-	fi
-	if [ -f "${ENCAP_PKGDIR}/etc/file2" ]; then 
-		echo "FAIL: ${ENCAP_PKGDIR}/etc/file2 exists"
 		retval=1
 	fi
 	if [ "${retval}" = 0 ]; then

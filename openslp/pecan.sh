@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="openslp-1.2.1+2"
+PECAN_PKGNAME="openslp-1.2.1+3"
 
 pecan_description="Service Location Protocol (SLP) client & libraries"
 

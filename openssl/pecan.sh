@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="openssl-1.0.1c+3"
+PECAN_PKGNAME="openssl-1.0.1c+4"
 
 pecan_description="SSLv2/v3 & TLSv1 protocol & cryptography library"
 
