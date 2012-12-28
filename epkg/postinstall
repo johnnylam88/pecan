@@ -1,0 +1,2 @@
+pecan_make_dir etc
+pecan_copy_file etc/mkencap_environment

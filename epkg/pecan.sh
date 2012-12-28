@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="epkg-2.3.9+3"
+PECAN_PKGNAME="epkg-2.3.9+4"
 
 pecan_description="Encap package manager"
 
@@ -19,14 +19,22 @@ else
 	exit 1
 fi
 
-configure_args="--with-encap-source=${PECAN_SOURCE}"
+configure_args="--disable-epkg-install"
+configure_args="${configure_args} --with-encap-source=${PECAN_SOURCE}"
 configure_args="${configure_args} --with-encap-target=${PECAN_TARGET}"
 
 pecan_configure_style="gnu"
 pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
-install_args="docdir=${pecan_pkgdir}/share/doc"
+pecan_post_stage()
+{
+	echo "exclude etc" >> "${pecan_stage_encapinfo}"
+	cp "${pecan_srcdir}/COPYRIGHT" "${pecan_stagedir}"
+	mkdir "${pecan_stagedir}/etc"
+	cp "${pecan_srcdir}/mkencap/mkencap_environment" "${pecan_stagedir}/etc"
+}
 
-pecan_install_args="${pecan_install_args} ${install_args}"
+pecan_install_target="install-recurse"
+pecan_install_args="${pecan_install_args} docdir=${pecan_pkgdir}/share/doc"
 
 pecan_main "$@"
