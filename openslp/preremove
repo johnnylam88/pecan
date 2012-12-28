@@ -5,3 +5,5 @@ pecan_remove_copied_file etc/slp.spi
 pecan_remove_copied_file etc/rc.d/slpd
 pecan_remove_dir etc/rc.d
 pecan_remove_dir etc
+
+pecan_remove_subst_file etc/rc.d/slpd

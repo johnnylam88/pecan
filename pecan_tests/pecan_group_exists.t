@@ -4,7 +4,7 @@ ENCAP_TARGET="`pwd`/.pecan"
 ENCAP_SOURCE="${ENCAP_TARGET}/pecan"
 ENCAP_PKGNAME="group_exists-0"
 
-. ../pecan/pecan_pkg_script.tmpl
+. ../pecan/pecan_pkg_script.subr
 
 pecan_group_exists_test()
 {

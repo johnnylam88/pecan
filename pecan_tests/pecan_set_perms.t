@@ -2,7 +2,7 @@
 
 ENCAP_TARGET="`pwd`/.pecan"
 
-. ../pecan/pecan_pkg_script.tmpl
+. ../pecan/pecan_pkg_script.subr
 
 pecan_set_perms_test()
 {

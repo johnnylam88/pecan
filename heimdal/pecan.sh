@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="heimdal-1.5.2+3"
+PECAN_PKGNAME="heimdal-1.5.2+4"
 
 pecan_description="Heimdal Kerberos 5 implementation"
 

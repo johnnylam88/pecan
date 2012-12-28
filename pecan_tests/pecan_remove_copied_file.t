@@ -4,7 +4,7 @@ ENCAP_TARGET="`pwd`/.pecan"
 ENCAP_SOURCE="${ENCAP_TARGET}/pecan"
 ENCAP_PKGNAME="remove_copied_file-0"
 
-. ../pecan/pecan_pkg_script.tmpl
+. ../pecan/pecan_pkg_script.subr
 
 pecan_remove_copied_file_helper()
 {
