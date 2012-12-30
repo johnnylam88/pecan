@@ -33,17 +33,20 @@ pecan_action_registry="${pecan_action_registry} extract"
 pecan_extract_vars()
 {
 	pecan_extract_cookie="${pecan_workdir}/.extract_cookie"
-	pecan_extract_require="tools"
+	pecan_extract_require="fetch"
 
-	: ${PECAN_DISTDIR:=${pecan_topdir}}
-	: ${pecan_extract_suffix=.tar.gz}
-	: ${pecan_extract_file:=${pecan_pkgname}-${pecan_swver}${pecan_extract_suffix}}
-	: ${pecan_extract_subdir:=${pecan_extract_file%${pecan_extract_suffix}}}
+	: ${pecan_extract_suffix=${pecan_fetch_suffix}}
+	: ${pecan_extract_file=${pecan_fetch_file}}
+
+	for _pb_extract_file in ${pecan_extract_file}; do
+		: ${pecan_extract_subdir:=${_pb_extract_file%${pecan_extract_suffix}}}
+	done
+
 	: ${pecan_srcdir:=${pecan_workdir}/${pecan_extract_subdir}}
 
-	if [ -n "${pecan_extract_file}" ]; then
-		pecan_extract_compression_format ${pecan_extract_file} _pb_extract_vars_cformat
-		pecan_extract_archive_format ${pecan_extract_file} _pb_extract_vars_aformat
+	for _pb_extract_file in ${pecan_extract_file}; do
+		pecan_extract_compression_format ${_pb_extract_file} _pb_extract_vars_cformat
+		pecan_extract_archive_format ${_pb_extract_file} _pb_extract_vars_aformat
 
 		case "${_pb_extract_vars_cformat}" in
 		bzip)		_pecan_tools_add_prereq build bzip2 ;;
@@ -54,13 +57,15 @@ pecan_extract_vars()
 		case "${_pb_extract_vars_aformat}" in
 		tar)	_pecan_tools_add_prereq build tar ;;
 		esac
-	fi
+	done
 }
 
 pecan_extract_default()
 {
 	( cd "${pecan_workdir}" &&
-	  pecan_extract_file "${PECAN_DISTDIR}/${pecan_extract_file}" )
+	  for _pb_extract_file in ${pecan_extract_file}; do
+	  	pecan_extract_file "${PECAN_DISTDIR}/${_pb_extract_file}"
+	  done )
 }
 
 pecan_do_extract()

@@ -1,0 +1,117 @@
+# Copyright (c) 2012, Johnny C. Lam
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#########
+# fetch #
+#########
+
+pecan_action_registry="${pecan_action_registry} fetch"
+
+pecan_fetch_vars()
+{
+	pecan_fetch_cookie="${pecan_workdir}/.fetch_cookie"
+	pecan_fetch_require="tools"
+
+	: ${PECAN_FETCH_CMD:=${PECAN_TARGET}/bin/curl}
+
+	: ${pecan_fetch_suffix=.tar.gz}
+	: ${pecan_fetch_file:=${pecan_pkgname}-${pecan_swver}${pecan_fetch_suffix}}
+	: ${pecan_fetch_url=}
+	: ${pecan_fetch_file_url=}
+}
+
+pecan_fetch_default()
+{
+	# Handle the complex case first since it supersedes the
+	# simple case if $pecan_fetch_file_url is set:
+	#	$pecan_fetch_file_url is a list of "file url" pairs.
+	#
+	# Handle the simple case next:
+	#	$pecan_fetch_file is a list of files to fetch.
+	#	$pecan_fetch_url is a list of URLs to fetch from.
+	#
+	( cd "${PECAN_DISTDIR}" &&
+	  _pb_fetch_file= &&
+	  for _pb_fetch_url in ${pecan_fetch_file_url}; do
+		if [ -z "${_pb_fetch_file}" ]; then
+			_pb_fetch_file="${_pb_fetch_url}"
+			continue
+		fi
+		[ ! -f ./${_pb_fetch_file} ] || continue
+		pecan_fetch_url "${_pb_fetch_file}" "${_pb_fetch_url}"
+		if [ ! -f ./${_pb_fetch_file} ]; then
+			pecan_errmsg "Please fetch ${_pb_fetch_file} into ${PECAN_DISTDIR}."
+			return 1
+		fi
+		_pb_fetch_file=
+	  done &&
+	  for _pb_fetch_file in ${pecan_fetch_file}; do
+		[ ! -f ./${_pb_fetch_file} ] || continue
+	  	for _pb_fetch_url in ${pecan_fetch_url}; do
+			if pecan_fetch_url "${_pb_fetch_file}" "${_pb_fetch_url}"; then
+				break
+			fi
+		done
+		if [ ! -f ./${_pb_fetch_file} ]; then
+			pecan_errmsg "Please fetch ${_pb_fetch_file} into ${PECAN_DISTDIR}."
+			return 1
+		fi
+	  done )
+}
+
+pecan_do_fetch()
+{
+	pecan_action_generator fetch
+}
+
+pecan_fetch_url()
+{
+	_pb_fetch_file="$1"
+	_pb_fetch_url="$2"
+
+	# Replace %FILE% in the URL with the filename.
+	case "${_pb_fetch_url}" in
+	*%FILE%*)
+		_pb_fetch_url_pre="${_pb_fetch_url%%\%FILE\%*}"
+		_pb_fetch_url_post="${_pb_fetch_url##*\%FILE\%}"
+		_pb_fetch_url="${_pb_fetch_url_pre}${_pb_fetch_file}${_pb_fetch_url_post}"
+		;;
+	esac
+
+	if [ -x "${PECAN_FETCH_CMD}" ]; then
+		case "${PECAN_FETCH_CMD}" in
+		*/curl|curl)
+			${PECAN_FETCH_CMD} -k -o ${_pb_fetch_file} ${_pb_fetch_url}
+			;;
+		*/nbftp|nbftp|*/ftp|ftp)
+			${PECAN_FETCH_CMD} -o ${_pb_fetch_file} ${_pb_fetch_url}
+			;;
+		esac
+	else
+		# Fall back to ftp(1).
+		ftp -o ${_pb_fetch_file} ${_pb_fetch_url}
+	fi
+}

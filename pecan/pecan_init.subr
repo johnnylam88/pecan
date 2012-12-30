@@ -54,6 +54,8 @@ pecan_init_vars()
 	: ${pecan_workdir:=${pecan_topdir}/work}
 	: ${pecan_tooldir:=${pecan_workdir}/.tools}
 
+	: ${PECAN_DISTDIR=${pecan_topdir}}
+
 	: ${pecan_pkgdir:=${PECAN_SOURCE}/${PECAN_PKGNAME}}
 	: ${pecan_infodir:=${pecan_pkgdir}/share/info}
 	: ${pecan_mandir:=${pecan_pkgdir}/share/man}

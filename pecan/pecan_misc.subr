@@ -40,6 +40,33 @@ pecan_do_clean()
 	pecan_action_generator clean
 }
 
+#############
+# distclean #
+#############
+
+pecan_action_registry="${pecan_action_registry} distclean"
+
+pecan_distclean_vars()
+{
+	pecan_distclean_require="clean"
+}
+
+pecan_distclean_default()
+{
+	( cd "${PECAN_DISTDIR}" &&
+	  for _pb_distclean_file in ${pecan_fetch_file}; do
+		if [ -f "./${_pb_distclean_file}" ]; then
+			pecan_msg "removing ${PECAN_DISTDIR}/${_pb_distclean_file}"
+			rm -f "./${_pb_distclean_file}"
+		fi
+	  done )
+}
+
+pecan_do_distclean()
+{
+	pecan_action_generator distclean
+}
+
 #########
 # debug #
 #########
@@ -59,6 +86,8 @@ pecan_do_debug()
 	echo "pecan_pkgver: ${pecan_pkgver}"
 	echo "pecan_topdir: ${pecan_topdir}"
 	echo "pecan_srcdir: ${pecan_srcdir}"
+	echo "pecan_fetch_file: ${pecan_fetch_file}"
+	echo "pecan_fetch_url: ${pecan_fetch_url}"
 	echo "pecan_cppflags: ${pecan_cppflags}"
 	echo "pecan_ldflags: ${pecan_ldflags}"
 	echo "PATH: ${PATH}"
