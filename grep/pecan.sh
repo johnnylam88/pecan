@@ -4,7 +4,8 @@ PECAN_PKGNAME="grep-2.14"
 
 pecan_description="GNU regular expression search utility"
 
-pecan_extract_suffix=".tar.xz"
+pecan_fetch_url="http://ftp.gnu.org/gnu/grep/%FILE%"
+pecan_fetch_suffix=".tar.xz"
 
 pecan_prereq_lib=">= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"

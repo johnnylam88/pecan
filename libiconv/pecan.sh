@@ -4,6 +4,8 @@ PECAN_PKGNAME="libiconv-1.14"
 
 pecan_description="GNU character set conversion library"
 
+pecan_fetch_url="http://ftp.gnu.org/gnu/libiconv/%FILE%"
+
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then

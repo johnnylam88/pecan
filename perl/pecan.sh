@@ -4,6 +4,8 @@ PECAN_PKGNAME="perl-5.16.2+1"
 
 pecan_description="Perl 5 scripting language interpreter"
 
+pecan_fetch_url="http://www.cpan.org/src/5.0/%FILE%"
+
 pecan_tools_build="sed"
 
 if [ -f ./pecan/pecan.subr ]; then

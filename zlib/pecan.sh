@@ -4,6 +4,8 @@ PECAN_PKGNAME="zlib-1.2.7"
 
 pecan_description="gzip-compatible compression library"
 
+pecan_fetch_url="http://zlib.net/%FILE%"
+
 pecan_tools_build="sed"
 
 if [ -f ./pecan/pecan.subr ]; then

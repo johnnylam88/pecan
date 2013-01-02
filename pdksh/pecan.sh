@@ -4,6 +4,12 @@ PECAN_PKGNAME="pdksh-5.2.14+1"
 
 pecan_description="Public Domain Korn Shell"
 
+pecan_fetch_url=`cat << EOF
+	ftp://ftp.cs.mun.ca/pub/pdksh/%FILE%
+	http://www.cs.mun.ca/~michael/pdksh/files/%FILE%
+EOF
+`
+
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then

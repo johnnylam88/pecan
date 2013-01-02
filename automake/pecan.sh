@@ -4,6 +4,8 @@ PECAN_PKGNAME="automake-1.12.5"
 
 pecan_description="GNU automatic Makefile.in generation"
 
+pecan_fetch_url="http://ftp.gnu.org/gnu/automake/%FILE%"
+
 pecan_prereq_pkg=">= autoconf-2.62"
 
 pecan_tools_build="perl sed"

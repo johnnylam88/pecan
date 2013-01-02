@@ -4,6 +4,8 @@ PECAN_PKGNAME="autoconf-2.69"
 
 pecan_description="GNU automatic source configuration system"
 
+pecan_fetch_url="http://ftp.gnu.org/gnu/autoconf/%FILE%"
+
 pecan_prereq_pkg=">= m4-1.4.16"
 
 pecan_tools_build="sed"

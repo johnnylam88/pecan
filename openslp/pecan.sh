@@ -4,6 +4,12 @@ PECAN_PKGNAME="openslp-1.2.1+4"
 
 pecan_description="Service Location Protocol (SLP) client & libraries"
 
+pecan_fetch_file_url=`cat << EOF
+	openslp-1.2.1.tar.gz
+	http://sourceforge.net/projects/openslp/files/OpenSLP/1.2.1/%FILE%/download
+EOF
+`
+
 pecan_prereq_lib=">= openssl-1.0.1c"
 
 if [ -f ./pecan/pecan.subr ]; then

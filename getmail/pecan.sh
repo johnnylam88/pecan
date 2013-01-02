@@ -4,6 +4,8 @@ PECAN_PKGNAME="getmail-4.35.0"
 
 pecan_description="Mail retriever from POP3/IMAP4 mailboxes"
 
+pecan_fetch_url="http://pyropus.ca/software/getmail/old-versions/%FILE%"
+
 pecan_prereq_pkg=">= python-2.6"
 
 if [ -f ./pecan/pecan.subr ]; then

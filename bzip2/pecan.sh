@@ -4,6 +4,8 @@ PECAN_PKGNAME="bzip2-1.0.6"
 
 pecan_description="Patent-free data compressor"
 
+pecan_fetch_url="http://www.bzip.org/1.0.6/%FILE%"
+
 pecan_prereq_build="* autoconf"
 pecan_prereq_build="${pecan_prereq_build} * automake"
 

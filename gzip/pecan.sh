@@ -4,8 +4,8 @@ PECAN_PKGNAME="gzip-1.2.4a+1"
 
 pecan_description="GNU compression program"
 
-pecan_extract_file="gzip-1.2.4a.shar"
-pecan_extract_suffix=".shar"
+pecan_fetch_url="http://ftp.gnu.org/gnu/gzip/%FILE%"
+pecan_fetch_suffix=".shar"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

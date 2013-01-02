@@ -4,8 +4,9 @@ PECAN_PKGNAME="tar-1.26+1"
 
 pecan_description="GNU tar archive program"
 
-pecan_extract_file="tar-1.26.shar.gz"
-pecan_extract_suffix=".shar.gz"
+pecan_fetch_file="tar-1.26.shar.gz"
+pecan_fetch_url="http://ftp.gnu.org/gnu/tar/%FILE%"
+pecan_fetch_suffix=".shar.gz"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

@@ -4,7 +4,8 @@ PECAN_PKGNAME="priv-1.0beta2+1"
 
 pecan_description="Utility to execute commands as a different user"
 
-pecan_extract_file="priv-1.0-beta2.tar.gz"
+pecan_fetch_file="priv-1.0-beta2.tar.gz"
+pecan_fetch_url="ftp://ftp.thistledown.com.au/pub/simonb/"
 
 pecan_tools_build="sed"
 

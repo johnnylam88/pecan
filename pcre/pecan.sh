@@ -4,6 +4,8 @@ PECAN_PKGNAME="pcre-8.31"
 
 pecan_description="Perl-compatible regular expression library"
 
+pecan_fetch_url="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/%FILE%"
+
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then

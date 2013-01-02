@@ -4,6 +4,8 @@ PECAN_PKGNAME="libxslt-1.1.27"
 
 pecan_description="XSLT C library"
 
+pecan_fetch_url="ftp://xmlsoft.org/libxml2/%FILE%"
+
 pecan_prereq_lib=">= libiconv-1.14"
 pecan_prereq_lib="${pecan_prereq_lib} >= libxml2-2.9.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= xz-5.0"

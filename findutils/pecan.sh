@@ -4,6 +4,8 @@ PECAN_PKGNAME="findutils-4.4.2+2"
 
 pecan_description="GNU find utilities for basic directory searches"
 
+pecan_fetch_url="http://ftp.gnu.org/gnu/findutils/%FILE%"
+
 pecan_prereq_lib=">= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
 pecan_prereq_pkg="* coreutils"

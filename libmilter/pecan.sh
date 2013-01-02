@@ -3,10 +3,12 @@
 sendmail_version=8.14.5
 PECAN_PKGNAME="libmilter-${sendmail_version}"
 
-pecan_extract_file="sendmail.${sendmail_version}.tar.gz"
-pecan_extract_subdir="sendmail-${sendmail_version}/libmilter"
-
 pecan_description="Sendmail mail filter API (milter)"
+
+pecan_fetch_file="sendmail.${sendmail_version}.tar.gz"
+pecan_fetch_url="ftp://ftp.sendmail.org/pub/sendmail/%FILE%"
+
+pecan_extract_subdir="sendmail-${sendmail_version}/libmilter"
 
 pecan_tools_build="libtool m4 sed"
 

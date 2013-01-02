@@ -4,9 +4,10 @@ PECAN_PKGNAME="gettext-runtime-0.18.1.1"
 
 pecan_description="GNU internationalization & localization library"
 
-pecan_prereq_lib=">= libiconv-1.14"
+pecan_fetch_file="gettext-0.18.1.1.tar.gz"
+pecan_fetch_url="http://ftp.gnu.org/gnu/gettext/%FILE%"
 
-pecan_extract_file="gettext-0.18.1.1.tar.gz"
+pecan_prereq_lib=">= libiconv-1.14"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

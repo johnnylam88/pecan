@@ -4,6 +4,8 @@ PECAN_PKGNAME="icbirc-1.8"
 
 pecan_description="Proxy IRC client and ICB server"
 
+pecan_fetch_url="http://www.benzedrine.cx/%FILE%"
+
 pecan_extract_subdir="icbirc"
 
 if [ -f ./pecan/pecan.subr ]; then

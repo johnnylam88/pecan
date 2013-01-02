@@ -4,6 +4,12 @@ PECAN_PKGNAME="openpam-20120526+1"
 
 pecan_description="Pluggable authentication mechanism (PAM) library"
 
+pecan_fetch_file_url=`cat << EOF
+	openpam-20120526.tar.gz
+	http://sourceforge.net/projects/openpam/files/openpam/Micrampelis/%FILE%/download
+EOF
+`
+
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then

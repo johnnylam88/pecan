@@ -4,6 +4,8 @@ PECAN_PKGNAME="heimdal-1.5.2+4"
 
 pecan_description="Heimdal Kerberos 5 implementation"
 
+pecan_fetch_url="http://www.h5l.org/dist/src/%FILE%"
+
 pecan_prereq_lib="${pecan_prereq_lib} >= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
 pecan_prereq_lib="${pecan_prereq_lib} >= ncurses-5.0"

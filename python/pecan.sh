@@ -4,8 +4,9 @@ PECAN_PKGNAME="python-2.7.3+1"
 
 pecan_description="Python 2.x scripting langauge interpreter"
 
-pecan_extract_file=Python-2.7.3.tgz
-pecan_extract_suffix=.tgz
+pecan_fetch_file=Python-2.7.3.tgz
+pecan_fetch_url="http://python.org/download/releases/2.7.3/%FILE%"
+pecan_fetch_suffix=.tgz
 
 pecan_prereq_lib=">= bzip2-1.0.6"
 pecan_prereq_lib="${pecan_prereq_lib} >= expat-2.1.0"

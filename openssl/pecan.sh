@@ -4,6 +4,8 @@ PECAN_PKGNAME="openssl-1.0.1c+4"
 
 pecan_description="SSLv2/v3 & TLSv1 protocol & cryptography library"
 
+pecan_fetch_url="http://openssl.org/source/%FILE%"
+
 pecan_prereq_lib=">= zlib-1.2.7"
 pecan_prereq_pkg=">= perl-5.005"
 

@@ -1,8 +1,14 @@
 #!/bin/sh
 
-PECAN_PKGNAME="git-1.8.0.1+1"
+git_version=1.8.0.1
+PECAN_PKGNAME="git-${git_version}+1"
 
 pecan_description="The stupid content tracker"
+
+pecan_fetch_file="git-${git_version}.tar.gz git-manpages-${git_version}.tar.gz"
+pecan_fetch_url="https://git-core.googlecode.com/files/%FILE%"
+
+pecan_extract_file="git-${git_version}.tar.gz"
 
 pecan_prereq_build=">= autoconf-2.62"
 pecan_prereq_lib=">= curl-7.28.0"

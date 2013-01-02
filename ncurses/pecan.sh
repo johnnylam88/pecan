@@ -4,6 +4,8 @@ PECAN_PKGNAME="ncurses-5.9"
 
 pecan_description="SVr4-compatible curses library"
 
+pecan_fetch_url="http://ftp.gnu.org/gnu/ncurses/%FILE%"
+
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then

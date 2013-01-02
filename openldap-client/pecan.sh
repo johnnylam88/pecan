@@ -5,11 +5,18 @@ PECAN_PKGNAME="openldap-client-${openldap_version}+3"
 
 pecan_description="Lightweight Directory Access Protocol (LDAP) client & libraries"
 
+pecan_fetch_file="openldap-${openldap_version}.tgz"
+pecan_fetch_suffix=".tgz"
+pecan_fetch_url=`cat << EOF
+	ftp://ftp.openldap.org/pub/OpenLDAP/openldap-release/%FILE%
+	ftp://gd.tuwien.ac.at/infosys/network/OpenLDAP/openldap-release/%FILE%
+	ftp://ftp.dti.ad.jp/pub/net/OpenLDAP/openldap-release/%FILE%
+	ftp://sunsite.cnlab-switch.ch/mirror/OpenLDAP/openldap-release/%FILE%
+EOF
+`
+
 pecan_prereq_lib=">= cyrus-sasl-2.1.26"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
-
-pecan_extract_file="openldap-${openldap_version}.tgz"
-pecan_extract_suffix=".tgz"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

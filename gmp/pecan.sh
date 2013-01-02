@@ -4,7 +4,8 @@ PECAN_PKGNAME="gmp-5.0.5"
 
 pecan_description="GNU multiple precision arithmetic library"
 
-pecan_extract_suffix=".tar.bz2"
+pecan_fetch_url="http://ftp.gnu.org/gnu/gmp/%FILE%"
+pecan_fetch_suffix=".tar.bz2"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

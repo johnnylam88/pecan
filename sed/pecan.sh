@@ -4,6 +4,8 @@ PECAN_PKGNAME="sed-4.2.1+1"
 
 pecan_description="GNU stream editor"
 
+pecan_fetch_url="http://ftp.gnu.org/gnu/sed/%FILE%"
+
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then

@@ -4,7 +4,8 @@ PECAN_PKGNAME="coreutils-8.20"
 
 pecan_description="GNU find utilities for basic directory searches"
 
-pecan_extract_suffix=".tar.xz"
+pecan_fetch_url="http://ftp.gnu.org/gnu/coreutils/%FILE%"
+pecan_fetch_suffix=".tar.xz"
 
 pecan_prereq_lib=">= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= gmp-5.0.5"

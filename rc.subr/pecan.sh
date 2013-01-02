@@ -14,6 +14,8 @@ else
 	exit 1
 fi
 
+pecan_fetch=:
+
 pecan_extract()
 {
 	mkdir -p "${pecan_srcdir}"

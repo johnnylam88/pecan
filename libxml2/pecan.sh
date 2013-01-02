@@ -4,6 +4,8 @@ PECAN_PKGNAME="libxml2-2.9.0"
 
 pecan_description="XML C parser library and toolkit"
 
+pecan_fetch_url="ftp://xmlsoft.org/libxml2/%FILE%"
+
 pecan_prereq_lib=">= libiconv-1.14"
 pecan_prereq_lib="${pecan_prereq_lib} >= xz-5.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"

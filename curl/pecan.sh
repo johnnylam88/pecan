@@ -4,6 +4,8 @@ PECAN_PKGNAME="curl-7.28.0+1"
 
 pecan_description="Command-line tool for transferring data with URL syntax"
 
+pecan_fetch_url="http://curl.haxx.se/download/%FILE%"
+
 pecan_prereq_lib=">= libidn-1.25"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.7"

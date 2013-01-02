@@ -4,6 +4,8 @@ PECAN_PKGNAME="epkg-2.3.9+5"
 
 pecan_description="Encap package manager"
 
+pecan_fetch_url="ftp://ftp.encap.org/pub/encap/epkg/%FILE%"
+
 pecan_prereq_lib=">= curl-7.28.0+1"
 pecan_prereq_lib="${pecan_prereq_lib} >= expat-2.1.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= libidn-1.25"

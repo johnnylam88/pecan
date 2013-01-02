@@ -4,6 +4,8 @@ PECAN_PKGNAME="m4-1.4.16"
 
 pecan_description="SVr4-compatible Unix macro processor"
 
+pecan_fetch_url="http://ftp.gnu.org/gnu/m4/%FILE%"
+
 pecan_prereq_lib=">= gettext-runtime-0.18.1"
 
 if [ -f ./pecan/pecan.subr ]; then

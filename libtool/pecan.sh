@@ -4,6 +4,8 @@ PECAN_PKGNAME="libtool-2.4.2"
 
 pecan_description="GNU tool for building, installing & using shared libraries"
 
+pecan_fetch_url="http://ftp.gnu.org/gnu/libtool/%FILE%"
+
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
 elif [ -f ../pecan/pecan.subr ]; then
