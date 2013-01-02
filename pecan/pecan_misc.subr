@@ -93,7 +93,12 @@ pecan_do_debug()
 	echo "PATH: ${PATH}"
 	echo "pecan_configure_style: ${pecan_configure_style}"
 	echo "pecan_build_style: ${pecan_build_style}"
+	echo "pecan_build_target: ${pecan_build_target}"
+	echo "pecan_build_args: ${pecan_build_args}"
+	echo "pecan_test_style: ${pecan_test_style}"
+	echo "pecan_test_target: ${pecan_test_target}"
 	echo "pecan_install_style: ${pecan_install_style}"
+	echo "pecan_install_target: ${pecan_install_target}"
 	echo "pecan_install_args: ${pecan_install_args}"
 }
 
