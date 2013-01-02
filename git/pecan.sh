@@ -1,7 +1,7 @@
 #!/bin/sh
 
-git_version=1.8.0.1
-PECAN_PKGNAME="git-${git_version}+1"
+git_version=1.8.1
+PECAN_PKGNAME="git-${git_version}"
 
 pecan_description="The stupid content tracker"
 
@@ -43,6 +43,9 @@ configure_args="${configure_args} --without-tcltk"
 
 pecan_configure_style="gnu"
 pecan_configure_args="${pecan_configure_args} ${configure_args}"
+
+pecan_test_style="make"
+pecan_test_target="test"
 
 pecan_post_stage()
 {
