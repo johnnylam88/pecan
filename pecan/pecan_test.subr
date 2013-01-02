@@ -34,7 +34,7 @@ pecan_test_vars()
 {
 	pecan_test_require="build"
 
-	: ${pecan_test_style}
+	: ${pecan_test_style=}
 
 	# make
 	: ${pecan_test_target:=check}
