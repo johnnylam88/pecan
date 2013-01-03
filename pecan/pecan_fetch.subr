@@ -38,7 +38,7 @@ pecan_fetch_vars()
 	: ${PECAN_FETCH_CMD:=${PECAN_TARGET}/bin/curl}
 
 	: ${pecan_fetch_suffix=.tar.gz}
-	: ${pecan_fetch_file:=${pecan_pkgname}-${pecan_swver}${pecan_fetch_suffix}}
+	: ${pecan_fetch_file=${pecan_pkgname}-${pecan_swver}${pecan_fetch_suffix}}
 	: ${pecan_fetch_url=}
 	: ${pecan_fetch_file_url=}
 }
