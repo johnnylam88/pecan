@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="readline-6.2"
+PECAN_PKGNAME="readline-6.2+1"
 
 pecan_description="GNU command-line editing library"
 
@@ -15,6 +15,9 @@ elif [ -f ../pecan/pecan.subr ]; then
 else
 	exit 1
 fi
+
+# Readline distribution patches say "apply with ``patch -p0''" in the header.
+pecan_patchdist_opts="-p0"
 
 pecan_configure_style="gnu"
 pecan_configure_args="${pecan_configure_args} --with-curses"

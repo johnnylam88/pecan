@@ -42,12 +42,17 @@ pecan_patchdist_vars()
 	done
 }
 
+pecan_patchdist_deferred_vars()
+{
+	: ${pecan_patchdist_opts=}
+}
+
 pecan_patchdist_default()
 {
 	( cd "${pecan_srcdir}" &&
 	  for _pb_patchdist_file in "${pecan_topdir}"/patchdist-*; do
 		[ "${_pb_patchdist_file}" != "${pecan_topdir}/patchdist-*" ] || break
-		patch < "${_pb_patchdist_file}"
+		patch ${pecan_patchdist_opts} < "${_pb_patchdist_file}"
 	  done )
 }
 
