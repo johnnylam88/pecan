@@ -54,6 +54,18 @@ pecan_distclean_vars()
 pecan_distclean_default()
 {
 	( cd "${PECAN_DISTDIR}" &&
+	  _pb_distclean_file= &&
+	  for _pb_distclean_url in ${pecan_fetch_file_url}; do
+		if [ -z "${_pb_distclean_file}" ]; then
+                        _pb_distclean_file="${_pb_distclean_url}"
+                        continue
+                fi
+		if [ -f "./${_pb_distclean_file}" ]; then
+			pecan_msg "removing ${PECAN_DISTDIR}/${_pb_distclean_file}"
+			rm -f "./${_pb_distclean_file}"
+		fi
+                _pb_distclean_file=
+          done &&
 	  for _pb_distclean_file in ${pecan_fetch_file}; do
 		if [ -f "./${_pb_distclean_file}" ]; then
 			pecan_msg "removing ${PECAN_DISTDIR}/${_pb_distclean_file}"
