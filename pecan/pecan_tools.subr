@@ -298,6 +298,12 @@ pecan_tools_registry="${pecan_tools_registry} libtool"
 pecan_tools_libtool_prereq=">= libtool-2.4.2"
 
 ###
+# tools: ls
+#
+pecan_tools_registry="${pecan_tools_registry} ls"
+pecan_tools_ls_prereq="* coreutils"
+
+###
 # tools: m4
 #
 pecan_tools_registry="${pecan_tools_registry} m4"
