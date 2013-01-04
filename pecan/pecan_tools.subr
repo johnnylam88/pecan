@@ -215,6 +215,19 @@ pecan_tools_autoconf()
 }
 
 ###
+# tools: awk
+#
+pecan_tools_registry="${pecan_tools_registry} awk"
+pecan_tools_awk_prereq="* gawk"
+
+pecan_tools_awk()
+{
+	if [ -x "${pecan_tooldir}/bin/gawk" ]; then
+		ln -s gawk "${pecan_tooldir}/bin/awk"
+	fi
+}
+
+###
 # tools: bash
 #
 pecan_tools_registry="${pecan_tools_registry} bash"
@@ -230,6 +243,12 @@ pecan_tools_bash_vars()
 #
 pecan_tools_registry="${pecan_tools_registry} bzip2"
 pecan_tools_bzip2_prereq="* bzip2"
+
+###
+# tools: gawk
+#
+pecan_tools_registry="${pecan_tools_registry} gawk"
+pecan_tools_awk_prereq="* gawk"
 
 ###
 # tools: getopt
