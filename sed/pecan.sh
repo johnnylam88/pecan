@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="sed-4.2.1+1"
+PECAN_PKGNAME="sed-4.2.2"
 
 pecan_description="GNU stream editor"
 
