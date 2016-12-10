@@ -1,10 +1,10 @@
 #!/bin/sh
 
-PECAN_PKGNAME="tar-1.26+1"
+PECAN_PKGNAME="tar-1.27.1"
 
 pecan_description="GNU tar archive program"
 
-pecan_fetch_file="tar-1.26.shar.gz"
+pecan_fetch_file="tar-1.27.1.shar.gz"
 pecan_fetch_url="http://ftp.gnu.org/gnu/tar/%FILE%"
 pecan_fetch_suffix=".shar.gz"
 
@@ -41,11 +41,6 @@ pecan_post_stage()
 	echo "exclude lib/charset.alias" >> "${pecan_stage_encapinfo}"
 	echo "exclude share/info/dir" >> "${pecan_stage_encapinfo}"
 	cp "${pecan_srcdir}/COPYING" "${pecan_stagedir}"
-}
-
-pecan_post_install()
-{
-	rmdir "${pecan_pkgdir}/sbin"
 }
 
 pecan_main "$@"
