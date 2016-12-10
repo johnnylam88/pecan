@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="patch-2.7.1"
+PECAN_PKGNAME="patch-2.7.5"
 
 pecan_description="GNU patch utility to apply diffs"
 
