@@ -88,7 +88,7 @@ pecan_tools_default()
 			eval _pb_tools_toolname=\"\${pecan_tools_${_pb_tools_tool}_toolname}\"
 			: ${_pb_tools_toolname:=${_pb_tools_tool}}
 			if [ "${_pb_tools_toolname}" = "${_pb_tools_prereq_tool}" ]; then
-				eval _pb_tools_path=\"\${pecan_tools_${_pb_tools_tool}_path}\"
+				eval _pb_tools_path=\"\${pecan_tools_${_pb_tools_tool}}\"
 				if [ -n "${_pb_tools_path}" ]; then
 					ln -s "${_pb_tools_path}" "${pecan_tooldir}/bin"
 				fi
@@ -131,7 +131,7 @@ pecan_tools_prereq()
 		eval _pb_tools_toolname=\"\${pecan_tools_${_pb_tools_tool}_toolname}\"
 		: ${_pb_tools_toolname:=${_pb_tools_tool}}
 		if [ "${_pb_tools_toolname}" = "${_pb_tools_prereq_tool}" ]; then
-			eval _pb_tools_path=\"\${pecan_tools_${_pb_tools_tool}_path}\"
+			eval _pb_tools_path=\"\${pecan_tools_${_pb_tools_tool}}\"
 			if [ -z "${_pb_tools_path}" ]; then
 				_pb_tools_prereq="pecan_tools_${_pb_tools_tool}_prereq"
 				eval "_pb_tools_prereq_value=\"\$${_pb_tools_prereq}\""
@@ -392,8 +392,8 @@ pecan_tools_sh_prereq="* pdksh"
 
 pecan_tools_sh_vars()
 {
-	case ${pecan_tools_sh_path} in
-	"")	SHELL=${pecan_tools_sh_path} ;;
+	case ${pecan_tools_sh} in
+	"")	SHELL=${pecan_tools_sh} ;;
 	*)	SHELL="${PECAN_TARGET}/bin/pdksh" ;;
 	esac
 	export SHELL

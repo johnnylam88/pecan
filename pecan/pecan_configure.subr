@@ -56,7 +56,7 @@ pecan_configure_deferred_vars()
 			;;
 		*)
 			# Require a Bourne shell for GNU configure.
-			[ -n "${pecan_tools_sh_path}" ] || _pecan_tools_add_prereq build sh
+			[ -n "${pecan_tools_sh}" ] || _pecan_tools_add_prereq build sh
 		esac
 		;;
 	*)
