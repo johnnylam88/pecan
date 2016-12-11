@@ -55,9 +55,8 @@ pecan_configure_deferred_vars()
 			: These are possible prereqs for pdksh.
 			;;
 		*)
-			# Use pdksh as the SHELL.
-			_pecan_tools_add_prereq build pdksh
-			;;
+			# Require a Bourne shell for GNU configure.
+			[ -n "${pecan_tools_sh_path}" ] || _pecan_tools_add_prereq build sh
 		esac
 		;;
 	*)

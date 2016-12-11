@@ -327,22 +327,6 @@ pecan_tools_registry="${pecan_tools_registry} patch"
 pecan_tools_patch_prereq="* patch"
 
 ###
-# tools: pdksh
-#
-pecan_tools_registry="${pecan_tools_registry} pdksh"
-pecan_tools_pdksh_prereq="* pdksh"
-
-pecan_tools_pdksh_vars()
-{
-	# Use pdksh to replace Bourne shell as the shell interpreter.
-	case "${SHELL}" in
-	/bin/sh)
-		SHELL="${PECAN_TARGET}/bin/pdksh"; export SHELL
-		;;
-	esac
-}
-
-###
 # tools: perl
 #
 pecan_tools_registry="${pecan_tools_registry} perl"
@@ -398,6 +382,22 @@ pecan_tools_pkg_config()
 #
 pecan_tools_registry="${pecan_tools_registry} sed"
 pecan_tools_sed_prereq="* sed"
+
+###
+# tools: sh
+#
+pecan_tools_registry="${pecan_tools_registry} sh"
+# Use pdksh as a Bourne shell replacement if none is specified.
+pecan_tools_sh_prereq="* pdksh"
+
+pecan_tools_sh_vars()
+{
+	case ${pecan_tools_sh_path} in
+	"")	SHELL=${pecan_tools_sh_path} ;;
+	*)	SHELL="${PECAN_TARGET}/bin/pdksh" ;;
+	esac
+	export SHELL
+}
 
 ###
 # tools: tar
