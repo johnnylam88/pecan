@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="zlib-1.2.7"
+PECAN_PKGNAME="zlib-1.2.8"
 
 pecan_description="gzip-compatible compression library"
 
