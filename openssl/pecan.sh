@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="openssl-1.0.1c+4"
+PECAN_PKGNAME="openssl-1.1.0c"
 
 pecan_description="SSLv2/v3 & TLSv1 protocol & cryptography library"
 
@@ -37,5 +37,6 @@ pecan_post_stage()
 
 pecan_install_args="OPENSSLDIR=${pecan_pkgdir}/etc/ssl"
 pecan_install_args="${pecan_install_args} MANDIR=${pecan_mandir}"
+pecan_install_args="${pecan_install_args} DOCDIR=${pecan_docdir}/openssl"
 
 pecan_main "$@"

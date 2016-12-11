@@ -2,11 +2,6 @@ pecan_remove_copied_file etc/ssl/openssl.cnf
 
 # OpenSSL miscellaneous scripts for managing a CA.
 pecan_remove_copied_file etc/ssl/misc/CA.pl
-pecan_remove_copied_file etc/ssl/misc/CA.sh
-pecan_remove_copied_file etc/ssl/misc/c_hash
-pecan_remove_copied_file etc/ssl/misc/c_info
-pecan_remove_copied_file etc/ssl/misc/c_issuer
-pecan_remove_copied_file etc/ssl/misc/c_name
 pecan_remove_copied_file etc/ssl/misc/tsget
 
 # OpenSSL config directory.

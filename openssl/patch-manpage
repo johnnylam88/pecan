@@ -1,65 +1,112 @@
 Prefix all manpages with "openssl_" where it would disambiguate the
 source of the manpage.
 
---- Makefile.org.orig	2012-04-22 09:25:19.000000000 -0400
-+++ Makefile.org	2012-12-18 16:04:05.000000000 -0500
-@@ -648,35 +648,53 @@
- 	set -e; for i in doc/apps/*.pod; do \
- 		fn=`basename $$i .pod`; \
- 		sec=`$(PERL) util/extract-section.pl 1 < $$i`; \
--		echo "installing man$$sec/$$fn.$${sec}$(MANSUFFIX)"; \
-+		case "$$fn" in \
-+		CA.pl|openssl) ofn="$$fn" ;; \
-+		*) ofn="openssl_$$fn" ;; \
+--- Configurations/unix-Makefile.tmpl.orig	2016-11-10 14:03:43.000000000 +0000
++++ Configurations/unix-Makefile.tmpl	2016-12-11 20:51:23.000000000 +0000
+@@ -567,27 +567,47 @@
+ 		SEC=`sed -ne 's/^=for  *comment  *openssl_manual_section: *\([0-9]\) *$$/\1/p' $$p`; \
+ 		[ -z "$$SEC" ] && SEC=$$defsec; \
+ 		fn=`basename $$p .pod`; \
++		case $$defsec in \
++		1)  case "$$fn" in \
++		    CA.pl|openssl) ofn="$$fn" ;; \
++		    *)             ofn="openssl_$$fn" ;; \
++		    esac ;; \
++		3)  case "$$fn" in \
++		    [A-Z]*|*_*) ofn="$$fn" ;; \
++		    *)          ofn="openssl_$$fn" ;; \
++		    esac ;; \
 +		esac; \
-+		echo "installing man$$sec/$$ofn.$${sec}$(MANSUFFIX)"; \
- 		(cd `$(PERL) util/dirname.pl $$i`; \
- 		sh -c "$$pod2man \
- 			--section=$$sec --center=OpenSSL \
- 			--release=$(VERSION) `basename $$i`") \
--			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$fn.$${sec}$(MANSUFFIX); \
-+			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$ofn.$${sec}$(MANSUFFIX); \
- 		$(PERL) util/extract-names.pl < $$i | \
- 			(grep -v $$filecase "^$$fn\$$"; true) | \
- 			(grep -v "[	]"; true) | \
- 			(cd $(INSTALL_PREFIX)$(MANDIR)/man$$sec/; \
- 			 while read n; do \
--				PLATFORM=$(PLATFORM) $$here/util/point.sh $$fn.$${sec}$(MANSUFFIX) "$$n".$${sec}$(MANSUFFIX); \
-+				case "$$n" in \
-+				CA.pl|openssl) on="$$fn" ;; \
-+				*) on="openssl_$$n" ;; \
-+				esac; \
-+				PLATFORM=$(PLATFORM) $$here/util/point.sh $$ofn.$${sec}$(MANSUFFIX) "$$on".$${sec}$(MANSUFFIX); \
- 			 done); \
- 	done; \
- 	set -e; for i in doc/crypto/*.pod doc/ssl/*.pod; do \
- 		fn=`basename $$i .pod`; \
- 		sec=`$(PERL) util/extract-section.pl 3 < $$i`; \
--		echo "installing man$$sec/$$fn.$${sec}$(MANSUFFIX)"; \
-+		case "$$fn" in \
-+		ui*) ofn="openssl_$$fn" ;; \
-+		[A-Z]*|*_*) ofn="$$fn" ;; \
-+		*) ofn="openssl_$$fn" ;; \
+ 		Name=$$fn; \
+ 		NAME=`echo $$fn | tr '[a-z]' '[A-Z]'`; \
+ 		suf=`eval "echo $$OUTSUFFIX"`; \
+ 		top=`eval "echo $$OUTTOP"`; \
+ 		$(PERL) $(SRCDIR)/util/mkdir-p.pl $$top/man$$SEC; \
+-		echo "install $$p -> $$top/man$$SEC/$$fn$$suf"; \
++		echo "install $$p -> $$top/man$$SEC/$$ofn$$suf"; \
+ 		cat $$p | eval "$$GENERATE" \
+-			>  $$top/man$$SEC/$$fn$$suf; \
++			>  $$top/man$$SEC/$$ofn$$suf; \
+ 		names=`cat $$p | $(EXTRACT_NAMES)`; \
+ 		( cd $$top/man$$SEC; \
+ 		  for n in $$names; do \
+-		      comp_n="$$n"; \
+-		      comp_fn="$$fn"; \
++		      case $$defsec in \
++		      1)  case "$$fn" in \
++			  CA.pl|openssl) on="$$n" ;; \
++			  *)             on="openssl_$$n" ;; \
++			  esac ;; \
++		      3)  case "$$fn" in \
++			  [A-Z]*|*_*) on="$$n" ;; \
++			  *)          on="openssl_$$n" ;; \
++			  esac ;; \
++		      esac; \
++		      comp_n="$$on"; \
++		      comp_fn="$$ofn"; \
+ 		      case "$(PLATFORM)" in DJGPP|Cygwin*|mingw*|darwin*-*-cc) \
+ 			  comp_n=`echo "$$n" | tr '[A-Z]' '[a-z]'`; \
+ 			  comp_fn=`echo "$$fn" | tr '[A-Z]' '[a-z]'`; \
+ 			  ;; \
+ 		      esac; \
+ 		      if [ "$$comp_n" != "$$comp_fn" ]; then \
+-			  echo "link $$top/man$$SEC/$$n$$suf -> $$top/man$$SEC/$$fn$$suf"; \
+-			  PLATFORM=$(PLATFORM) $$point $$fn$$suf $$n$$suf; \
++			  echo "link $$top/man$$SEC/$$on$$suf -> $$top/man$$SEC/$$ofn$$suf"; \
++			  PLATFORM=$(PLATFORM) $$point $$ofn$$suf $$on$$suf; \
+ 		      fi; \
+ 		  done ); \
+ 	    done; \
+@@ -602,22 +622,44 @@
+ 		SEC=`sed -ne 's/^=for  *comment  *openssl_manual_section: *\([0-9]\) *$$/\1/p' $$p`; \
+ 		[ -z "$$SEC" ] && SEC=$$defsec; \
+ 		fn=`basename $$p .pod`; \
++		case $$defsec in \
++		1)  case "$$fn" in \
++		    CA.pl|openssl)	ofn="$$fn" ;; \
++		    *)		ofn="openssl_$$fn" ;; \
++		    esac ;; \
++		3)  case "$$fn" in \
++		    ui*)	ofn="openssl_$$fn" ;; \
++		    [A-Z]*|*_*)	ofn="$$fn" ;; \
++		    *)		ofn="openssl_$$fn" ;; \
++		    esac ;; \
 +		esac; \
-+		echo "installing man$$sec/$$ofn.$${sec}$(MANSUFFIX)"; \
- 		(cd `$(PERL) util/dirname.pl $$i`; \
- 		sh -c "$$pod2man \
- 			--section=$$sec --center=OpenSSL \
- 			--release=$(VERSION) `basename $$i`") \
--			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$fn.$${sec}$(MANSUFFIX); \
-+			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$ofn.$${sec}$(MANSUFFIX); \
- 		$(PERL) util/extract-names.pl < $$i | \
- 			(grep -v $$filecase "^$$fn\$$"; true) | \
- 			(grep -v "[	]"; true) | \
- 			(cd $(INSTALL_PREFIX)$(MANDIR)/man$$sec/; \
- 			 while read n; do \
--				PLATFORM=$(PLATFORM) $$here/util/point.sh $$fn.$${sec}$(MANSUFFIX) "$$n".$${sec}$(MANSUFFIX); \
-+				case "$$n" in \
-+				ui*) on="openssl_$$n" ;; \
-+				[A-Z]*|*_*) on="$$n" ;; \
-+				*) on="openssl_$$n" ;; \
-+				esac; \
-+				PLATFORM=$(PLATFORM) $$here/util/point.sh $$ofn.$${sec}$(MANSUFFIX) "$$on".$${sec}$(MANSUFFIX); \
- 			 done); \
- 	done
- 
+ 		suf=`eval "echo $$OUTSUFFIX"`; \
+ 		top=`eval "echo $$OUTTOP"`; \
+-		echo "$(RM) $$top/man$$SEC/$$fn$$suf"; \
+-	        $(RM) $$top/man$$SEC/$$fn$$suf; \
++		echo "$(RM) $$top/man$$SEC/$$ofn$$suf"; \
++	        $(RM) $$top/man$$SEC/$$ofn$$suf; \
+ 		names=`cat $$p | $(EXTRACT_NAMES)`; \
+ 		for n in $$names; do \
+-		    comp_n="$$n"; \
+-		    comp_fn="$$fn"; \
++		    case $$defsec in \
++		    1)	case "$$fn" in \
++			CA.pl|openssl)	on="$$n" ;; \
++			*)		on="openssl_$$n" ;; \
++			esac ;; \
++		    3)	case "$$fn" in \
++			ui*)		on="openssl_$$n" ;; \
++			[A-Z]*|*_*)	on="$$n" ;; \
++			*)		on="openssl_$$n" ;; \
++			esac ;; \
++		    esac; \
++		    comp_n="$$on"; \
++		    comp_fn="$$ofn"; \
+ 		    case "$(PLATFORM)" in DJGPP|Cygwin*|mingw*|darwin*-*-cc) \
+-			comp_n=`echo "$$n" | tr '[A-Z]' '[a-z]'`; \
+-			comp_fn=`echo "$$fn" | tr '[A-Z]' '[a-z]'`; \
++			comp_n=`echo "$$on" | tr '[A-Z]' '[a-z]'`; \
++			comp_fn=`echo "$$ofn" | tr '[A-Z]' '[a-z]'`; \
+ 			;; \
+ 		    esac; \
+ 		    if [ "$$comp_n" != "$$comp_fn" ]; then \
+-			echo "$(RM) $$top/man$$SEC/$$n$$suf"; \
+-			$(RM) $$top/man$$SEC/$$n$$suf; \
++			echo "$(RM) $$top/man$$SEC/$$on$$suf"; \
++			$(RM) $$top/man$$SEC/$$on$$suf; \
+ 		    fi; \
+ 		done; \
+ 		( $(RMDIR) $$top/man$$SEC 2>/dev/null || exit 0 ); \

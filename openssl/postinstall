@@ -9,9 +9,4 @@ pecan_copy_file etc/ssl/openssl.cnf
 
 # OpenSSL miscellaneous scripts for managing a CA.
 pecan_copy_file etc/ssl/misc/CA.pl 0555
-pecan_copy_file etc/ssl/misc/CA.sh 0555
-pecan_copy_file etc/ssl/misc/c_hash 0555
-pecan_copy_file etc/ssl/misc/c_info 0555
-pecan_copy_file etc/ssl/misc/c_issuer 0555
-pecan_copy_file etc/ssl/misc/c_name 0555
 pecan_copy_file etc/ssl/misc/tsget 0555
