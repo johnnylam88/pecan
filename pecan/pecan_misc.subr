@@ -87,31 +87,36 @@ pecan_action_registry="${pecan_action_registry} debug"
 
 pecan_do_debug()
 {
-	echo "pecan_build_version: ${pecan_build_version}"
-	echo "pecan_action_registry: ${pecan_action_registry}"
-	echo "PECAN_PLATFORM: ${PECAN_PLATFORM}"
-	echo "PECAN_PKGNAME: ${PECAN_PKGNAME}"
-	echo "PECAN_TARGET: ${PECAN_TARGET}"
-	echo "PECAN_SOURCE: ${PECAN_SOURCE}"
-	echo "pecan_pkgname: ${pecan_pkgname}"
-	echo "pecan_swver: ${pecan_swver}"
-	echo "pecan_pkgver: ${pecan_pkgver}"
-	echo "pecan_topdir: ${pecan_topdir}"
-	echo "pecan_srcdir: ${pecan_srcdir}"
-	echo "pecan_fetch_file: ${pecan_fetch_file}"
-	echo "pecan_fetch_url: ${pecan_fetch_url}"
-	echo "pecan_cppflags: ${pecan_cppflags}"
-	echo "pecan_ldflags: ${pecan_ldflags}"
-	echo "PATH: ${PATH}"
-	echo "pecan_configure_style: ${pecan_configure_style}"
-	echo "pecan_build_style: ${pecan_build_style}"
-	echo "pecan_build_target: ${pecan_build_target}"
-	echo "pecan_build_args: ${pecan_build_args}"
-	echo "pecan_test_style: ${pecan_test_style}"
-	echo "pecan_test_target: ${pecan_test_target}"
-	echo "pecan_install_style: ${pecan_install_style}"
-	echo "pecan_install_target: ${pecan_install_target}"
-	echo "pecan_install_args: ${pecan_install_args}"
+	for varname in			\
+		PATH			\
+		PECAN_PKGNAME		\
+		PECAN_PLATFORM		\
+		PECAN_SOURCE		\
+		PECAN_TARGET		\
+		pecan_action_registry	\
+		pecan_build_style	\
+		pecan_build_target	\
+		pecan_build_version	\
+		pecan_configure_shell	\
+		pecan_configure_style	\
+		pecan_cppflags		\
+		pecan_fetch_file	\
+		pecan_fetch_url		\
+		pecan_install_args	\
+		pecan_install_style	\
+		pecan_install_target	\
+		pecan_ldflags		\
+		pecan_pkgname		\
+		pecan_pkgver		\
+		pecan_srcdir		\
+		pecan_swver		\
+		pecan_test_style	\
+		pecan_test_target	\
+		pecan_topdir		\
+
+	do
+		eval echo "${varname}: \$${varname}"
+	done
 }
 
 ########
