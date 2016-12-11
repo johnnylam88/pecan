@@ -1,7 +1,7 @@
-Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
+Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20161012.
 
---- Makefile.in.orig	1999-07-13 13:06:53.000000000 -0400
-+++ Makefile.in	2012-12-20 21:15:57.000000000 -0500
+--- Makefile.in.orig	1999-07-13 17:06:53.000000000 +0000
++++ Makefile.in	2016-12-10 23:48:09.000000000 +0000
 @@ -70,7 +70,9 @@
  	os2/emacs.out os2/kshrc.ksh os2/make.sed os2/os2.c os2/os2siglist.out \
  	os2/README.os2 os2/NEWS.os2 os2/os2bugs os2/th.cmd os2/config.cache
@@ -13,27 +13,11 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  # This shouldn't be first - some makes don't know about PRECIOUS and assume it
  # is the default target.
---- alloc.c.orig	1999-05-18 10:45:09.000000000 -0400
-+++ alloc.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,776 +1,125 @@
--/*
-- * area-based allocation built on malloc/free
-- */
--
--#include "sh.h"
--
--#ifdef TEST_ALLOC
--# define shellf	printf
--# ifndef DEBUG_ALLOC
--#  define DEBUG_ALLOC
--# endif /* DEBUG_ALLOC */
--#endif /* TEST_ALLOC */
--
--#ifdef MEM_DEBUG
-+/*	$NetBSD: alloc.c,v 1.3 2008/06/15 14:20:08 tnn Exp $	*/
- 
+--- alloc.c.orig	1999-05-18 14:45:09.000000000 +0000
++++ alloc.c	2016-12-10 23:56:36.000000000 +0000
+@@ -1,776 +1,123 @@
  /*
-- * Special versions of alloc routines if doing mem_debug
+- * area-based allocation built on malloc/free
 + * Copyright (c) 2002 Marc Espie.
 + *
 + * Redistribution and use in source and binary forms, with or without
@@ -57,6 +41,21 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   */
+ 
+-#include "sh.h"
+-
+-#ifdef TEST_ALLOC
+-# define shellf	printf
+-# ifndef DEBUG_ALLOC
+-#  define DEBUG_ALLOC
+-# endif /* DEBUG_ALLOC */
+-#endif /* TEST_ALLOC */
+-
+-#ifdef MEM_DEBUG
+-
+-/*
+- * Special versions of alloc routines if doing mem_debug
+- */
 -Area *
 -_chmem_ainit(ap, file, line)
 -	Area *ap;
@@ -134,7 +133,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -
 -typedef union Cell Cell;
 -typedef struct Block Block;
- 
+-
  /*
 - * The Cells in a Block are organized as a set of objects.
 - * Each object (pointed to by dp) begins with the block it is in
@@ -202,10 +201,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -			free((void*)tmp);
 -		} while (bp != ap->freelist);
 -		ap->freelist = &aempty;
-+	for (l = ap->freelist; l != NULL; l = l2) {
-+		l2 = l->next;
-+		free(l);
- 	}
+-	}
 -	ACHECK(ap);
 -}
 -
@@ -261,7 +257,10 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -			ap->freelist->next->prev = bp;
 -			ap->freelist->next = bp;
 -			bp->prev = ap->freelist;
--		}
++	for (l = ap->freelist; l != NULL; l = l2) {
++		l2 = l->next;
++		free(l);
+ 		}
 -		bp->last = bp->cell + acells;
 -		/* initial free list */
 -		fp = bp->freelist = bp->cell + NOBJECT_FIELDS;
@@ -289,7 +288,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -{
 -	Cell *dp = fp;	/* allocated object */
 -	int split = (fp-1)->size - cells;
--
++#define L2P(l)	( (void *)(((char *)(l)) + sizeof(struct link)) )
++#define P2L(p)	( (struct link *)(((char *)(p)) - sizeof(struct link)) )
+ 
 -	ACHECK(ap);
 -	if (split < 0)
 -		aerror(ap, "allocated object too small");
@@ -311,9 +312,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -	ACHECK(ap);
 -	return (void*) dp;
 -}
-+#define L2P(l)	( (void *)(((char *)(l)) + sizeof(struct link)) )
-+#define P2L(p)	( (struct link *)(((char *)(p)) - sizeof(struct link)) )
- 
+-
 -/* change size of object -- like realloc */
 +/* coverity[+alloc] */
  void *
@@ -381,12 +380,12 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -		(dp-1)->size = cells;
 -		nbp->last = nbp->cell + cells + NOBJECT_FIELDS;
 -		nbp->freelist = nbp->last;
-+	struct link *l;
- 
+-
 -		ACHECK(ap);
 -		return (void*) dp;
 -	}
--
++	struct link *l;
+ 
 -	/* Check if we can just grow this cell
 -	 * (need to check that cells < ICELLS so we don't make an
 -	 * object a `large' - that would mess everything up).
@@ -488,13 +487,10 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -		ACHECK(ap);
 -		return;
 -	}
-+	struct link *l, *l2, *lprev, *lnext;
- 
+-
 -	if (dp < &bp->cell[NOBJECT_FIELDS] || dp >= bp->last)
 -		aerror(ap, "freeing memory outside of block (corrupted?)");
-+	if (ptr == NULL)
-+		return alloc(size, ap);
- 
+-
 -	/* find position in free list */
 -	/* XXX if we had prev/next pointers for objects, this loop could go */
 -	for (fpp = NULL, fp = bp->freelist; fp < dp; fpp = fp, fp = fp->next)
@@ -518,7 +514,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -		fpp->next = dp->next;
 -	} else			/* non-adjacent */
 -		fpp->next = dp;
--
++	struct link *l, *l2, *lprev, *lnext;
+ 
 -	/* If whole block is free (and we have some other blocks
 -	 * around), release this block back to the system...
 -	 */
@@ -529,6 +526,17 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -		ablockfree(bp, ap);
 -	ACHECK(ap);
 -}
++	if (ptr == NULL)
++		return alloc(size, ap);
+ 
+-static void
+-ablockfree(bp, ap)
+-	Block *bp;
+-	Area *ap;
+-{
+-	/* NOTE: If this code changes, similar changes may be
+-	 * needed in alloc() (where realloc fails).
+-	 */
 +	l = P2L(ptr);
 +	lprev = l->prev;
 +	lnext = l->next;
@@ -543,15 +551,6 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +	if (lnext)
 +		lnext->prev = l2;
  
--static void
--ablockfree(bp, ap)
--	Block *bp;
--	Area *ap;
--{
--	/* NOTE: If this code changes, similar changes may be
--	 * needed in alloc() (where realloc fails).
--	 */
--
 -	if (bp->next == bp) /* only block */
 -		ap->freelist = &aempty;
 -	else {
@@ -576,7 +575,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -	int ok = 1;
 -	int isfree;
 -	static int disabled;
--
++	struct link *l;
+ 
 -	if (disabled)
 -		return;
 -
@@ -590,8 +590,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -		disabled = 1;
 -		aerror(ap, "acheck: null area freelist");
 -	}
-+	struct link *l;
- 
+-
 -	/* Nothing to check... */
 -	if (bp == &aempty)
 +	if (!ptr)
@@ -673,8 +672,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -	size_t size;
 -{
 -	Block *bp;
-+	l = P2L(ptr);
- 
+-
 -	if (!ap)
 -		shellf("aprint: null area pointer\n");
 -	else if (!(bp = ap->freelist))
@@ -763,7 +761,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -
 -Area a;
 -FILE *myout;
--
++	l = P2L(ptr);
+ 
 -int
 -main(int argc, char **argv)
 -{
@@ -875,15 +874,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -# endif /* TEST_ALLOC */
 -
 -#endif /* MEM_DEBUG */
---- c_ksh.c.orig	1999-05-13 13:02:48.000000000 -0400
-+++ c_ksh.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: c_ksh.c,v 1.3 2008/06/15 14:20:08 tnn Exp $	*/
-+
- /*
-  * built-in Korn commands: c_*
-  */
-@@ -25,6 +27,7 @@
+--- c_ksh.c.orig	1999-05-13 17:02:48.000000000 +0000
++++ c_ksh.c	2016-12-10 23:56:57.000000000 +0000
+@@ -25,6 +25,7 @@
  	char *dir, *try, *pwd;
  	int phys_path;
  	char *cdpath;
@@ -891,7 +884,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	while ((optc = ksh_getopt(wp, &builtin_opt, "LP")) != EOF)
  		switch (optc) {
-@@ -73,7 +76,7 @@
+@@ -73,7 +74,7 @@
  			bi_errorf("don't know current directory");
  			return 1;
  		}
@@ -900,7 +893,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		 * if the first substitution fails because the cd fails
  		 * we could try to find another substitution. For now
  		 * we don't
-@@ -86,7 +89,7 @@
+@@ -86,7 +87,7 @@
  		olen = strlen(wp[0]);
  		nlen = strlen(wp[1]);
  		elen = strlen(current_wd + ilen + olen) + 1;
@@ -909,7 +902,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		memcpy(dir, current_wd, ilen);
  		memcpy(dir + ilen, wp[1], nlen);
  		memcpy(dir + ilen + nlen, current_wd + ilen + olen, elen);
-@@ -121,6 +124,8 @@
+@@ -121,6 +122,8 @@
  			bi_errorf("%s: bad directory", dir);
  		else
  			bi_errorf("%s - %s", try, strerror(errno));
@@ -918,7 +911,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		return 1;
  	}
  
-@@ -169,6 +174,9 @@
+@@ -169,6 +172,9 @@
  	if (printpath || cdnode)
  		shprintf("%s\n", pwd);
  
@@ -928,7 +921,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return 0;
  }
  
-@@ -178,7 +186,7 @@
+@@ -178,7 +184,7 @@
  {
  	int optc;
  	int physical = Flag(FPHYSICAL);
@@ -937,7 +930,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	while ((optc = ksh_getopt(wp, &builtin_opt, "LP")) != EOF)
  		switch (optc) {
-@@ -206,7 +214,7 @@
+@@ -206,7 +212,7 @@
  	if (p && eaccess(p, R_OK) < 0)
  		p = (char *) 0;
  	if (!p) {
@@ -946,7 +939,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		if (!p) {
  			bi_errorf("can't get current directory - %s",
  				strerror(errno));
-@@ -214,6 +222,8 @@
+@@ -214,6 +220,8 @@
  		}
  	}
  	shprintf("%s\n", p);
@@ -955,16 +948,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return 0;
  }
  
-@@ -333,7 +343,7 @@
- 		while ((c = *s++) != '\0') {
- 			Xcheck(xs, xp);
- #ifdef OS2
--			if ((flags & PO_FSLASH) && c == '\\') 
-+			if ((flags & PO_FSLASH) && c == '\\')
- 				if (*s == '\\')
- 					*s++;
- 				else
-@@ -359,7 +369,7 @@
+@@ -359,7 +367,7 @@
  				case '0':
  					/* Look for an octal number: can have
  					 * three digits (not counting the
@@ -973,7 +957,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  					 */
  					c = 0;
  					for (i = 0; i < 3; i++) {
-@@ -390,8 +400,8 @@
+@@ -390,8 +398,8 @@
  		Xfree(xs, xp);
  	} else {
  		int n, len = Xlength(xs, xp);
@@ -983,7 +967,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  		/* Ensure we aren't killed by a SIGPIPE while writing to
  		 * a coprocess.  at&t ksh doesn't seem to do this (seems
-@@ -558,7 +568,7 @@
+@@ -558,7 +566,7 @@
  			break;
  		}
  		if (vflag || !ret)
@@ -992,7 +976,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  	return ret;
  }
-@@ -582,7 +592,7 @@
+@@ -582,7 +590,7 @@
  	struct block *l = e->loc;
  	struct tbl *vp, **p;
  	Tflag fset = 0, fclr = 0;
@@ -1001,7 +985,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	const char *options = "L#R#UZ#fi#lprtux";	/* see comment below */
  	char *fieldstr, *basestr;
  	int field, base;
-@@ -603,10 +613,10 @@
+@@ -603,7 +611,7 @@
  		/* called with 'typeset -' */
  		break;
   	  case 't':		/* typeset */
@@ -1009,12 +993,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 + 		localv = 1;
   		break;
   	}
-- 
-+
- 	fieldstr = basestr = (char *) 0;
- 	builtin_opt.flags |= GF_PLUSOPT;
- 	/* at&t ksh seems to have 0-9 as options, which are multiplied
-@@ -650,8 +660,8 @@
+  
+@@ -650,8 +658,8 @@
  			flag = LCASEV;
  			break;
  		  case 'p': /* posix export/readonly -p flag.
@@ -1025,16 +1005,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			     */
  			pflag = 1;
  			break;
-@@ -702,7 +712,7 @@
- 		return 1;
- 	}
- 	if (wp[builtin_opt.optind]) {
--		/* Take care of exclusions.  
-+		/* Take care of exclusions.
- 		 * At this point, flags in fset are cleared in fclr and vise
- 		 * versa.  This property should be preserved.
- 		 */
-@@ -730,7 +740,7 @@
+@@ -730,7 +738,7 @@
  		int rval = 0;
  		struct tbl *f;
  
@@ -1043,34 +1014,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			fset |= LOCAL;
  		for (i = builtin_opt.optind; wp[i]; i++) {
  			if (func) {
-@@ -822,19 +832,19 @@
- 				shprintf("-x ");
- 			    if ((vp->flag&RDONLY))
- 				shprintf("-r ");
--			    if ((vp->flag&TRACE)) 
-+			    if ((vp->flag&TRACE))
- 				shprintf("-t ");
--			    if ((vp->flag&LJUST)) 
-+			    if ((vp->flag&LJUST))
- 				shprintf("-L%d ", vp->u2.field);
--			    if ((vp->flag&RJUST)) 
-+			    if ((vp->flag&RJUST))
- 				shprintf("-R%d ", vp->u2.field);
--			    if ((vp->flag&ZEROFIL)) 
-+			    if ((vp->flag&ZEROFIL))
- 				shprintf("-Z ");
--			    if ((vp->flag&LCASEV)) 
-+			    if ((vp->flag&LCASEV))
- 				shprintf("-l ");
--			    if ((vp->flag&UCASEV_AL)) 
-+			    if ((vp->flag&UCASEV_AL))
- 				shprintf("-u ");
--			    if ((vp->flag&INT_U)) 
-+			    if ((vp->flag&INT_U))
- 				shprintf("-U ");
- 			    shprintf("%s\n", vp->name);
- 			    if (vp->flag&ARRAY)
-@@ -858,7 +868,7 @@
+@@ -858,7 +866,7 @@
  				else
  				    print_value_quoted(s);
  			    }
@@ -1079,7 +1023,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			}
  			/* Only report first `element' of an array with
  			 * no set elements.
-@@ -933,7 +943,7 @@
+@@ -933,7 +941,7 @@
  			return 1;
  		}
  		ksh_getopt_reset(&builtin_opt, GF_ERROR);
@@ -1088,7 +1032,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  
  	
-@@ -949,7 +959,7 @@
+@@ -949,7 +957,7 @@
  					shf_putc('=', shl_stdout);
  					print_value_quoted(ap->val.s);
  				}
@@ -1097,7 +1041,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			}
  	}
  
-@@ -973,7 +983,7 @@
+@@ -973,7 +981,7 @@
  					shf_putc('=', shl_stdout);
  					print_value_quoted(ap->val.s);
  				}
@@ -1106,7 +1050,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			} else {
  				shprintf("%s alias not found\n", alias);
  				rv = 1;
-@@ -1110,13 +1120,14 @@
+@@ -1110,13 +1118,14 @@
  			return 1;
  		}
  	wp += builtin_opt.optind;
@@ -1123,7 +1067,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return rv;
  }
  
-@@ -1188,7 +1199,8 @@
+@@ -1188,7 +1197,8 @@
  	int i, n, rv, sig;
  
  	/* assume old style options if -digits or -UPPERCASE */
@@ -1133,7 +1077,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		if (!(t = gettrap(p + 1, TRUE))) {
  			bi_errorf("bad signal `%s'", p + 1);
  			return 1;
-@@ -1208,6 +1220,7 @@
+@@ -1208,6 +1218,7 @@
  						builtin_opt.optarg);
  					return 1;
  				}
@@ -1141,7 +1085,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			  case '?':
  				return 1;
  			}
-@@ -1215,10 +1228,10 @@
+@@ -1215,10 +1226,10 @@
  	}
  	if ((lflag && t) || (!wp[i] && !lflag)) {
  		shf_fprintf(shl_out,
@@ -1154,7 +1098,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		return 1;
  	}
  
-@@ -1239,28 +1252,29 @@
+@@ -1239,28 +1250,29 @@
  			for (i = 1; i < SIGNALS; i++, p = space)
  				if (sigtraps[i].name)
  					shprintf("%s%s", p, sigtraps[i].name);
@@ -1192,7 +1136,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		}
  		return 0;
  	}
-@@ -1271,7 +1285,7 @@
+@@ -1271,7 +1283,7 @@
  			if (j_kill(p, sig))
  				rv = 1;
  		} else if (!getn(p, &n)) {
@@ -1201,7 +1145,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				p);
  			rv = 1;
  		} else {
-@@ -1420,7 +1434,7 @@
+@@ -1420,7 +1432,7 @@
  	wp += builtin_opt.optind;
  
  	if (*wp == NULL)	/* list all */
@@ -1210,15 +1154,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	for (; *wp != NULL; wp++) {
  		cp = strchr(*wp, '=');
---- c_sh.c.orig	1999-07-13 12:54:44.000000000 -0400
-+++ c_sh.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: c_sh.c,v 1.3 2008/06/15 14:20:08 tnn Exp $	*/
-+
- /*
-  * built-in Bourne commands
-  */
-@@ -237,7 +239,7 @@
+--- c_sh.c.orig	1999-07-13 16:54:44.000000000 +0000
++++ c_sh.c	2016-12-10 23:57:04.000000000 +0000
+@@ -237,7 +237,7 @@
  	char **wp;
  {
  	register int c = 0;
@@ -1227,7 +1165,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	int expanding;
  	int ecode = 0;
  	register char *cp;
-@@ -248,6 +250,7 @@
+@@ -248,6 +248,7 @@
  	XString cs, xs;
  	struct tbl *vp;
  	char UNINITIALIZED(*xp);
@@ -1235,7 +1173,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	while ((optc = ksh_getopt(wp, &builtin_opt, "prsu,")) != EOF)
  		switch (optc) {
-@@ -260,7 +263,7 @@
+@@ -260,7 +261,7 @@
  			break;
  #endif /* KSH */
  		  case 'r':
@@ -1244,7 +1182,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			break;
  		  case 's':
  			history = 1;
-@@ -279,7 +282,7 @@
+@@ -279,7 +280,7 @@
  	wp += builtin_opt.optind;
  
  	if (*wp == NULL)
@@ -1253,7 +1191,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	/* Since we can't necessarily seek backwards on non-regular files,
  	 * don't buffer them so we can't read too much.
-@@ -303,11 +306,11 @@
+@@ -303,8 +304,8 @@
  	 * make sure the other side of the pipe is closed first.  This allows
  	 * the detection of eof.
  	 *
@@ -1263,12 +1201,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +	 * coproc can be started with same output, however, this means eof
  	 * can't be detected...  This is why it is closed here.
  	 * If this call is removed, remove the eof check below, too.
--	* coproc_readw_close(fd);
-+	 * coproc_readw_close(fd);
- 	 */
- #endif /* KSH */
- 
-@@ -364,7 +367,7 @@
+ 	* coproc_readw_close(fd);
+@@ -364,7 +365,7 @@
  					Xput(cs, cp, c);
  				continue;
  			}
@@ -1277,7 +1211,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				expanding = 1;
  				continue;
  			}
-@@ -423,6 +426,7 @@
+@@ -423,6 +424,7 @@
  	char **wp;
  {
  	register struct source *s;
@@ -1285,7 +1219,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	if (ksh_getopt(wp, &builtin_opt, null) == '?')
  		return 1;
-@@ -456,7 +460,9 @@
+@@ -456,7 +458,9 @@
  		exstat = subst_exstat;
  	}
  
@@ -1296,24 +1230,15 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  }
  
  int
-@@ -601,13 +607,14 @@
- 		 */
- 		if (n == quit) {
- 			warningf(TRUE, "%s: cannot %s", wp[0], wp[0]);
--			return 0; 
-+			return 0;
- 		}
- 		/* POSIX says if n is too big, the last enclosing loop
+@@ -607,6 +611,7 @@
  		 * shall be used.  Doesn't say to print an error but we
  		 * do anyway 'cause the user messed up.
  		 */
--		last_ep->flags &= ~EF_BRKCONT_PASS;
 +		if (last_ep)
-+			last_ep->flags &= ~EF_BRKCONT_PASS;
+ 		last_ep->flags &= ~EF_BRKCONT_PASS;
  		warningf(TRUE, "%s: can only %s %d level(s)",
  			wp[0], wp[0], n - quit);
- 	}
-@@ -626,7 +633,7 @@
+@@ -626,7 +631,7 @@
  
  	if (wp[1] == NULL) {
  		static const char *const args [] = { "set", "-", NULL };
@@ -1322,7 +1247,15 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  
  	argi = parse_args(wp, OF_SET, &setargs);
-@@ -684,7 +691,7 @@
+@@ -676,15 +681,13 @@
+ 		if (unset_var) {	/* unset variable */
+ 			struct tbl *vp = global(id);
+ 
+-			if (!(vp->flag & ISSET))
+-			    ret = 1;
+ 			if ((vp->flag&RDONLY)) {
+ 				bi_errorf("%s is read only", vp->name);
+ 				return 1;
  			}
  			unset(vp, strchr(id, '[') ? 1 : 0);
  		} else {		/* unset function */
@@ -1331,7 +1264,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				ret = 1;
  		}
  	return ret;
-@@ -812,7 +819,7 @@
+@@ -812,7 +815,7 @@
  	 * 1000, must print 3 places after decimal (if non-zero, else 1).
  	 */
  	if (CLK_TCK != 100)	/* convert to 1/100'ths */
@@ -1340,24 +1273,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		    (t * 100) / CLK_TCK : (t / CLK_TCK) * 100;
  
  	*--cp = '\0';
-@@ -848,7 +855,7 @@
- 				fd_clexec(i);
- #endif /* KSH */
- 		}
--		e->savefd = NULL; 
-+		e->savefd = NULL;
- 	}
- 	return 0;
- }
---- c_test.c.orig	1999-06-30 16:15:31.000000000 -0400
-+++ c_test.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: c_test.c,v 1.3 2008/06/15 14:20:08 tnn Exp $	*/
-+
- /*
-  * test(1); version 7-like  --  author Erik Baalbergen
-  * modified by Eric Gisin to be used as built-in.
-@@ -85,17 +87,17 @@
+--- c_test.c.orig	1999-06-30 20:15:31.000000000 +0000
++++ c_test.c	2016-12-10 23:57:07.000000000 +0000
+@@ -85,17 +85,17 @@
  	{"",	TO_NONOP }
      };
  
@@ -1386,30 +1304,16 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  int
  c_test(wp)
-@@ -124,10 +126,10 @@
- 	te.pos.wp = wp + 1;
- 	te.wp_end = wp + argc;
- 
--	/* 
-+	/*
+@@ -127,7 +127,7 @@
+ 	/* 
  	 * Handle the special cases from POSIX.2, section 4.62.4.
--	 * Implementation of all the rules isn't necessary since 
+ 	 * Implementation of all the rules isn't necessary since 
 -	 * our parser does the right thing for the ommited steps.
-+	 * Implementation of all the rules isn't necessary since
 +	 * our parser does the right thing for the omitted steps.
  	 */
  	if (argc <= 5) {
  		char **owp = wp;
-@@ -238,7 +240,7 @@
- 			if (not)
- 				res = !res;
- 		}
--		return res; 
-+		return res;
- 	  case TO_FILRD: /* -r */
- 		return test_eaccess(opnd1, R_OK) == 0;
- 	  case TO_FILWR: /* -w */
-@@ -416,26 +418,26 @@
+@@ -416,26 +416,26 @@
  
  /* Nasty kludge to handle Korn's bizarre /dev/fd hack */
  static int
@@ -1442,7 +1346,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	int mode;
  {
  	int res;
-@@ -444,7 +446,7 @@
+@@ -444,7 +444,7 @@
  	int fd;
  
  	/* Note: doesn't handle //dev/fd, etc.. (this is ok) */
@@ -1451,7 +1355,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		int flags;
  
  		if ((flags = fcntl(fd, F_GETFL, 0)) < 0
-@@ -456,26 +458,22 @@
+@@ -456,26 +456,22 @@
  	}
  #endif /* !HAVE_DEV_FD */
  
@@ -1484,23 +1388,18 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	return res;
  }
---- c_test.h.orig	1996-02-01 20:41:24.000000000 -0500
-+++ c_test.h	2012-12-20 21:15:57.000000000 -0500
-@@ -1,5 +1,7 @@
-+/*	$NetBSD: c_test.h,v 1.2 2008/05/31 16:47:36 tnn Exp $	*/
-+
+--- c_test.h.orig	1996-02-02 01:41:24.000000000 +0000
++++ c_test.h	2016-12-10 23:57:12.000000000 +0000
+@@ -1,5 +1,5 @@
  /* Various types of operations.  Keeping things grouped nicely
 - * (unary,binary) makes switch() statements more efficeint.
 + * (unary,binary) makes switch() statements more efficient.
   */
  enum Test_op {
  	TO_NONOP = 0,	/* non-operator */
---- c_ulimit.c.orig	1999-04-22 15:51:33.000000000 -0400
-+++ c_ulimit.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,8 +1,10 @@
-+/*	$NetBSD: c_ulimit.c,v 1.4 2009/02/21 20:06:30 tnn Exp $	*/
-+
- /*
+--- c_ulimit.c.orig	1999-04-22 19:51:33.000000000 +0000
++++ c_ulimit.c	2016-12-10 23:57:15.000000000 +0000
+@@ -2,7 +2,7 @@
  	ulimit -- handle "ulimit" builtin
  
  	Reworked to use getrusage() and ulimit() at once (as needed on
@@ -1509,7 +1408,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	conform to at&t ksh, added autoconf support.  Michael Rendell, May, '94
  
  	Eric Gisin, September 1988
-@@ -92,6 +94,9 @@
+@@ -92,6 +92,9 @@
  #ifdef RLIMIT_NPROC
  		{ "processes", RLIMIT, RLIMIT_NPROC, RLIMIT_NPROC, 1, 'p' },
  #endif
@@ -1519,7 +1418,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #ifdef RLIMIT_VMEM
  		{ "vmemory(kbytes)", RLIMIT, RLIMIT_VMEM, RLIMIT_VMEM, 1024, 'v' },
  #else /* RLIMIT_VMEM */
-@@ -109,9 +114,12 @@
+@@ -109,9 +112,12 @@
  # endif /* UL_GMEMLIM */
  #endif /* RLIMIT_VMEM */
  #ifdef RLIMIT_SWAP
@@ -1534,7 +1433,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	    };
  	static char	options[3 + NELEM(limits)];
  	rlim_t		UNINITIALIZED(val);
-@@ -182,7 +190,7 @@
+@@ -182,14 +188,18 @@
  			    bi_errorf("invalid limit: %s", wp[0]);
  			    return 1;
  			}
@@ -1543,17 +1442,32 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		}
  	}
  	if (all) {
-@@ -194,7 +202,7 @@
+ 		for (l = limits; l->name; l++) {
+ #ifdef HAVE_SETRLIMIT
+ 			if (l->which == RLIMIT) {
+-				getrlimit(l->gcmd, &limit);
++				if (getrlimit(l->gcmd, &limit) == -1) {
++					bi_errorf("can't get limit: %s",
++					    strerror(errno));
++					return 1;
++				}
+ 				if (how & SOFT)
  					val = limit.rlim_cur;
  				else if (how & HARD)
- 					val = limit.rlim_max;
--			} else 
-+			} else
- #endif /* HAVE_SETRLIMIT */
- #ifdef HAVE_ULIMIT
- 			{
---- config.h.in.orig	1999-04-20 16:02:21.000000000 -0400
-+++ config.h.in	2012-12-20 21:15:57.000000000 -0500
+@@ -218,7 +228,10 @@
+ 	}
+ #ifdef HAVE_SETRLIMIT
+ 	if (l->which == RLIMIT) {
+-		getrlimit(l->gcmd, &limit);
++		if (getrlimit(l->gcmd, &limit) == -1) {
++			bi_errorf("can't get limit: %s", strerror(errno));
++			return 1;
++		}
+ 		if (set) {
+ 			if (how & SOFT)
+ 				limit.rlim_cur = val;
+--- config.h.in.orig	1999-04-20 20:02:21.000000000 +0000
++++ config.h.in	2016-12-10 23:48:09.000000000 +0000
 @@ -280,6 +280,11 @@
  /* Define if you have the strerror function.  */
  #undef HAVE_STRERROR
@@ -1566,8 +1480,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  /* Define if you have the strstr function.  */
  #undef HAVE_STRSTR
  
---- configure.in.orig	1999-04-20 16:01:52.000000000 -0400
-+++ configure.in	2012-12-20 21:15:57.000000000 -0500
+--- configure.in.orig	1999-04-20 20:01:52.000000000 +0000
++++ configure.in	2016-12-10 23:48:09.000000000 +0000
 @@ -276,7 +276,7 @@
  KSH_MEMSET
  AC_CHECK_FUNCS(confstr dup2 flock getcwd getwd killpg nice \
@@ -1577,8 +1491,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  AC_CHECK_FUNCS(sigsetjmp _setjmp, break)
  AC_FUNC_MMAP
  KSH_FUNC_LSTAT
---- configure.orig	1999-04-20 16:01:59.000000000 -0400
-+++ configure	2012-12-20 21:15:57.000000000 -0500
+--- configure.orig	1999-04-20 20:01:59.000000000 +0000
++++ configure	2016-12-10 23:48:09.000000000 +0000
 @@ -1985,12 +1985,12 @@
  fi
  
@@ -2404,15 +2318,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #include "confdefs.h"
  
  #include <stdio.h>
---- edit.c.orig	1999-05-13 13:04:33.000000000 -0400
-+++ edit.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: edit.c,v 1.3 2008/06/15 14:20:08 tnn Exp $	*/
-+
- /*
-  * Command line editing - common code
-  *
-@@ -15,6 +17,7 @@
+--- edit.c.orig	1999-05-13 17:04:33.000000000 +0000
++++ edit.c	2016-12-10 23:57:35.000000000 +0000
+@@ -15,6 +15,7 @@
  # include <sys/stream.h>	/* needed for <sys/ptem.h> */
  # include <sys/ptem.h>		/* needed for struct winsize */
  #endif /* OS_SCO */
@@ -2420,7 +2328,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #include <ctype.h>
  #include "ksh_stat.h"
  
-@@ -126,11 +129,6 @@
+@@ -126,11 +127,6 @@
  {
  	int	i;
  
@@ -2432,7 +2340,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	x_mode(TRUE);
  #ifdef EMACS
  	if (Flag(FEMACS) || Flag(FGMACS))
-@@ -144,6 +142,11 @@
+@@ -144,6 +140,11 @@
  #endif
  		i = -1;		/* internal error */
  	x_mode(FALSE);
@@ -2444,23 +2352,13 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return i;
  }
  
-@@ -320,7 +323,7 @@
-  *
-  * DESCRIPTION:
-  *      This function is based on a fix from guy@demon.co.uk
-- *      It fixes a bug in that if PS1 contains '!', the length 
-+ *      It fixes a bug in that if PS1 contains '!', the length
-  *      given by strlen() is probably wrong.
-  *
-  * RETURN VALUE:
-@@ -381,12 +384,12 @@
+@@ -381,12 +382,12 @@
  #endif
  		    };
  	char *rcp;
 -	int i;
--  
 +	size_t i;
-+
+   
  	if ((rcp = ksh_strrchr_dirsep(ed)))
  		ed = ++rcp;
  	for (i = 0; i < NELEM(edit_flags); i++)
@@ -2469,7 +2367,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			change_flag(edit_flags[i], OF_SPECIAL, 1);
  			return;
  		}
-@@ -451,14 +454,12 @@
+@@ -451,14 +452,12 @@
  /*           Common file/command completion code for vi/emacs	             */
  
  
@@ -2488,7 +2386,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  int
  x_complete_word(str, slen, is_command, nwordsp, ret)
  	const char *str;
-@@ -496,8 +497,10 @@
+@@ -496,8 +495,10 @@
  	int prefix_len;
  	XPtrV l;
  
@@ -2500,7 +2398,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	 */
  	if (!is_command
  	    && (prefix_len = x_longest_prefix(nwords, words)) > 0)
-@@ -530,7 +533,7 @@
+@@ -530,7 +531,7 @@
  	 */
  	x_putc('\r');
  	x_putc('\n');
@@ -2509,7 +2407,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	if (use_copy)
  		XPfree(l); /* not x_free_words() */
-@@ -552,7 +555,7 @@
+@@ -552,7 +553,7 @@
  {
  	char *toglob;
  	char **words;
@@ -2518,7 +2416,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	XPtrV w;
  	struct source *s, *sold;
  
-@@ -561,6 +564,20 @@
+@@ -561,6 +562,20 @@
  
  	toglob = add_glob(str, slen);
  
@@ -2539,7 +2437,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	/*
  	 * Convert "foo*" (toglob) to an array of strings (words)
  	 */
-@@ -596,13 +613,18 @@
+@@ -596,13 +611,18 @@
  		    || words[0][0] == '\0')
  		{
  			x_free_words(nwords, words);
@@ -2560,7 +2458,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return nwords;
  }
  
-@@ -613,6 +635,8 @@
+@@ -613,6 +633,8 @@
  	int path_order;
  };
  
@@ -2569,7 +2467,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  /* Compare routine used in x_command_glob() */
  static int
  path_order_cmp(aa, bb)
-@@ -722,7 +746,8 @@
+@@ -722,7 +744,8 @@
  	return nwords;
  }
  
@@ -2579,7 +2477,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  static int
  x_locate_word(buf, buflen, pos, startp, is_commandp)
-@@ -747,19 +772,22 @@
+@@ -747,19 +770,22 @@
  	/* Keep going backwards to start of word (has effect of allowing
  	 * one blank after the end of a word)
  	 */
@@ -2607,7 +2505,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		if (iscmd) {
  			/* If command has a /, path, etc. is not searched;
  			 * only current directory is searched, which is just
-@@ -839,14 +867,14 @@
+@@ -839,14 +865,14 @@
  
  	/*
  	 * If the pathname contains a wildcard (an unquoted '*',
@@ -2624,7 +2522,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			 || (s[1] == '(' /*)*/ && strchr("*+?@!", *s)))
  			break;
  		else if (ISDIRSEP(*s))
-@@ -878,7 +906,8 @@
+@@ -878,7 +904,8 @@
  	prefix_len = strlen(words[0]);
  	for (i = 1; i < nwords; i++)
  		for (j = 0, p = words[i]; j < prefix_len; j++)
@@ -2634,7 +2532,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				prefix_len = j;
  				break;
  			}
-@@ -953,14 +982,15 @@
+@@ -953,14 +980,15 @@
  }
  
  static void
@@ -2652,7 +2550,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	int pathlen;
  	int patlen;
  	int oldsize, newsize, i, j;
-@@ -968,7 +998,7 @@
+@@ -968,7 +996,7 @@
  	XString xs;
  
  	patlen = strlen(pat) + 1;
@@ -2661,7 +2559,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	Xinit(xs, xp, patlen + 128, ATEMP);
  	while (sp) {
  		xp = Xstring(xs, xp);
-@@ -995,13 +1025,15 @@
+@@ -995,13 +1023,15 @@
  		memcpy(xp, pat, patlen);
  
  		oldsize = XPsize(*wp);
@@ -2679,7 +2577,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				words[j] = words[i];
  				if (!(flags & XCF_FULLPATH))
  					memmove(words[j], words[j] + pathlen,
-@@ -1018,4 +1050,40 @@
+@@ -1018,4 +1048,40 @@
  	Xfree(xs, xp);
  }
  
@@ -2720,15 +2618,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +	return (rval);
 +}
  #endif /* EDIT */
---- edit.h.orig	1996-08-13 09:30:26.000000000 -0400
-+++ edit.h	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: edit.h,v 1.2 2008/05/31 16:47:36 tnn Exp $	*/
-+
- /* NAME:
-  *      edit.h - globals for edit modes
-  *
-@@ -55,6 +57,7 @@
+--- edit.h.orig	1996-08-13 13:30:26.000000000 +0000
++++ edit.h	2016-12-10 23:57:40.000000000 +0000
+@@ -55,6 +55,7 @@
  int	x_longest_prefix ARGS((int nwords, char *const *words));
  int	x_basename ARGS((const char *s, const char *se));
  void	x_free_words ARGS((int nwords, char **words));
@@ -2736,23 +2628,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  /* emacs.c */
  int 	x_emacs		ARGS((char *buf, size_t len));
  void 	x_init_emacs	ARGS((void));
---- emacs-gen.sh.orig	1995-05-03 08:28:48.000000000 -0400
-+++ emacs-gen.sh	2012-12-20 21:15:57.000000000 -0500
-@@ -1,4 +1,5 @@
- #!/bin/sh
-+#	$NetBSD: emacs-gen.sh,v 1.2 2008/05/31 16:47:36 tnn Exp $
- 
- case $# in
- 1)	file=$1;;
---- emacs.c.orig	1999-07-07 15:43:43.000000000 -0400
-+++ emacs.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: emacs.c,v 1.3 2008/06/15 14:20:08 tnn Exp $	*/
-+
- /*
-  *  Emacs-like command line editing and history
-  *
-@@ -13,6 +15,7 @@
+--- emacs.c.orig	1999-07-07 19:43:43.000000000 +0000
++++ emacs.c	2016-12-10 23:58:05.000000000 +0000
+@@ -13,6 +13,7 @@
  #include "ksh_stat.h"
  #include "ksh_dir.h"
  #include <ctype.h>
@@ -2760,7 +2638,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #include "edit.h"
  
  static	Area	aedit;
-@@ -21,6 +24,8 @@
+@@ -21,6 +22,8 @@
  #undef CTRL			/* _BSD brain damage */
  #define	CTRL(x)		((x) == '?' ? 0x7F : (x) & 0x1F)	/* ASCII */
  #define	UNCTRL(x)	((x) == 0x7F ? '?' : (x) | 0x40)	/* ASCII */
@@ -2769,7 +2647,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  
  /* values returned by keyboard functions */
-@@ -49,7 +54,7 @@
+@@ -49,7 +52,7 @@
  
  /* Separator for completion */
  #define	is_cfs(c)	(c == ' ' || c == '\t' || c == '"' || c == '\'')
@@ -2778,16 +2656,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  #ifdef OS2
    /* Deal with 8 bit chars & an extra prefix for function key (these two
-@@ -86,7 +91,7 @@
- static char    *xlp;		/* last char visible on screen */
- static int	x_adj_ok;
- /*
-- * we use x_adj_done so that functions can tell 
-+ * we use x_adj_done so that functions can tell
-  * whether x_adjust() has been called while they are active.
-  */
- static int	x_adj_done;
-@@ -113,10 +118,11 @@
+@@ -113,10 +116,11 @@
  static	int	killsp, killtp;
  static	int	x_curprefix;
  static	char    *macroptr;
@@ -2800,7 +2669,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  static int	x_bword     ARGS((void));
  static int	x_fword     ARGS((void));
  static void     x_goto      ARGS((char *cp));
-@@ -130,7 +136,7 @@
+@@ -130,7 +134,7 @@
  static int      x_match     ARGS((char *str, char *pat));
  static void	x_redraw    ARGS((int limit));
  static void     x_push      ARGS((int nchars));
@@ -2809,7 +2678,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  static char *   x_mapout    ARGS((int c));
  static void     x_print     ARGS((int prefix, int key));
  static void	x_adjust    ARGS((void));
-@@ -138,9 +144,11 @@
+@@ -138,9 +142,11 @@
  static int	x_e_getc    ARGS((void));
  static void	x_e_putc    ARGS((int c));
  static void	x_e_puts    ARGS((const char *s));
@@ -2821,7 +2690,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  
  /* The lines between START-FUNC-TAB .. END-FUNC-TAB are run through a
-@@ -205,7 +213,7 @@
+@@ -205,7 +211,7 @@
  	{ x_yank,		"yank",				0 },
          { x_comp_list,		"complete-list",		0 },
          { x_expand,		"expand-file",			0 },
@@ -2830,7 +2699,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
          { x_fold_lower,		"downcase-word",		XF_ARG },
          { x_fold_upper,		"upcase-word",			XF_ARG },
          { x_set_arg,		"set-arg",			XF_NOBIND },
-@@ -269,6 +277,7 @@
+@@ -269,6 +275,7 @@
  	{ XFUNC_transpose,		0, CTRL('T') },
  #endif
  	{ XFUNC_complete,		1, CTRL('[') },
@@ -2838,7 +2707,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
          { XFUNC_comp_list,		1,	'='  },
  	{ XFUNC_enumerate,		1,	'?'  },
          { XFUNC_expand,			1,	'*'  },
-@@ -299,8 +308,8 @@
+@@ -299,8 +306,8 @@
          { XFUNC_fold_upper,		1,	'u'  },
          { XFUNC_fold_lower,		1,	'L'  },
          { XFUNC_fold_lower,		1,	'l'  },
@@ -2849,7 +2718,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #ifdef OS2
  	{ XFUNC_meta3,			0,	0xE0 },
  	{ XFUNC_mv_back,		3,	'K'  },
-@@ -313,6 +322,7 @@
+@@ -313,6 +320,7 @@
  	 * entries.
  	 */
          { XFUNC_meta2,			1,	'['  },
@@ -2857,7 +2726,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	{ XFUNC_prev_com,		2,	'A'  },
  	{ XFUNC_next_com,		2,	'B'  },
  	{ XFUNC_mv_forw,		2,	'C'  },
-@@ -342,15 +352,20 @@
+@@ -342,15 +350,20 @@
  	xx_cols = x_cols;
  	x_col = promptlen(prompt, &p);
  	prompt_skip = p - prompt;
@@ -2880,7 +2749,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			x_load_hist(histptr - off);
  		x_nextcmd = -1;
  	}
-@@ -360,8 +375,13 @@
+@@ -360,6 +373,11 @@
  		if ((c = x_e_getc()) < 0)
  			return 0;
  
@@ -2890,12 +2759,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +		}
 +
  		f = x_curprefix == -1 ? XFUNC_insert
--			: x_tab[x_curprefix][c&CHARMASK]; 
-+			: x_tab[x_curprefix][c&CHARMASK];
+ 			: x_tab[x_curprefix][c&CHARMASK]; 
  
- 		if (!(x_ftab[f].xf_flags & XF_PREFIX)
- 		    && x_last_command != XFUNC_set_arg)
-@@ -423,6 +443,8 @@
+@@ -423,6 +441,8 @@
  	return KSTD;
  }
  
@@ -2904,7 +2770,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  static int
  x_do_ins(cp, len)
  	const char *cp;
-@@ -468,6 +490,21 @@
+@@ -468,6 +488,21 @@
  	return 0;
  }
  
@@ -2926,7 +2792,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  static int
  x_del_back(c)
  	int c;
-@@ -503,9 +540,9 @@
+@@ -503,9 +538,9 @@
  
  /* Delete nc chars to the right of the cursor (including cursor position) */
  static void
@@ -2938,7 +2804,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  {
  	int	i,j;
  	char	*cp;
-@@ -522,7 +559,7 @@
+@@ -522,7 +557,7 @@
  	/*
  	 * This lets us yank a word we have deleted.
  	 */
@@ -2947,7 +2813,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		x_push(nc);
  
  	xep -= nc;
-@@ -540,7 +577,7 @@
+@@ -540,7 +575,7 @@
  	 * there is no need to ' ','\b'.
  	 * But if we must, make sure we do the minimum.
  	 */
@@ -2956,7 +2822,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	{
  	  j = (j < i) ? j : i;
  	  i = j;
-@@ -563,7 +600,7 @@
+@@ -563,7 +598,7 @@
  x_del_bword(c)
  	int c;
  {
@@ -2965,7 +2831,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return KSTD;
  }
  
-@@ -587,7 +624,7 @@
+@@ -587,7 +622,7 @@
  x_del_fword(c)
  	int c;
  {
@@ -2974,7 +2840,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return KSTD;
  }
  
-@@ -698,7 +735,7 @@
+@@ -698,7 +733,7 @@
  {
  	if (c=='\t')
  		return 4;	/* Kludge, tabs are always four spaces. */
@@ -2983,7 +2849,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		return 2;
  	return 1;
  }
-@@ -721,7 +758,7 @@
+@@ -721,7 +756,7 @@
  	if (c == '\t')  {
  		/*  Kludge, tabs are always four spaces.  */
  		x_e_puts("    ");
@@ -2992,7 +2858,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		x_e_putc('^');
  		x_e_putc(UNCTRL(c));
  	} else
-@@ -821,14 +858,14 @@
+@@ -821,7 +856,7 @@
  	return KEOL;
  }
  
@@ -3001,15 +2867,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  static int x_end_hist(c) int c; { x_load_hist(histptr); return KSTD;}
  
- static int x_prev_com(c) int c; { x_load_hist(x_histp - x_arg); return KSTD;}
- 
- static int x_next_com(c) int c; { x_load_hist(x_histp + x_arg); return KSTD;}
--  
-+ 
- /* Goto a particular history number obtained from argument.
-  * If no argument is given history 1 is probably not what you
-  * want so we'll simply go to the oldest one.
-@@ -838,7 +875,7 @@
+@@ -838,7 +873,7 @@
  	int c;
  {
  	if (x_arg_defaulted)
@@ -3018,7 +2876,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	else
  		x_load_hist(histptr + x_arg - source->line);
  	return KSTD;
-@@ -850,15 +887,15 @@
+@@ -850,15 +885,15 @@
  {
  	int	oldsize;
  
@@ -3037,7 +2895,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	xlp_valid = FALSE;
  	if (xep > x_lastcp())
  	  x_goto(xep);
-@@ -957,7 +994,7 @@
+@@ -957,7 +992,7 @@
  	register char **hp;
  	int i;
  
@@ -3046,7 +2904,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		i = x_match(*hp, pat);
  		if (i >= 0) {
  			if (offset < 0)
-@@ -992,7 +1029,7 @@
+@@ -992,7 +1027,7 @@
  	int	i, j;
  
  	*xep = 0;
@@ -3055,16 +2913,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	j = x_size_str(xbuf);
  	xcp = xbuf;
  	x_push(i);
-@@ -1043,7 +1080,7 @@
- 	x_adj_ok = 0;
- 	if (limit == -1)
- 		x_e_putc('\n');
--	else 
-+	else
- 		x_e_putc('\r');
- 	x_flush();
- 	if (xbp == xbuf)
-@@ -1097,14 +1134,14 @@
+@@ -1097,14 +1132,14 @@
  
  	/* What transpose is meant to do seems to be up for debate. This
  	 * is a general summary of the options; the text is abcd with the
@@ -3081,7 +2930,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	 * This should really be broken up into 3 functions so users can bind
  	 * to the one they want.
  	 */
-@@ -1216,7 +1253,7 @@
+@@ -1216,7 +1251,7 @@
  		killtp = KILLSIZE;
  	else
  		killtp = killsp;
@@ -3090,7 +2939,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	if (killstack[killtp] == 0)  {
  		x_e_puts("\nnothing to yank");
  		x_redraw(-1);
-@@ -1232,7 +1269,9 @@
+@@ -1232,7 +1267,9 @@
  	int c;
  {
  	int	len;
@@ -3101,7 +2950,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		x_e_puts("\nyank something first");
  		x_redraw(-1);
  		return KSTD;
-@@ -1302,12 +1341,13 @@
+@@ -1302,12 +1339,13 @@
  }
  
  static char *
@@ -3117,7 +2966,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	while (*cp)  {
  		/* XXX -- should handle \^ escape? */
  		if (*cp == '^')  {
-@@ -1345,7 +1385,7 @@
+@@ -1345,7 +1383,7 @@
  		*p++ = '0';
  	} else
  #endif /* OS2 */
@@ -3126,7 +2975,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		*p++ = '^';
  		*p++ = UNCTRL(c);
  	} else
-@@ -1410,7 +1450,7 @@
+@@ -1410,7 +1448,7 @@
  		return 0;
  	}
  
@@ -3135,7 +2984,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	prefix = key = 0;
  	for (;; m1++) {
  		key = *m1 & CHARMASK;
-@@ -1425,6 +1465,7 @@
+@@ -1425,6 +1463,7 @@
  		else
  			break;
  	}
@@ -3143,7 +2992,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	if (a2 == NULL) {
  		x_print(prefix, key);
-@@ -1450,8 +1491,7 @@
+@@ -1450,8 +1489,7 @@
  #endif /* 0 */
  	} else {
  		f = XFUNC_ins_string;
@@ -3153,7 +3002,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  
  	if (x_tab[prefix][key] == XFUNC_ins_string && x_atab[prefix][key])
-@@ -1473,7 +1513,9 @@
+@@ -1473,7 +1511,9 @@
  void
  x_init_emacs()
  {
@@ -3164,7 +3013,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	ainit(AEDIT);
  	x_nextcmd = -1;
-@@ -1485,15 +1527,25 @@
+@@ -1485,15 +1525,25 @@
  		for (j = 0; j < X_TABSZ; j++)
  			x_tab[i][j] = XFUNC_error;
  	for (i = 0; i < NELEM(x_defbindings); i++)
@@ -3191,7 +3040,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  static void
  bind_if_not_bound(p, k, func)
  	int p, k;
-@@ -1581,8 +1633,8 @@
+@@ -1581,8 +1631,8 @@
  	char *o_xbp = xbp, *o_xep = xep, *o_xcp = xcp;
  	int lim = x_lastcp() - xbp;
  
@@ -3202,7 +3051,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	x_redraw(lim);
  	x_flush();
  
-@@ -1738,12 +1790,15 @@
+@@ -1738,12 +1788,15 @@
  
  	x_goto(xbuf + start);
  	x_delete(end - start, FALSE);
@@ -3220,7 +3069,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	return KSTD;
  }
-@@ -1755,102 +1810,61 @@
+@@ -1755,92 +1808,51 @@
  	Comp_type type;
  {
  	char **words;
@@ -3268,11 +3117,10 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -	if (do_glob)
 -		nwords = x_cf_glob(flags | (t == CT_LIST ? XCF_FULLPATH : 0),
 -			xbuf, xep - xbuf, xcp - xbuf,
--			&start, &end, &words, &is_command);
 +	int completed = 0;
 +
 +	nwords = x_cf_glob(flags, xbuf, xep - xbuf, xcp - xbuf,
-+			    &start, &end, &words, &is_command);
+ 			&start, &end, &words, &is_command);
 +	/* no match */
  	if (nwords == 0) {
  		x_e_putc(BEL);
@@ -3280,55 +3128,36 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
 -	switch (type) {
 -	  case CT_LIST:
-+
-+	if (type == CT_LIST) {
- 		x_print_expansions(nwords, words, is_command);
- 		x_redraw(0);
+-		x_print_expansions(nwords, words, is_command);
+-		x_redraw(0);
 -		break;
-+		x_free_words(nwords, words);
-+		return;
-+	}
- 
+-
 -	  case CT_COMPLIST:
 -		/* Only get here if nwords > 1 && comp_word is set */
 -		{
 -			int olen = end - start;
 -			int nlen = strlen(comp_word);
+ 
++	if (type == CT_LIST) {
+ 			x_print_expansions(nwords, words, is_command);
+-			xcp = xbuf + end;
+-			x_do_ins(comp_word + olen, nlen - olen);
+ 			x_redraw(0);
++		x_free_words(nwords, words);
++		return;
+ 		}
+-		break;
+-
+-	  case CT_COMPLETE:
+-		{
+-			int nlen = x_longest_prefix(nwords, words);
+ 
+-			if (nlen > 0) {
 +	olen = end - start;
 +	nlen = x_longest_prefix(nwords, words);
 +	/* complete */
 +	if (nwords == 1 || nlen > olen) {
-+		x_goto(xbuf + start);
-+		x_delete(olen, FALSE);
-+		x_escape(words[0], nlen, x_emacs_putbuf);
-+		x_adjust();
-+		completed = 1;
-+	}
-+	/* add space if single non-dir match */
-+	if ((nwords == 1) && (!ISDIRSEP(words[0][nlen - 1]))) {
-+		x_ins(space);
-+		completed = 1;
-+	}
- 
--			x_print_expansions(nwords, words, is_command);
--			xcp = xbuf + end;
--			x_do_ins(comp_word + olen, nlen - olen);
--			x_redraw(0);
--		}
--		break;
-+	if (type == CT_COMPLIST && !completed) {
-+		x_print_expansions(nwords, words, is_command);
-+		completed = 1;
-+	}
- 
--	  case CT_COMPLETE:
--		{
--			int nlen = x_longest_prefix(nwords, words);
-+	if (completed)	
-+		x_redraw(0);	
- 
--			if (nlen > 0) {
--				x_goto(xbuf + start);
+ 				x_goto(xbuf + start);
 -				x_delete(end - start, FALSE);
 -				words[0][nlen] = '\0';
 -				x_ins(words[0]);
@@ -3337,31 +3166,33 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -				 */
 -				if (nwords == 1
 -				    && !ISDIRSEP(words[0][nlen - 1]))
--					x_ins(space);
++		x_delete(olen, FALSE);
++		x_escape(words[0], nlen, x_emacs_putbuf);
++		x_adjust();
++		completed = 1;
++	}
++	/* add space if single non-dir match */
++	if ((nwords == 1) && (!ISDIRSEP(words[0][nlen - 1]))) {
+ 					x_ins(space);
 -			} else
 -				x_e_putc(BEL);
--		}
++		completed = 1;
+ 		}
 -		break;
--	}
++
++	if (type == CT_COMPLIST && !completed) {
++		x_print_expansions(nwords, words, is_command);
++		completed = 1;
+ 	}
++
++	if (completed)	
++		x_redraw(0);	
++
 +	x_free_words(nwords, words);
  }
  
  /* NAME:
-  *      x_adjust - redraw the line adjusting starting point etc.
-  *
-  * DESCRIPTION:
-- *      This function is called when we have exceeded the bounds 
-- *      of the edit window.  It increments x_adj_done so that 
-- *      functions like x_ins and x_delete know that we have been 
-- *      called and can skip the x_bs() stuff which has already 
-+ *      This function is called when we have exceeded the bounds
-+ *      of the edit window.  It increments x_adj_done so that
-+ *      functions like x_ins and x_delete know that we have been
-+ *      called and can skip the x_bs() stuff which has already
-  *      been done by x_redraw.
-  *
-  * RETURN VALUE:
-@@ -1890,7 +1904,7 @@
+@@ -1890,7 +1902,7 @@
  		unget_char = -1;
  	} else {
  		if (macroptr)  {
@@ -3370,35 +3201,16 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			if (!*macroptr)
  				macroptr = (char *) 0;
  		} else
-@@ -2019,11 +2033,11 @@
-  *      x_prev_histword - recover word from prev command
-  *
-  * DESCRIPTION:
-- *      This function recovers the last word from the previous 
-- *      command and inserts it into the current edit line.  If a 
-- *      numeric arg is supplied then the n'th word from the 
-- *      start of the previous command is used.  
-- *      
-+ *      This function recovers the last word from the previous
-+ *      command and inserts it into the current edit line.  If a
-+ *      numeric arg is supplied then the n'th word from the
-+ *      start of the previous command is used.
-+ *
-  *      Bound to M-.
-  *
-  * RETURN VALUE:
-@@ -2053,8 +2067,8 @@
+@@ -2053,7 +2065,7 @@
        rcp++;
      x_ins(rcp);
    } else {
 -    int c;
--    
 +    int i;
-+
+     
      rcp = cp;
      /*
-      * ignore white-space at start of line
-@@ -2071,10 +2085,10 @@
+@@ -2071,10 +2083,10 @@
      cp = rcp;
      while (*rcp && !is_cfs(*rcp))
        rcp++;
@@ -3411,7 +3223,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
    }
    return KSTD;
  }
-@@ -2097,14 +2111,14 @@
+@@ -2097,14 +2109,14 @@
  
  /* Lowercase N(1) words */
  static int
@@ -3428,7 +3240,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   *
   * DESCRIPTION:
   *      This function is used to implement M-U,M-u,M-L,M-l,M-C and M-c
-@@ -2126,7 +2140,7 @@
+@@ -2126,7 +2138,7 @@
  	}
  	while (x_arg--) {
  		/*
@@ -3437,7 +3249,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		 */
  		while (cp != xep && is_mfs(*cp))
  			cp++;
-@@ -2136,24 +2150,24 @@
+@@ -2136,24 +2148,24 @@
  		 */
  		if (cp != xep) {
  			if (c == 'L') {		/* lowercase */
@@ -3471,33 +3283,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			}
  			cp++;
  		}
-@@ -2169,13 +2183,13 @@
-  *      x_lastcp()
-  *
-  * DESCRIPTION:
-- *      This function returns a pointer to that  char in the 
-- *      edit buffer that will be the last displayed on the 
-+ *      This function returns a pointer to that  char in the
-+ *      edit buffer that will be the last displayed on the
-  *      screen.  The sequence:
-- *      
-+ *
-  *      for (cp = x_lastcp(); cp > xcp; cp)
-  *        x_bs(*--cp);
-- *      
-+ *
-  *      Will position the cursor correctly on the screen.
-  *
-  * RETURN VALUE:
---- eval.c.orig	1999-07-13 12:48:39.000000000 -0400
-+++ eval.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: eval.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * Expansion - quoting, separation, substitution, globbing
-  */
-@@ -167,13 +169,16 @@
+--- eval.c.orig	1999-07-13 16:48:39.000000000 +0000
++++ eval.c	2016-12-10 23:58:07.000000000 +0000
+@@ -167,13 +167,16 @@
  	XString ds;		/* destination string */
  	register char *dp, *sp;	/* dest., source */
  	int fdo, word;		/* second pass flags; have word */
@@ -3515,7 +3303,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	if (cp == NULL)
  		internal_errorf(1, "expand(NULL)");
  	/* for alias, readonly, set, typeset commands */
-@@ -282,6 +287,7 @@
+@@ -282,6 +285,7 @@
  				int stype;
  				int slen;
  
@@ -3523,35 +3311,39 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				sp = strchr(sp, '\0') + 1; /* skip variable */
  				type = varsub(&x, varname, sp, &stype, &slen);
  				if (type < 0) {
-@@ -413,10 +419,11 @@
+@@ -331,7 +335,7 @@
+ 						 * expected)
+ 						 */
+ 						*dp++ = MAGIC;
+-						*dp++ = '@' + 0x80;
++						*dp++ = (char)('@' + 0x80);
+ 						break;
+ 					  case '=':
+ 						/* Enabling tilde expansion
+@@ -413,9 +417,10 @@
  					 * fatal for special builtins (setstr
  					 * does readonly check).
  					 */
 -					setstr(st->var, debunk(
 -						(char *) alloc(strlen(dp) + 1,
 -							ATEMP), dp),
--						KSH_UNWIND_ERROR);
 +					len = strlen(dp) + 1;
 +					setstr(st->var,
 +					    debunk((char *) alloc(len, ATEMP),
 +						dp, len),
-+					    KSH_UNWIND_ERROR);
+ 						KSH_UNWIND_ERROR);
  					x.str = str_val(st->var);
  					type = XSUB;
- 					if (f&DOBLANK)
-@@ -428,9 +435,9 @@
- 					char *s = Xrestpos(ds, dp, st->base);
- 
+@@ -430,7 +435,7 @@
  					errorf("%s: %s", st->var->name,
--					    dp == s ? 
-+					    dp == s ?
+ 					    dp == s ? 
  					      "parameter null or not set"
 -					    : (debunk(s, s), s));
 +					    : (debunk(s, s, strlen(s) + 1), s));
  				    }
  				}
  				st = st->prev;
-@@ -443,7 +450,7 @@
+@@ -443,7 +448,7 @@
  				c = *sp++ + 0x80;
  				break;
  
@@ -3560,7 +3352,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				make_magic = 1;
  				c = '|';
  				break;
-@@ -574,7 +581,7 @@
+@@ -574,7 +579,7 @@
  				else if ((f & DOPAT) || !(fdo & DOMAGIC_))
  					XPput(*wp, p);
  				else
@@ -3569,7 +3361,21 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				fdo = 0;
  				saw_eq = 0;
  				tilde_ok = (f & (DOTILDE|DOASNTILDE)) ? 1 : 0;
-@@ -847,6 +854,7 @@
+@@ -714,13 +719,11 @@
+ 		/* Check for size of array */
+ 		if ((p=strchr(sp,'[')) && (p[1]=='*'||p[1]=='@') && p[2]==']') {
+ 			int n = 0;
+-			int max = 0;
+ 			vp = global(arrayname(sp));
+ 			if (vp->flag & (ISSET|ARRAY))
+ 				zero_ok = 1;
+ 			for (; vp; vp = vp->u.array)
+ 				if (vp->flag & ISSET) {
+-					max = vp->index + 1;
+ 					n++;
+ 				}
+ 			c = n; /* ksh88/ksh93 go for number, not max index */
+@@ -847,6 +850,7 @@
  	s->start = s->str = cp;
  	sold = source;
  	t = compile(s);
@@ -3577,20 +3383,18 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	source = sold;
  
  	if (t == NULL)
-@@ -870,8 +878,10 @@
+@@ -870,8 +874,10 @@
  		openpipe(pv);
  		shf = shf_fdopen(pv[0], SHF_RD, (struct shf *) 0);
  		ofd1 = savefd(1, 0);	/* fd 1 may be closed... */
--		ksh_dup2(pv[1], 1, FALSE);
--		close(pv[1]);
 +		if (pv[1] != 1) {
-+			ksh_dup2(pv[1], 1, FALSE);
-+			close(pv[1]);
+ 		ksh_dup2(pv[1], 1, FALSE);
+ 		close(pv[1]);
 +		}
  		execute(t, XFORK|XXCOM|XPIPEO);
  		restfd(1, ofd1);
  		startlast();
-@@ -896,7 +906,7 @@
+@@ -896,7 +902,7 @@
  	register char *p, c;
  
  	switch (how&0xff) {	/* UCHAR_MAX maybe? */
@@ -3599,7 +3403,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		for (p = str; p <= end; p++) {
  			c = *p; *p = '\0';
  			if (gmatch(str, pat, FALSE)) {
-@@ -906,7 +916,7 @@
+@@ -906,7 +912,7 @@
  			*p = c;
  		}
  		break;
@@ -3608,7 +3412,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		for (p = end; p >= str; p--) {
  			c = *p; *p = '\0';
  			if (gmatch(str, pat, FALSE)) {
-@@ -948,14 +958,14 @@
+@@ -948,14 +954,14 @@
  	int oldsize = XPsize(*wp);
  
  	if (glob_str(cp, wp, markdirs) == 0)
@@ -3625,7 +3429,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #define GF_GLOBBED	BIT(1)		/* some globbing has been done */
  #define GF_MARKDIR	BIT(2)		/* add trailing / to directories */
  
-@@ -1083,7 +1093,7 @@
+@@ -1083,7 +1089,7 @@
  	 */
  	if (!has_globbing(sp, se)) {
  		XcheckN(*xs, xp, se - sp + 1);
@@ -3634,7 +3438,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		xp += strlen(xp);
  		*xpp = xp;
  		globit(xs, xpp, np, wp, check);
-@@ -1102,9 +1112,6 @@
+@@ -1102,9 +1108,6 @@
  			goto Nodir;
  		while ((d = readdir(dirp)) != NULL) {
  			name = d->d_name;
@@ -3644,7 +3448,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			if ((*name == '.' && *sp != '.')
  			    || !gmatch(name, sp, TRUE))
  				continue;
-@@ -1172,15 +1179,18 @@
+@@ -1172,15 +1175,18 @@
  
  /* remove MAGIC from string */
  char *
@@ -3665,13 +3469,12 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			if (!ISMAGIC(*s) || !(*++s & 0x80)
  			    || !strchr("*+?@! ", *s & 0x7f))
  				*d++ = *s;
-@@ -1188,11 +1198,12 @@
+@@ -1188,11 +1194,12 @@
  				/* extended pattern operators: *+?@! */
  				if ((*s & 0x7f) != ' ')
  					*d++ = *s & 0x7f;
--				*d++ = '(';
 +				if (d - dp < dlen)
-+					*d++ = '(';
+ 				*d++ = '(';
  			}
  		*d = '\0';
  	} else if (dp != sp)
@@ -3680,7 +3483,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return dp;
  }
  
-@@ -1282,11 +1293,19 @@
+@@ -1282,11 +1289,19 @@
  		return NULL;
  #else /* OS2 */
  		struct passwd *pw;
@@ -3689,19 +3492,18 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		pw = getpwnam(name);
  		if (pw == NULL)
  			return NULL;
--		ap->val.s = str_save(pw->pw_dir, APERM);
 +		n = strlen(pw->pw_dir);
 +		if (n > 0 && '/' != pw->pw_dir[n - 1]) {
 +			ap->val.s = str_nsave(pw->pw_dir, n + 1, APERM);
 +			ap->val.s[n] = '/';
 +			ap->val.s[n + 1] = '\0';
 +		} else {
-+			ap->val.s = str_save(pw->pw_dir, APERM);
+ 		ap->val.s = str_save(pw->pw_dir, APERM);
 +		}
  		ap->flag |= DEFINED|ISSET|ALLOC;
  #endif /* OS2 */
  	}
-@@ -1335,7 +1354,7 @@
+@@ -1335,7 +1350,7 @@
  		if (fdo & DOGLOB)
  			glob(start, wp, fdo & DOMARKDIRS);
  		else
@@ -3710,15 +3512,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		return;
  	}
  	brace_end = p;
---- exec.c.orig	1999-07-13 12:53:46.000000000 -0400
-+++ exec.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: exec.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * execute command tree
-  */
-@@ -14,25 +16,24 @@
+--- exec.c.orig	1999-07-13 16:53:46.000000000 +0000
++++ exec.c	2016-12-10 23:58:10.000000000 +0000
+@@ -14,25 +14,24 @@
  # define PS4_SUBSTITUTE(s)	(s)
  #endif /* KSH */
  
@@ -3757,16 +3553,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #endif /* OS2 */
  
  
-@@ -99,7 +100,7 @@
- 	newenv(E_EXEC);
- 	if (trap)
- 		runtraps(0);
-- 
-+
- 	if (t->type == TCOM) {
- 		/* Clear subst_exstat before argument expansion.  Used by
- 		 * null commands (see comexec() and c_eval()) and by c_set().
-@@ -144,7 +145,7 @@
+@@ -144,7 +143,7 @@
  				 */
  				if (tp && tp->type == CSHELL
  				    && (tp->flag & SPEC_BI))
@@ -3775,20 +3562,18 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				/* Deal with FERREXIT, quitenv(), etc. */
  				goto Break;
  			}
-@@ -228,8 +229,10 @@
+@@ -228,8 +227,10 @@
  		e->savefd[1] = savefd(1, 0);
  
  		openpipe(pv);
--		ksh_dup2(pv[0], 0, FALSE);
--		close(pv[0]);
 +		if (pv[0] != 0) {
-+			ksh_dup2(pv[0], 0, FALSE);
-+			close(pv[0]);
+ 		ksh_dup2(pv[0], 0, FALSE);
+ 		close(pv[0]);
 +		}
  		coproc.write = pv[1];
  		coproc.job = (void *) 0;
  
-@@ -448,18 +451,20 @@
+@@ -448,18 +449,20 @@
  	int volatile flags;
  {
  	int i;
@@ -3811,7 +3596,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	 * perhaps save last arg here and set it in shell()?.
  	 */
  	if (Flag(FTALKING) && *(lastp = ap)) {
-@@ -544,9 +549,10 @@
+@@ -544,9 +547,10 @@
  		newblock();
  		/* ksh functions don't keep assignments, POSIX functions do. */
  		if (keepasn_ok && tp && tp->type == CFUNC
@@ -3824,7 +3609,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			type_flags = LOCAL|LOCAL_COPY|EXPORT;
  	}
  	if (Flag(FEXPORT))
-@@ -563,6 +569,8 @@
+@@ -563,6 +567,8 @@
  				shf_flush(shl_out);
  		}
  		typeset(cp, type_flags, 0, 0, 0);
@@ -3833,7 +3618,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  
  	if ((cp = *ap) == NULL) {
-@@ -630,7 +638,7 @@
+@@ -630,7 +636,7 @@
  		if (tp->flag & FKSH)
  			kshname = ap[0];
  		else
@@ -3842,7 +3627,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		e->loc->argv = ap;
  		for (i = 0; *ap++ != NULL; i++)
  			;
-@@ -712,8 +720,8 @@
+@@ -712,8 +718,8 @@
  #ifdef KSH
  		/* set $_ to program's full path */
  		/* setstr() can't fail here */
@@ -3853,7 +3638,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #endif /* KSH */
  
  		if (flags&XEXEC) {
-@@ -732,10 +740,11 @@
+@@ -732,10 +738,11 @@
  		rv = exchild(&texec, flags, -1);
  		break;
  	}
@@ -3866,7 +3651,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  	return rv;
  }
-@@ -745,13 +754,13 @@
+@@ -745,13 +752,13 @@
  	register struct op *tp;
  	register char **ap;
  {
@@ -3886,7 +3671,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	*tp->args-- = tp->str;
  #ifdef	SHARPBANG
-@@ -768,7 +777,7 @@
+@@ -768,7 +775,7 @@
  		}
  		if ((buf[0] == '#' && buf[1] == '!' && (cp = &buf[2]))
  # ifdef OS2
@@ -3895,7 +3680,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			&& (cp = &buf[7]))
  # endif /* OS2 */
  		    )
-@@ -821,22 +830,22 @@
+@@ -821,22 +828,22 @@
  						afree(tmp_a0, ATEMP);
  					}
  # endif /* OS2 */
@@ -3926,7 +3711,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				 *tp->args-- = "/c";
  				 for (p = tp->str; *p; p++)
  					 if (*p == '/')
-@@ -846,12 +855,12 @@
+@@ -846,12 +853,12 @@
  		}
  	}
  #endif	/* SHARPBANG */
@@ -3941,7 +3726,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  }
  
  int
-@@ -1048,7 +1057,12 @@
+@@ -1048,7 +1055,12 @@
  		npath = search(name, flags & FC_DEFPATH ? def_path : path,
  				X_OK, &tp->u2.errno_);
  		if (npath) {
@@ -3955,7 +3740,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			tp->flag |= ISSET|ALLOC;
  		} else if ((flags & FC_FUNC)
  			   && (fpath = str_val(global("FPATH"))) != null
-@@ -1091,8 +1105,8 @@
+@@ -1091,8 +1103,8 @@
  
  /* Check if path is something we want to find.  Returns -1 for failure. */
  int
@@ -3966,7 +3751,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	int mode;
  	int *errnop;		/* set if candidate found, but not suitable */
  {
-@@ -1100,9 +1114,9 @@
+@@ -1100,9 +1112,9 @@
  	int ret, err = 0;
  	struct stat statb;
  
@@ -3978,7 +3763,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	if (ret < 0)
  		err = errno; /* File exists, but we can't access it */
  	else if (mode == X_OK
-@@ -1130,18 +1144,18 @@
+@@ -1130,7 +1142,7 @@
  				      (char *) 0
  				   };
  	int i;
@@ -3987,20 +3772,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	char *tp = mpath + strlen(mpath);
  	char *p;
  	char **sfx;
-- 
-+
- 	/* If a suffix has been specified, check if it is one of the
- 	 * suffixes that indicate the file is executable - if so, change
- 	 * the access test to R_OK...
- 	 * This code assumes OS/2 files can have only one suffix...
- 	 */
- 	if ((p = strrchr((p = ksh_strrchr_dirsep(mpath)) ? p : mpath, '.'))) {
--		if (mode == X_OK) 
-+		if (mode == X_OK)
- 			mode = R_OK;
- 		return search_access1(mpath, mode, errnop);
- 	}
-@@ -1161,17 +1175,17 @@
+@@ -1161,17 +1173,17 @@
  
  #ifdef OS2
  static int
@@ -4022,7 +3794,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	if (ret < 0)
  		err = errno; /* File exists, but we can't access it */
  	else if (!S_ISREG(statb.st_mode)) {
-@@ -1188,9 +1202,9 @@
+@@ -1188,9 +1200,9 @@
   * search for command with PATH
   */
  char *
@@ -4034,13 +3806,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	int mode;		/* R_OK or X_OK */
  	int *errnop;		/* set if candidate found, but not suitable */
  {
-@@ -1217,12 +1231,12 @@
- 	}
- 
- 	/* Look in current context always. (os2 style) */
--	if (search_access(Xstring(xs, xp), mode, errnop) == 0) 
-+	if (search_access(Xstring(xs, xp), mode, errnop) == 0)
- 		return Xstring(xs, xp); /* not Xclose() - xp may be wrong */
+@@ -1222,7 +1234,7 @@
  #else /* OS2 */
  	if (ksh_strchr_dirsep(name)) {
  		if (search_access(name, mode, errnop) == 0)
@@ -4049,7 +3815,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		return NULL;
  	}
  
-@@ -1230,7 +1244,7 @@
+@@ -1230,7 +1242,7 @@
  	Xinit(xs, xp, 128, ATEMP);
  #endif /* OS2 */
  
@@ -4058,7 +3824,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	while (sp != NULL) {
  		xp = Xstring(xs, xp);
  		if (!(p = strchr(sp, PATHSEP)))
-@@ -1351,6 +1365,8 @@
+@@ -1351,6 +1363,8 @@
  				snptreef((char *) 0, 32, "%R", &iotmp), emsg);
  			return -1;
  		}
@@ -4067,7 +3833,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		break;
  	  }
  	}
-@@ -1375,13 +1391,19 @@
+@@ -1375,13 +1389,19 @@
  		return -1;
  	}
  	/* Do not save if it has already been redirected (i.e. "cat >x >y"). */
@@ -4076,8 +3842,6 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -		 * Ask savefd() not to close iop->unit - allows error messages
 -		 * to be seen if iop->unit is 2; also means we can't lose
 -		 * the fd (eg, both dup2 below and dup2 in restfd() failing).
--		 */
--		e->savefd[iop->unit] = savefd(iop->unit, 1);
 +	if (e->savefd[iop->unit] == 0) {
 +		/* If these are the same, it means unit was previously closed */
 +		if (u == iop->unit)
@@ -4088,13 +3852,13 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +			 * this allows error messages to be seen if iop->unit
 +			 * is 2; also means we can't lose the fd (eg, both
 +			 * dup2 below and dup2 in restfd() failing).
-+			 */
-+			e->savefd[iop->unit] = savefd(iop->unit, 1);
+ 		 */
+ 		e->savefd[iop->unit] = savefd(iop->unit, 1);
 +	}
  
  	if (do_close)
  		close(iop->unit);
-@@ -1463,7 +1485,7 @@
+@@ -1463,7 +1483,7 @@
  		s = pushs(SSTRING, ATEMP);
  		s->start = s->str = content;
  		source = s;
@@ -4103,7 +3867,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			internal_errorf(1, "herein: yylex");
  		source = osource;
  		shf_puts(evalstr(yylval.cp, 0), shf);
-@@ -1509,7 +1531,8 @@
+@@ -1509,7 +1529,8 @@
  		if (print_menu || !*str_val(global("REPLY")))
  			pr_menu(ap);
  		shellf("%s", str_val(global("PS3")));
@@ -4113,7 +3877,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			return (char *) 0;
  		s = str_val(global("REPLY"));
  		if (*s) {
-@@ -1581,7 +1604,40 @@
+@@ -1581,7 +1602,40 @@
  	smi.arg_width = nwidth;
  	smi.num_width = dwidth;
  	print_columns(shl_out, n, select_fmt_entry, (void *) &smi,
@@ -4155,8 +3919,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	return n;
  }
---- expand.h.orig	1997-05-14 13:28:33.000000000 -0400
-+++ expand.h	2012-12-20 21:15:57.000000000 -0500
+--- expand.h.orig	1997-05-14 17:28:33.000000000 +0000
++++ expand.h	2016-12-10 23:49:11.000000000 +0000
 @@ -11,7 +11,7 @@
  
  	Xinit(xs, xp, 128, ATEMP); /* allocate initial string */
@@ -4166,15 +3930,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		Xput(xs, xp, c); /* add character */
  	}
  	return Xclose(xs, xp);	/* resize string */
---- expr.c.orig	1999-04-22 15:54:15.000000000 -0400
-+++ expr.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: expr.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * Korn expression evaluation
-  */
-@@ -61,7 +63,7 @@
+--- expr.c.orig	1999-04-22 19:54:15.000000000 +0000
++++ expr.c	2016-12-10 23:58:12.000000000 +0000
+@@ -61,7 +61,7 @@
  struct opinfo {
  	char		name[4];
  	int		len;	/* name length */
@@ -4183,7 +3941,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  };
  
  /* Tokens in this table must be ordered so the longest are first
-@@ -138,7 +140,7 @@
+@@ -138,7 +138,7 @@
  static struct tbl *intvar   ARGS((Expr_state *es, struct tbl *vp));
  
  /*
@@ -4192,7 +3950,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   */
  int
  evaluate(expr, rval, error_ok)
-@@ -157,7 +159,7 @@
+@@ -157,7 +157,7 @@
  }
  
  /*
@@ -4201,7 +3959,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   */
  int
  v_evaluate(vp, expr, error_ok)
-@@ -185,7 +187,7 @@
+@@ -185,7 +185,7 @@
  		if (i == LAEXPR) {
  			if (error_ok == KSH_RETURN_ERROR)
  				return 0;
@@ -4210,7 +3968,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		}
  		unwind(i);
  		/*NOTREACHED*/
-@@ -206,7 +208,7 @@
+@@ -206,7 +206,7 @@
  	if (vp->flag & INTEGER)
  		setint_v(vp, v);
  	else
@@ -4219,7 +3977,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		setstr(vp, str_val(v), error_ok);
  
  	quitenv();
-@@ -417,21 +419,21 @@
+@@ -417,21 +417,21 @@
  			break;
  		case O_TERN:
  			{
@@ -4247,7 +4005,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			}
  			break;
  		case O_ASN:
-@@ -463,7 +465,7 @@
+@@ -463,7 +463,7 @@
  	char *tvar;
  
  	/* skip white space */
@@ -4256,15 +4014,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		;
  	es->tokp = cp;
  
---- history.c.orig	1999-05-10 09:13:06.000000000 -0400
-+++ history.c	2012-12-20 21:16:52.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: history.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * command history
-  *
-@@ -57,15 +59,14 @@
+--- history.c.orig	1999-05-10 13:13:06.000000000 +0000
++++ history.c	2016-12-10 23:58:14.000000000 +0000
+@@ -57,15 +57,14 @@
  
  # endif	/* of EASY_HISTORY */
  
@@ -4286,7 +4038,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  static int	curpos;		/* current index in history[] */
  static char    *hname;		/* current name of history file */
  static int	hstarted;	/* set after hist_init() called */
-@@ -84,6 +85,11 @@
+@@ -84,6 +83,11 @@
  	char *first = (char *) 0, *last = (char *) 0;
  	char **hfirst, **hlast, **hp;
  
@@ -4298,7 +4050,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	while ((optc = ksh_getopt(wp, &builtin_opt, "e:glnrs0,1,2,3,4,5,6,7,8,9,")) != EOF)
  		switch (optc) {
  		  case 'e':
-@@ -91,8 +97,9 @@
+@@ -91,8 +95,9 @@
  			if (strcmp(p, "-") == 0)
  				sflag++;
  			else {
@@ -4310,7 +4062,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			}
  			break;
  		  case 'g': /* non-at&t ksh */
-@@ -326,11 +333,11 @@
+@@ -326,11 +331,11 @@
  }
  
  static int
@@ -4324,7 +4076,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  {
  	char *line;
  
-@@ -347,7 +354,7 @@
+@@ -347,7 +352,7 @@
  
  		Xinit(xs, xp, 128, ATEMP);
  		for (s = *hp; (s1 = strstr(s, pat))
@@ -4333,7 +4085,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		{
  			any_subst = 1;
  			len = s1 - s;
-@@ -385,7 +392,7 @@
+@@ -385,7 +390,7 @@
  
  	if (getn(str, &n)) {
  		hp = histptr + (n < 0 ? n : (n - hist_source->line));
@@ -4342,7 +4094,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			if (approx)
  				hp = hist_get_oldest();
  			else {
-@@ -407,12 +414,12 @@
+@@ -407,12 +412,12 @@
  		int anchored = *str == '?' ? (++str, 0) : 1;
  
  		/* the -1 is to avoid the current fc command */
@@ -4357,7 +4109,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  	return hp;
  }
-@@ -422,7 +429,7 @@
+@@ -422,7 +427,7 @@
  hist_get_newest(allow_cur)
  	int allow_cur;
  {
@@ -4366,7 +4118,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		bi_errorf("no history (yet)");
  		return (char **) 0;
  	}
-@@ -435,11 +442,11 @@
+@@ -435,11 +440,11 @@
  static char **
  hist_get_oldest()
  {
@@ -4380,7 +4132,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  }
  
  /******************************/
-@@ -450,7 +457,7 @@
+@@ -450,7 +455,7 @@
  {
  	static int last_line = -1;
  
@@ -4389,7 +4141,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		hist_source->line--;
  		afree((void*)*histptr, APERM);
  		histptr--;
-@@ -477,21 +484,21 @@
+@@ -477,21 +482,21 @@
  histnum(n)
  	int	n;
  {
@@ -4414,7 +4166,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   * searching from positions other than the end, and in either
   * direction.
   */
-@@ -503,18 +510,18 @@
+@@ -503,18 +508,18 @@
  	int	anchored;
  {
  	char	**hp;
@@ -4437,7 +4189,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	return -1;
  }
-@@ -528,18 +535,18 @@
+@@ -528,18 +533,18 @@
  	int n;
  {
  	if (n > 0 && n != histsize) {
@@ -4460,7 +4212,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  }
  
-@@ -577,7 +584,7 @@
+@@ -577,7 +582,7 @@
  		afree(hname, APERM);
  		hname = NULL;
  		/* let's reset the history */
@@ -4469,7 +4221,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		hist_source->line = 0;
  	}
  # endif
-@@ -591,10 +598,10 @@
+@@ -591,10 +596,10 @@
  void
  init_histvec()
  {
@@ -4483,7 +4235,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  }
  
-@@ -611,11 +618,11 @@
+@@ -611,11 +616,11 @@
  	register char **hp = histptr;
  	char *cp;
  
@@ -4500,7 +4252,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  	*hp = str_save(cmd, APERM);
  	/* trash trailing newline but allow imbedded newlines */
-@@ -727,20 +734,27 @@
+@@ -727,20 +732,27 @@
  hist_finish()
  {
    static int once;
@@ -4532,7 +4284,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
      for (i = 0; hp + i <= histptr && hp[i]; i++)
        fprintf(fh, "%s%c", hp[i], '\0');
      fclose(fh);
-@@ -779,9 +793,9 @@
+@@ -779,9 +791,9 @@
  
  	hp = histptr;
  
@@ -4545,7 +4297,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			hp[0] = hp[1];
  	}
  	*hp = c;
-@@ -858,8 +872,8 @@
+@@ -858,8 +870,8 @@
  		/*
  		 * check on its validity
  		 */
@@ -4556,7 +4308,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				munmap((caddr_t)base, hsize);
  			hist_finish();
  			unlink(hname);
-@@ -887,7 +901,7 @@
+@@ -887,7 +899,7 @@
  	shdr,		/* expecting a header */
  	sline,		/* looking for a null byte to end the line */
  	sn1,		/* bytes 1 to 4 of a line no */
@@ -4565,7 +4317,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  } State;
  
  static int
-@@ -896,7 +910,7 @@
+@@ -896,7 +908,7 @@
  	register int bytes;
  {
  	State state = shdr;
@@ -4574,7 +4326,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	while (bytes--) {
  		switch (state)
-@@ -1015,8 +1029,8 @@
+@@ -1015,8 +1027,8 @@
  	register int bytes;
  {
  	State state;
@@ -4585,7 +4337,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	for (state = shdr; bytes-- > 0; base++) {
  		switch (state) {
-@@ -1044,7 +1058,7 @@
+@@ -1044,7 +1056,7 @@
  		case sline:
  			if (*base == '\0') {
  				/* worry about line numbers */
@@ -4594,7 +4346,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  					/* a replacement ? */
  					histinsert(s, lno, line);
  				}
-@@ -1069,7 +1083,7 @@
+@@ -1069,7 +1081,7 @@
  {
  	register char **hp;
  
@@ -4603,7 +4355,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		hp = &histptr[lno-s->line];
  		if (*hp)
  			afree((void*)*hp, APERM);
-@@ -1093,7 +1107,7 @@
+@@ -1093,7 +1105,7 @@
  	unsigned char	*base;
  	unsigned char	*new;
  	int	bytes;
@@ -4612,7 +4364,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	(void) flock(histfd, LOCK_EX);
  	sizenow = lseek(histfd, 0L, SEEK_END);
-@@ -1105,7 +1119,7 @@
+@@ -1105,7 +1117,7 @@
  			/* someone has added some lines */
  			bytes = sizenow - hsize;
  			base = (unsigned char *)mmap(0, sizenow, PROT_READ, MAP_FLAGS, histfd, 0);
@@ -4621,7 +4373,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				goto bad;
  			new = base + hsize;
  			if (*new != COMMAND) {
-@@ -1157,7 +1171,7 @@
+@@ -1157,7 +1169,7 @@
  sprinkle(fd)
  	int fd;
  {
@@ -4630,15 +4382,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	return(write(fd, mag, 2) != 2);
  }
---- io.c.orig	1999-05-12 09:43:41.000000000 -0400
-+++ io.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: io.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * shell buffered IO and formatted output
-  */
-@@ -13,7 +15,7 @@
+--- io.c.orig	1999-05-12 13:43:41.000000000 +0000
++++ io.c	2016-12-10 23:58:17.000000000 +0000
+@@ -13,7 +13,7 @@
   */
  
  
@@ -4647,7 +4393,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  void
  #ifdef HAVE_PROTOTYPES
  errorf(const char *fmt, ...)
-@@ -297,11 +299,12 @@
+@@ -297,11 +297,12 @@
  
  	if (fd < FDBASE) {
  		nfd = ksh_dupbase(fd, FDBASE);
@@ -4661,7 +4407,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		if (!noclose)
  			close(fd);
  	} else
-@@ -318,7 +321,7 @@
+@@ -318,7 +319,7 @@
  		shf_flush(&shf_iob[fd]);
  	if (ofd < 0)		/* original fd closed */
  		close(fd);
@@ -4670,7 +4416,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		ksh_dup2(ofd, fd, TRUE); /* XXX: what to do if this fails? */
  		close(ofd);
  	}
-@@ -353,7 +356,7 @@
+@@ -353,7 +354,7 @@
  {
  	int fd, fl;
  
@@ -4679,25 +4425,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		fd = name[0] - '0';
  		if ((fl = fcntl(fd = name[0] - '0', F_GETFL, 0)) < 0) {
  			if (emsgp)
-@@ -362,7 +365,7 @@
- 		}
- 		fl &= O_ACCMODE;
- #ifdef OS2
--		if (mode == W_OK ) { 
-+		if (mode == W_OK ) {
- 		       if (setmode(fd, O_TEXT) == -1) {
- 				if (emsgp)
- 					*emsgp = "couldn't set write mode";
-@@ -372,7 +375,7 @@
- 	      		if (setmode(fd, O_BINARY) == -1) {
- 				if (emsgp)
- 					*emsgp = "couldn't set read mode";
--				return -1; 
-+				return -1;
- 			}
- #else /* OS2 */
- 		/* X_OK is a kludge to disable this check for dups (x<&1):
-@@ -449,7 +452,7 @@
+@@ -449,7 +450,7 @@
  	}
  }
  
@@ -4706,7 +4434,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   * (Used by check_fd() and by c_read/c_print to deal with -p option).
   */
  int
-@@ -502,28 +505,36 @@
+@@ -502,28 +503,36 @@
  	Temp_type type;
  	struct temp **tlist;
  {
@@ -4747,7 +4475,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		if (fd >= 0) {
  			tp->shf = shf_fdopen(fd, SHF_WR, (struct shf *) 0);
  			break;
-@@ -541,7 +552,7 @@
+@@ -541,7 +550,7 @@
  			 */
  			break;
  	}
@@ -4756,15 +4484,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	tp->pid = procpid;
  
  	tp->next = *tlist;
---- jobs.c.orig	1999-07-13 12:50:56.000000000 -0400
-+++ jobs.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: jobs.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * Process and job control
-  */
-@@ -13,7 +15,7 @@
+--- jobs.c.orig	1999-07-13 16:50:56.000000000 +0000
++++ jobs.c	2016-12-10 23:58:19.000000000 +0000
+@@ -13,7 +13,7 @@
   *
   * Notes regarding the copious ifdefs:
   *	- JOB_SIGS is independent of JOBS - it is defined if there are modern
@@ -4773,7 +4495,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   *	  JOBS is not defined, since the shell will not otherwise notice when
   *	  background jobs die until the shell waits for a foreground process
   *	  to die.
-@@ -121,7 +123,7 @@
+@@ -121,7 +121,7 @@
  #define JF_CHANGED	0x040	/* process has changed state */
  #define JF_KNOWN	0x080	/* $! referenced */
  #define JF_ZOMBIE	0x100	/* known, unwaited process */
@@ -4782,7 +4504,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #define JF_USETTYMODE	0x400	/* tty mode saved if process exits normally */
  #define JF_SAVEDTTYPGRP	0x800	/* j->saved_ttypgrp is valid */
  
-@@ -219,8 +221,7 @@
+@@ -219,8 +219,7 @@
  static void		check_job ARGS((Job *j));
  static void		put_job ARGS((Job *j, int where));
  static void		remove_job ARGS((Job *j, const char *where));
@@ -4792,28 +4514,26 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  /* initialize job control */
  void
-@@ -294,10 +295,17 @@
+@@ -294,10 +293,17 @@
  				    && procpid == kshpid)))))
  		{
  			killed = 1;
--			killpg(j->pgrp, SIGHUP);
 +			if (j->pgrp == 0)
 +				kill_job(j, SIGHUP);
 +			else
-+				killpg(j->pgrp, SIGHUP);
+ 			killpg(j->pgrp, SIGHUP);
  #ifdef JOBS
 -			if (j->state == PSTOPPED)
--				killpg(j->pgrp, SIGCONT);
 +			if (j->state == PSTOPPED) {
 +				if (j->pgrp == 0)
 +					kill_job(j, SIGCONT);
 +				else
-+					killpg(j->pgrp, SIGCONT);
+ 				killpg(j->pgrp, SIGCONT);
 +			}
  #endif /* JOBS */
  		}
  	}
-@@ -497,7 +505,7 @@
+@@ -497,7 +503,7 @@
  		put_job(j, PJ_PAST_STOPPED);
  	}
  
@@ -4822,7 +4542,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	/* create child process */
  	forksleep = 1;
-@@ -508,7 +516,7 @@
+@@ -508,7 +514,7 @@
  		forksleep <<= 1;
  	}
  	if (i < 0) {
@@ -4831,20 +4551,20 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		remove_job(j, "fork failed");
  #ifdef NEED_PGRP_SYNC
  		if (j_sync_open) {
-@@ -621,8 +629,10 @@
+@@ -621,10 +627,12 @@
  				SS_RESTORE_IGN|SS_FORCE);
  			if (!(flags & (XPIPEI | XCOPROC))) {
  				int fd = open("/dev/null", 0);
--				(void) ksh_dup2(fd, 0, TRUE);
--				close(fd);
 +				if (fd != 0) {
-+					(void) ksh_dup2(fd, 0, TRUE);
-+					close(fd);
-+				}
+ 				(void) ksh_dup2(fd, 0, TRUE);
+ 				close(fd);
  			}
  		}
++		}
  		remove_job(j, "child");	/* in case of `jobs` command */
-@@ -805,7 +815,6 @@
+ 		nzombie = 0;
+ #ifdef JOBS
+@@ -805,7 +813,6 @@
  	int	sig;
  {
  	Job	*j;
@@ -4852,23 +4572,17 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	int	rv = 0;
  	int	ecode;
  #ifdef JOB_SIGS
-@@ -823,11 +832,10 @@
+@@ -823,8 +830,7 @@
  	}
  
  	if (j->pgrp == 0) {	/* started when !Flag(FMONITOR) */
 -		for (p=j->proc_list; p != (Proc *) 0; p = p->next)
 -			if (kill(p->pid, sig) < 0) {
--				bi_errorf("%s: %s", cp, strerror(errno));
--				rv = 1;
--			}
 +		if (kill_job(j, sig) < 0) {
-+			bi_errorf("%s: %s", cp, strerror(errno));
-+			rv = 1;
-+		}
- 	} else {
- #ifdef JOBS
- 		if (j->state == PSTOPPED && (sig == SIGTERM || sig == SIGHUP))
-@@ -886,7 +894,7 @@
+ 				bi_errorf("%s: %s", cp, strerror(errno));
+ 				rv = 1;
+ 			}
+@@ -886,7 +892,7 @@
  		}
  		shprintf("%s%s", p->command, p->next ? "| " : null);
  	}
@@ -4877,7 +4591,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	shf_flush(shl_stdout);
  	if (running)
  		j->state = PRUNNING;
-@@ -1070,7 +1078,7 @@
+@@ -1070,7 +1076,7 @@
  #endif /* JOB_SIGS */
  }
  
@@ -4886,7 +4600,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  pid_t
  j_async()
  {
-@@ -1214,7 +1222,7 @@
+@@ -1214,7 +1220,7 @@
  			 * a fork/exec instead of an exec (the fork means
  			 * the execed shell gets a different pid from its
  			 * pgrp, so naturally it sets its pgrp and gets hosed
@@ -4895,22 +4609,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			 * has restored the tty's pgrp to that of the su
  			 * process).
  			 */
-@@ -1282,7 +1290,7 @@
- 	j_systime = j->systime;
- 	rv = j->status;
- 
--	if (!(flags & JW_ASYNCNOTIFY) 
-+	if (!(flags & JW_ASYNCNOTIFY)
- 	    && (!Flag(FMONITOR) || j->state != PSTOPPED))
- 	{
- 		j_print(j, JP_SHORT, shl_out);
-@@ -1423,12 +1431,12 @@
- 
- #ifdef KSH
- 	/* Note when co-process dies: can't be done in j_wait() nor
--	 * remove_job() since neither may be called for non-interactive 
-+	 * remove_job() since neither may be called for non-interactive
- 	 * shells.
+@@ -1428,7 +1434,7 @@
  	 */
  	if (j->state == PEXITED || j->state == PSIGNALLED) {
  		/* No need to keep co-process input any more
@@ -4919,7 +4618,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		 */
  		if (coproc.job == j) {
  			coproc.job = (void *) 0;
-@@ -1530,16 +1538,17 @@
+@@ -1530,16 +1536,17 @@
  		coredumped = 0;
  		switch (p->state) {
  		case PRUNNING:
@@ -4940,7 +4639,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			else
  				shf_snprintf(buf, sizeof(buf), "Done (%d)",
  					WEXITSTATUS(p->status));
-@@ -1555,15 +1564,17 @@
+@@ -1555,15 +1562,17 @@
  				|| WTERMSIG(p->status) == SIGPIPE)) {
  				buf[0] = '\0';
  			} else
@@ -4960,51 +4659,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  		if (how == JP_LONG)
  			shf_fprintf(shf, "%5d ", p->pid);
-@@ -1635,27 +1646,27 @@
- 		return (Job *) 0;
- 	}
- 	switch (*++cp) {
--	  case '\0': /* non-standard */
--	  case '+':
--	  case '%':
-+	case '\0': /* non-standard */
-+	case '+':
-+	case '%':
- 		if (job_list != (Job *) 0)
- 			return job_list;
- 		break;
- 
--	  case '-':
-+	case '-':
- 		if (job_list != (Job *) 0 && job_list->next)
- 			return job_list->next;
- 		break;
- 
--	  case '0': case '1': case '2': case '3': case '4':
--	  case '5': case '6': case '7': case '8': case '9':
-+	case '0': case '1': case '2': case '3': case '4':
-+	case '5': case '6': case '7': case '8': case '9':
- 		job = atoi(cp);
- 		for (j = job_list; j != (Job *) 0; j = j->next)
- 			if (j->job == job)
- 				return j;
- 		break;
- 
--	  case '?':		/* %?string */
-+	case '?':		/* %?string */
- 		last_match = (Job *) 0;
- 		for (j = job_list; j != (Job *) 0; j = j->next)
- 			for (p = j->proc_list; p != (Proc *) 0; p = p->next)
-@@ -1671,7 +1682,7 @@
- 			return last_match;
- 		break;
- 
--	  default:		/* %string */
-+	default:		/* %string */
- 		len = strlen(cp);
- 		last_match = (Job *) 0;
- 		for (j = job_list; j != (Job *) 0; j = j->next)
-@@ -1723,7 +1734,7 @@
+@@ -1723,7 +1732,7 @@
  	return newj;
  }
  
@@ -5013,7 +4668,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   *
   * If jobs are compiled in then this routine expects sigchld to be blocked.
   */
-@@ -1825,50 +1836,17 @@
+@@ -1825,50 +1834,17 @@
   *
   * If jobs are compiled in then this routine expects sigchld to be blocked.
   */
@@ -5071,33 +4726,27 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +				rval = -1;
 +	return rval;
  }
---- ksh.Man.orig	1999-07-13 13:23:27.000000000 -0400
-+++ ksh.Man	2012-12-20 21:15:57.000000000 -0500
-@@ -1,4 +1,5 @@
- '\" t
-+.\" $NetBSD: ksh.Man,v 1.2 2008/05/31 16:47:36 tnn Exp $
- .\"{{{}}}
- .\"{{{  Notes about man page
- .\"     - use the pseudo-macros .sh( and .sh) to begin and end sh-specific
-@@ -12,8 +13,8 @@
- .\"	  name in built-in commands section?)
- .\"	- need to be consistent about notation for `See section-name', `
- .\"	  See description of foobar command', `See section section-name', etc.
--.\"	- need to use the term `external command' meaning `a command that is 
--.\"       executed using execve(2)' (as opposed to a built-in command or 
-+.\"	- need to use the term `external command' meaning `a command that is
-+.\"       executed using execve(2)' (as opposed to a built-in command or
- .\"       function) for more clear description.
+--- ksh.Man.orig	1999-07-13 17:23:27.000000000 +0000
++++ ksh.Man	2016-12-10 23:58:54.000000000 +0000
+@@ -18,10 +18,10 @@
  .\"}}}
  .\"{{{  Title
-@@ -48,12 +49,12 @@
- .\"{{{  Description
+ .ksh(
+-.TH KSH 1 "August 19, 1996" "" "User commands"
++.TH KSH 1 "April 12, 2015" "" "User commands"
+ .ksh)
+ .sh(
+-.TH SH 1 "August 19, 1996" "" "User commands"
++.TH SH 1 "April 12, 2015" "" "User commands"
+ .sh)
+ .\"}}}
+ .\"{{{  Name
+@@ -49,11 +49,11 @@
  .SH DESCRIPTION
  .ksh(
--\fBksh\fP is a command interpreter that is intended for both 
+ \fBksh\fP is a command interpreter that is intended for both 
 -interactive and shell script use.  Its command language is a superset
 -of the \fIsh\fP(1) shell language.
-+\fBksh\fP is a command interpreter that is intended for both
 +interactive and shell script use.
 +Its command language is a superset of the \fIsh\fP(1) shell language.
  .ksh)
@@ -5107,7 +4756,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  interpreter for both interactive and script use.
  .sh)
  .\"{{{  Shell Startup
-@@ -124,14 +125,14 @@
+@@ -124,14 +124,14 @@
  If the basename of the name the shell is called with (\fIi.e.\fP, argv[0])
  starts with \fB\-\fP or if the \fB\-l\fP option is used, the shell is assumed
  to be a login shell and the shell reads and executes the contents of
@@ -5125,7 +4774,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  is included (after the above mentioned substitutions have been performed).
  .PP
  The exit status of the shell is 127 if the command file specified
-@@ -292,7 +293,8 @@
+@@ -292,7 +292,8 @@
  is not.
  .\"{{{  ( list )
  .IP "\fB(\fP \fIlist\fP \fB)\fP"
@@ -5135,7 +4784,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  environment changes from a subshell back to its parent.
  .\"}}}
  .\"{{{  { list }
-@@ -304,12 +306,14 @@
+@@ -304,12 +305,14 @@
  .IP "\fBcase\fP \fIword\fP \fBin\fP [ [\fB(\fP] \fIpattern\fP [\fB|\fP \fIpattern\fP] ... \fB)\fP \fIlist\fP \fB;;\fP ] ... \fBesac\fP"
  The \fBcase\fP statement attempts to match \fIword\fP against the specified
  \fIpattern\fPs; the \fIlist\fP associated with the first successfully matched
@@ -5155,7 +4804,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  For historical reasons, open and close braces may be used instead
  of \fBin\fP and \fBesac\fP (\fIe.g.\fP, \fBcase $foo { *) echo bar; }\fP).
  The exit status of a \fBcase\fP statement is that of the executed \fIlist\fP;
-@@ -319,7 +323,8 @@
+@@ -319,7 +322,8 @@
  .IP "\fBfor\fP \fIname\fP [ \fBin\fP \fIword\fP ... \fIterm\fP ] \fBdo\fP \fIlist\fP \fBdone\fP"
  where \fIterm\fP is either a newline or a \fB;\fP.
  For each \fIword\fP in the specified word list, the parameter \fIname\fP is
@@ -5165,7 +4814,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  specify a word list, the positional parameters (\fB"$1"\fP, \fB"$2"\fP,
  \fIetc.\fP) are used instead.
  For historical reasons, open and close braces may be used instead
-@@ -331,7 +336,8 @@
+@@ -331,7 +335,8 @@
  .IP "\fBif\fP \fIlist\fP \fBthen\fP \fIlist\fP [\fBelif\fP \fIlist\fP \fBthen\fP \fIlist\fP] ... [\fBelse\fP \fIlist\fP] \fBfi\fP"
  If the exit status of the first \fIlist\fP is zero, the second \fIlist\fP
  is executed; otherwise the \fIlist\fP following the \fBelif\fP, if any, is
@@ -5175,7 +4824,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  and \fBelif\fPs fail (\fIi.e.\fP, exit with non-zero status), the \fIlist\fP
  following the \fBelse\fP is executed.
  The exit status of an \fBif\fP statement is that
-@@ -372,7 +378,8 @@
+@@ -372,7 +377,8 @@
  .\"}}}
  .\"{{{  while list do list done
  .IP "\fBwhile\fP \fIlist\fP \fBdo\fP \fIlist\fP \fBdone\fP"
@@ -5185,7 +4834,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  as the exit status of the first \fIlist\fP is zero.
  The exit status of a \fBwhile\fP statement is the last exit status
  of the \fIlist\fP in the body of the loop; if the body is not executed,
-@@ -432,7 +439,7 @@
+@@ -432,7 +438,7 @@
  .IP \ \ \(bu
  The single argument form
  of \fBtest\fP, which tests if the argument has non-zero length, is not valid
@@ -5194,7 +4843,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .ce
  \fB[\fP \fIstr\fP \fB]\fP
  use
-@@ -472,18 +479,26 @@
+@@ -472,18 +478,26 @@
  followed by a newline, both the \fB\e\fP and the newline are stripped;
  otherwise, both the \fB\e\fP and the character following are unchanged.
  .PP
@@ -5229,7 +4878,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  when a word that is not an alias is found, when a quoted word is found
  or when an alias word that is currently being expanded is found.
  .PP
-@@ -506,8 +521,10 @@
+@@ -506,8 +520,10 @@
  local='typeset'
  .br
  login='exec login'
@@ -5242,7 +4891,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .br
  nohup='nohup '
  .br
-@@ -523,15 +540,17 @@
+@@ -523,15 +539,17 @@
  .ft P
  .PP
  Tracked aliases allow the shell to remember where it found a particular
@@ -5267,16 +4916,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  For interactive shells, only the following commands are automatically
  tracked: \fBcat\fP, \fBcc\fP, \fBchmod\fP, \fBcp\fP, \fBdate\fP, \fBed\fP,
  \fBemacs\fP, \fBgrep\fP, \fBls\fP, \fBmail\fP, \fBmake\fP, \fBmv\fP,
-@@ -550,7 +569,7 @@
- If a substitution appears outside of double quotes, the results of the
- substitution are generally subject to word or field splitting according to
- the current value of the \fBIFS\fP parameter.
--The \fBIFS\fP parameter specifies a list of characters which 
-+The \fBIFS\fP parameter specifies a list of characters which
- are used to break a string up into several words;
- any characters from the set space, tab and newline that appear in the
- IFS characters are called \fIIFS white space\fP.
-@@ -583,8 +602,8 @@
+@@ -583,8 +601,8 @@
  .br
  .\"todo: fix this( $(..) parenthesis counting).
  NOTE: \fB$(\fP\fIcommand\fP\fB)\fP expressions are currently parsed by
@@ -5287,7 +4927,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .PP
  Arithmetic substitutions are replaced by the value of the specified
  expression.
-@@ -601,7 +620,7 @@
+@@ -601,7 +619,7 @@
  The later form can be treated as arrays by appending an array
  index of the form: \fB[\fP\fIexpr\fP\fB]\fP where \fIexpr\fP is
  an arithmetic expression.
@@ -5296,7 +4936,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  Parameter substitutions take the form \fB$\fP\fIname\fP,
  \fB${\fP\fIname\fP\fB}\fP or
  \fB${\fP\fIname\fP\fB[\fP\fIexpr\fP\fB]}\fP, where \fIname\fP is a
-@@ -639,7 +658,7 @@
+@@ -639,7 +657,7 @@
  .\"{{{  environment
  Parameters with the export attribute (set using the \fBexport\fP or
  \fBtypeset \-x\fP commands, or by parameter assignments followed by simple
@@ -5305,7 +4945,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  run by the shell as \fIname\fP\fB=\fP\fIvalue\fP pairs.
  The order in which parameters appear in the environment of a command
  is unspecified.
-@@ -685,8 +704,8 @@
+@@ -685,8 +703,8 @@
  .\"{{{  ${name#pattern}, ${name##pattern}
  .IP "\fB${\fP\fIname\fP\fB#\fP\fIpattern\fP\fB}\fP, \fB${\fP\fIname\fP\fB##\fP\fIpattern\fP\fB}\fP"
  If \fIpattern\fP matches the beginning of the value of parameter \fIname\fP,
@@ -5316,7 +4956,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  longest match.
  .\"}}}
  .\"{{{  ${name%pattern}, ${name%%pattern}
-@@ -700,8 +719,8 @@
+@@ -700,8 +718,8 @@
  set directly using assignments:
  .\"{{{  !
  .IP \fB!\fP
@@ -5327,16 +4967,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .\"}}}
  .\"{{{  #
  .IP \fB#\fP
-@@ -742,7 +761,7 @@
- .\"}}}
- .\"{{{  *
- .IP \fB*\fP
--All positional parameters (except parameter 0), 
-+All positional parameters (except parameter 0),
- \fIi.e.\fP, \fB$1 $2 $3\fP....
- If used outside of double quotes, parameters are separate words
- (which are subjected to word splitting); if used within double quotes,
-@@ -754,7 +773,7 @@
+@@ -754,7 +772,7 @@
  Same as \fB$*\fP, unless it is used inside double quotes, in which case
  a separate word is generated for each positional parameter \- if there
  are no positional parameters, no word is generated ("$@" can be used
@@ -5345,7 +4976,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  splitting arguments with spaces).
  .\"}}}
  .\"}}}
-@@ -775,7 +794,8 @@
+@@ -775,7 +793,8 @@
  .\"}}}
  .\"{{{  CDPATH
  .IP \fBCDPATH\fP
@@ -5355,7 +4986,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  \fBPATH\fP for those directories not beginning with \fB/\fP in \fBcd\fP
  commands.
  Note that if CDPATH is set and does not contain \fB.\fP nor an empty path,
-@@ -801,8 +821,8 @@
+@@ -801,8 +820,8 @@
  .\"{{{  ENV
  .IP \fBENV\fP
  If this parameter is found to be set after any profile files are
@@ -5366,7 +4997,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .\"}}}
  .\"{{{  ERRNO
  .IP \fBERRNO\fP
-@@ -838,7 +858,8 @@
+@@ -838,7 +857,8 @@
  shell running on the same machine will share history if their
  \fBHISTFILE\fP parameters all point at the same file.
  .br
@@ -5376,7 +5007,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  different from the original Korn shell, which uses \fB$HOME/.sh_history\fP;
  in future, pdksh may also use a default history file.
  .ksh)
-@@ -858,7 +879,8 @@
+@@ -858,7 +878,8 @@
  .IP \fBIFS\fP
  Internal field separator, used during substitution and by the \fBread\fP
  command, to split values into distinct arguments; normally set to
@@ -5386,7 +5017,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .br
  \fBNote:\fP this parameter is not imported from the environment
  when the shell is started.
-@@ -894,24 +916,27 @@
+@@ -894,24 +915,27 @@
  .\"{{{  MAIL
  .ksh(
  .IP \fBMAIL\fP
@@ -5420,7 +5051,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  performed on the message, and, during substitution, the parameter \fB$_\fP
  contains the name of the file.
  The default message is \fByou have mail in $_\fP.
-@@ -956,7 +981,8 @@
+@@ -956,7 +980,8 @@
  .ksh(
  Parameter, command and arithmetic substitutions are performed, and
  \fB!\fP is replaced with the current command number (see \fBfc\fP
@@ -5430,7 +5061,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  Note that since the command line editors try to figure out how long the
  prompt is (so they know how far it is to edge of the screen),
  escape codes in the prompt tend to mess things up.
-@@ -970,7 +996,7 @@
+@@ -970,7 +995,7 @@
  .sh(
  The prompt is printed verbatim (\fIi.e.\fP, no substitutions are done).
  .sh)
@@ -5439,7 +5070,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .\"}}}
  .\"{{{  PS2
  .IP \fBPS2\fP
-@@ -999,13 +1025,14 @@
+@@ -999,13 +1024,14 @@
  .\"}}}
  .\"{{{  PWD
  .IP \fBPWD\fP
@@ -5457,7 +5088,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  referenced, it is assigned the next number in a random number series.
  The point in the series can be set by assigning a number to
  \fBRANDOM\fP (see \fIrand\fP(3)).
-@@ -1030,21 +1057,22 @@
+@@ -1030,21 +1056,22 @@
  .IP \fBTMOUT\fP
  If set to a positive integer in an interactive shell, it specifies
  the maximum number of seconds the shell will wait for input after
@@ -5486,7 +5117,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  parameter contains the string \fBvi\fP, \fBemacs\fP or \fBgmacs\fP, the
  vi, emacs or gmacs (Gosling emacs) editing mode is enabled, respectively.
  .ksh)
-@@ -1054,13 +1082,15 @@
+@@ -1054,13 +1081,15 @@
  .\"{{{  Tilde Expansion
  .SS "Tilde Expansion"
  Tilde expansion, which is done in parallel with parameter substitution,
@@ -5508,7 +5139,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  file or if any quoting or parameter substitution occurs in the login name,
  no substitution is performed.
  .PP
-@@ -1070,7 +1100,8 @@
+@@ -1070,7 +1099,8 @@
  (\fB:\fP), and login names are also delimited by colons.
  .PP
  The home directory of previously expanded login names are cached and
@@ -5518,7 +5149,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  add to this cache (\fIe.g.\fP, `alias \-d fac=/usr/local/facilities; cd
  ~fac/bin').
  .\"}}}
-@@ -1096,34 +1127,39 @@
+@@ -1096,34 +1126,39 @@
  .SS "File Name Patterns"
  .PP
  A file name pattern is a word containing one or more unquoted \fB?\fP or
@@ -5565,7 +5196,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  of the specified patterns.
  Example: the pattern \fB+(foo|bar)\fP matches the strings
  `foo', `bar', `foobarfoo', \fIetc.\fP.
-@@ -1172,7 +1208,8 @@
+@@ -1172,7 +1207,8 @@
  set to be from \fB/dev/null\fP, and commands for which any of the following
  redirections have been specified:
  .IP "\fB>\fP \fIfile\fP"
@@ -5575,7 +5206,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  it is created; if it does exist, is a regular file and the \fBnoclobber\fP
  option is set, an error occurs, otherwise the file is truncated.
  Note that this means the command \fIcmd < foo > foo\fP will open
-@@ -1183,7 +1220,8 @@
+@@ -1183,7 +1219,8 @@
  option is set.
  .IP "\fB>>\fP \fIfile\fP"
  same as \fB>\fP, except the file an existing file is appended to instead
@@ -5585,7 +5216,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  always go to the end of the file (see \fIopen\fP(2)).
  .IP "\fB<\fP \fIfile\fP"
  standard input is redirected from \fIfile\fP, which is opened for reading.
-@@ -1305,11 +1343,12 @@
+@@ -1305,11 +1342,12 @@
  When used as a prefix operator, the result is the incremented value of
  the parameter, when used as a postfix operator, the result is the
  original value of the parameter.
@@ -5601,7 +5232,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .IP "\fB=\fP"
  assignment; variable on the left is set to the value on the right.
  .IP "\fB*= /= %= += \-= <<= >>= &= ^= |=\fP"
-@@ -1335,7 +1374,8 @@
+@@ -1335,7 +1373,8 @@
  less than; the result is 1 if the left argument is less than the right,
  0 if not.
  .IP "\fB<= >= >\fP"
@@ -5611,7 +5242,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .IP "\fB<< >>\fP"
  shift left (right); the result is the left argument with its bits shifted
  left (right) by the amount given in the right argument.
-@@ -1343,8 +1383,8 @@
+@@ -1343,8 +1382,8 @@
  addition, subtraction, multiplication, and division.
  .IP "\fB%\fP"
  remainder; the result is the remainder of the division of the left argument
@@ -5622,16 +5253,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .IP "\fI<arg1>\fP \fB?\fP \fI<arg2>\fP \fB:\fP \fI<arg3>\fP"
  if \fI<arg1>\fP is non-zero, the result is \fI<arg2>\fP,
  otherwise \fI<arg3>\fP.
-@@ -1361,7 +1401,7 @@
- Once a co-process has been started, another can't be started until
- the co-process exits, or until the co-process input has been redirected using
- an \fBexec \fP\fIn\fP\fB>&p\fP redirection.
--If a co-process's input is redirected in this way, the next 
-+If a co-process's input is redirected in this way, the next
- co-process to be started will share the output with the first co-process,
- unless the output of the initial co-process has been redirected using an
- \fBexec \fP\fIn\fP\fB<&p\fP redirection.
-@@ -1382,7 +1422,7 @@
+@@ -1382,7 +1421,7 @@
  This can be avoided by redirecting the output to a numbered
  file descriptor (as this also causes the shell to close its copy).
  Note that this behaviour is slightly different from the original Korn shell
@@ -5640,7 +5262,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  most recently started co-process (instead of when all sharing co-processes)
  exits.
  .IP \ \ \(bu
-@@ -1425,7 +1465,8 @@
+@@ -1425,7 +1464,8 @@
  with \fBtypeset \-ft\fP and \fBtypeset \-fx\fP, respectively.
  When a traced function is executed, the shell's \fBxtrace\fP option is turned
  on for the functions duration, otherwise the \fBxtrace\fP option is turned off.
@@ -5650,7 +5272,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  Korn shell, exported functions are visible to shell scripts that are executed.
  .PP
  Since functions are executed in the current shell environment, parameter
-@@ -1449,7 +1490,7 @@
+@@ -1449,7 +1489,7 @@
  the \fB$0\fP parameter is set to the name of the function
  (Bourne-style functions leave \fB$0\fP untouched).
  .IP \ \ \(bu
@@ -5659,7 +5281,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  the shell environment
  (executing Bourne-style functions will keep assignments).
  .IP \ \ \(bu
-@@ -1495,13 +1536,6 @@
+@@ -1495,13 +1535,6 @@
  is not expanded and included when the shell starts.
  .sh)
  .IP \ \ \(bu
@@ -5673,7 +5295,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  \fBkill \-l\fP output: in posix mode, signal names are listed one a single line;
  in non-posix mode, signal numbers, names and descriptions are printed in
  columns.
-@@ -1533,7 +1567,8 @@
+@@ -1533,7 +1566,8 @@
  if there are no errors; in non-posix mode, the exit status is that of
  any command substitutions performed in generating the set command.
  For example, `\fBset \-\- `false`; echo $?\fP' prints 0 in posix mode,
@@ -5683,16 +5305,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  use the old \fIgetopt\fP(1) command.
  .IP \ \ \(bu
  argument expansion of \fBalias\fP, \fBexport\fP, \fBreadonly\fP, and
-@@ -1572,7 +1607,7 @@
- a function, a regular built-in or the name of a file to execute found
- using the \fBPATH\fP parameter.
- The checks are made in the above order.
--Special built-in commands differ from other commands in that 
-+Special built-in commands differ from other commands in that
- the \fBPATH\fP parameter is not used to find them, an error
- during their execution can cause a non-interactive shell to exit and
- parameter assignments that are specified before the command are
-@@ -1580,7 +1615,7 @@
+@@ -1580,7 +1614,7 @@
  Just to confuse things, if the posix option is turned off (see \fBset\fP
  command below) some special commands are very special in that
  no field splitting, file globing, brace expansion nor tilde expansion
@@ -5701,45 +5314,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  Regular built-in commands are different only in that the \fBPATH\fP
  parameter is not used to find them.
  .PP
-@@ -1596,12 +1631,12 @@
- .IP "Additional ksh special commands"
- .TS
- lw(8m)fB lw(8m)fB lw(8m)fB lw(8m)fB lw(8m)fB .
--builtin	times	typeset		
-+builtin	times	typeset
- .TE
- .IP "Very special commands (non-posix mode)"
- .TS
- lw(8m)fB lw(8m)fB lw(8m)fB lw(8m)fB lw(8m)fB .
--alias	readonly	set	typeset	
-+alias	readonly	set	typeset
- .TE
- .IP "POSIX regular commands"
- .TS
-@@ -1613,8 +1648,8 @@
- .IP "Additional ksh regular commands"
- .TS
- lw(8m)fB lw(8m)fB lw(8m)fB lw(8m)fB lw(8m)fB .
--[	let	pwd	ulimit	
--echo	print	test	whence	
-+[	let	pwd	ulimit
-+echo	print	test	whence
- .TE
- .PP
- In the future, the additional ksh special and regular commands may
-@@ -1644,9 +1679,9 @@
- For any name without a value, the existing alias is listed.
- Any name with a value defines an alias (see Aliases above).
- .sp
--When listing aliases, one of two formats is used: 
-+When listing aliases, one of two formats is used:
- normally, aliases are listed as \fIname\fP\fB=\fP\fIvalue\fP, where
--\fIvalue\fP is quoted; if options were preceded with \fB+\fP 
-+\fIvalue\fP is quoted; if options were preceded with \fB+\fP
- or a lone \fB+\fP is given on the command line, only \fIname\fP
- is printed.
- In addition, if the \fB\-p\fP option is used, each alias
-@@ -1671,7 +1706,7 @@
+@@ -1671,7 +1705,7 @@
  See Job Control below for more information.
  .\"}}}
  .\"{{{  bind [-l] [-m] [key[=editing-command] ...]
@@ -5748,7 +5323,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  Set or view the current emacs command editing key bindings/macros.
  See Emacs Editing Mode below for a complete description.
  .\"}}}
-@@ -1687,14 +1722,15 @@
+@@ -1687,14 +1721,15 @@
  .\"}}}
  .\"{{{  cd [-LP] [dir]
  .IP "\fBcd\fP [\fB\-LP\fP] [\fIdir\fP]"
@@ -5768,7 +5343,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  \fB\-\fP, the previous working directory is used (see OLDPWD parameter).
  If \fB\-L\fP option (logical path) is used or if the \fBphysical\fP option
  (see \fBset\fP command below) isn't set, references to \fB..\fP in \fIdir\fP
-@@ -1739,7 +1775,7 @@
+@@ -1739,7 +1774,7 @@
  for aliases, a command that defines them is printed,
  and for commands found by searching the \fBPATH\fP parameter,
  the full path of the command is printed.
@@ -5777,7 +5352,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  is printed and \fBcommand\fP exits with a non-zero status.
  The \fB\-V\fP option is like the \fB\-v\fP option, except it is more verbose.
  .ksh)
-@@ -1761,7 +1797,7 @@
+@@ -1761,7 +1796,7 @@
  .sp
  The options are provided for compatibility with BSD shell scripts:
  \fB\-n\fP suppresses the trailing newline, \fB\-e\fP enables backslash
@@ -5786,7 +5361,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  suppresses backslash interpretation.
  .\"}}}
  .\"{{{  eval command ...
-@@ -1818,9 +1854,11 @@
+@@ -1818,9 +1853,11 @@
  \fIfirst\fP and \fIlast\fP select commands from the history.
  Commands can be selected by
  history number, or a string specifying the most recent command starting
@@ -5801,7 +5376,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  commands are edited by the editor specified with the \fB\-e\fP
  option, or if no \fB\-e\fP is specified, the editor specified by the
  \fBFCEDIT\fP parameter (if this parameter is not set, \fB/bin/ed\fP is used),
-@@ -1830,9 +1868,10 @@
+@@ -1830,9 +1867,10 @@
  .\"{{{  fc [-e - | -s] [-g] [old=new] [prefix]
  .IP "\fBfc\fP [\fB\-e \-\fP | \fB\-s\fP] [\fB\-g\fP] [\fIold\fP\fB=\fP\fInew\fP] [\fIprefix\fP]"
  Re-execute the selected command (the previous command by default) after
@@ -5815,7 +5390,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  \fBr='fc \-e \-'\fP.
  .\"}}}
  .\"{{{  fg [job ...]
-@@ -1848,8 +1887,8 @@
+@@ -1848,8 +1886,8 @@
  (or positional parameters, if no arguments are given) and to check for legal
  options.
  \fIoptstring\fP contains the option letters that
@@ -5826,7 +5401,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  Options that do not take arguments may be grouped in a single argument.
  If an option takes an argument and the option character is not the last
  character of the argument it is found in, the remainder of the argument
-@@ -1872,7 +1911,7 @@
+@@ -1872,7 +1910,7 @@
  .sp
  When the end of the options is encountered, \fBgetopts\fP exits with a
  non-zero exit status.
@@ -5835,7 +5410,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  start with a \-, or when a \fB\-\-\fP argument is encountered.
  .sp
  Option parsing can be reset by setting \fBOPTIND\fP to 1 (this is done
-@@ -1931,12 +1970,13 @@
+@@ -1931,12 +1969,13 @@
  .\"{{{  print [-nprsun | -R [-en]] [argument ...]
  .IP "\fBprint\fP [\fB\-nprsu\fP\fIn\fP | \fB\-R\fP [\fB\-en\fP]] [\fIargument ...\fP]"
  \fBPrint\fP prints its arguments on the standard output, separated by
@@ -5855,7 +5430,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  The \fB\-s\fP option prints to the history file instead of standard output,
  the \fB\-u\fP option prints to file descriptor \fIn\fP (\fIn\fP
  defaults to 1 if omitted), and the \fB\-p\fP option prints to the co-process
-@@ -1982,7 +2022,8 @@
+@@ -1982,7 +2021,8 @@
  .\"}}}
  .\"{{{  readonly [-p] [parameter[=value] ...]
  .IP "\fBreadonly\fP [\fB\-p\fP] [\fIparameter\fP[\fB=\fP\fIvalue\fP]] ..."
@@ -5865,7 +5440,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  parameters are set to them before setting the attribute.
  Once a parameter is made readonly, it cannot be unset and its value cannot
  be changed.
-@@ -2067,14 +2108,14 @@
+@@ -2067,14 +2107,14 @@
  (ignored if interactive).
  T}
  \-p	privileged	T{
@@ -5884,7 +5459,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  means.
  T}
  \-s	stdin	T{
-@@ -2112,6 +2153,12 @@
+@@ -2112,6 +2152,12 @@
  Enable BRL emacs-like command line editing (interactive shells only);
  see Emacs Editing Mode.
  T}
@@ -5897,7 +5472,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	gmacs	T{
  Enable gmacs-like (Gosling emacs) command line editing (interactive shells
  only);
-@@ -2139,14 +2186,16 @@
+@@ -2139,14 +2185,16 @@
  Causes the \fBcd\fP and \fBpwd\fP commands to use `physical'
  (\fIi.e.\fP, the filesystem's) \fB..\fP directories instead of `logical'
  directories (\fIi.e.\fP,  the shell handles \fB..\fP, which allows the user
@@ -5917,7 +5492,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  T}
  	vi	T{
  Enable vi-like command line editing (interactive shells only).
-@@ -2167,12 +2216,12 @@
+@@ -2167,12 +2215,12 @@
  T}
  	vi-tabcomplete	T{
  In vi command line editing, do command / file name completion when
@@ -5933,7 +5508,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  parameter \fB\-\fP.
  \fBset -o\fP with no option name will list all the options and whether each
  is on or off; \fBset +o\fP will print the long names of all options that
-@@ -2197,20 +2246,20 @@
+@@ -2197,20 +2245,20 @@
  .IP "\fBtest\fP \fIexpression\fP"
  .IP "\fB[\fP \fIexpression\fP \fB]\fP"
  \fBtest\fP evaluates the \fIexpression\fP and returns zero status if
@@ -5959,7 +5534,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  instead (double quotes are used in case \fIstr\fP contains spaces or file
  globing characters).
  T}
-@@ -2278,17 +2327,16 @@
+@@ -2278,9 +2326,8 @@
  shell \fIoption\fP is set (see \fBset\fP command above for list of options).
  As a non-standard extension, if the option starts with a \fB!\fP, the test
  is negated; the test always fails if option doesn't exist (thus
@@ -5970,17 +5545,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  returns true if and only if option \fIfoo\fP exists).
  T}
  \fIfile\fP \-nt \fIfile\fP	T{
--first \fIfile\fP is newer than second \fIfile\fP or first 
-+first \fIfile\fP is newer than second \fIfile\fP or first
- \fIfile\fP exists and the second \fIfile\fP does not.
- T}
- \fIfile\fP \-ot \fIfile\fP	T{
--first \fIfile\fP is older than second \fIfile\fP or second \fIfile\fP 
-+first \fIfile\fP is older than second \fIfile\fP or second \fIfile\fP
- exists and the first \fIfile\fP does not.
- T}
- \fIfile\fP \-ef \fIfile\fP	T{
-@@ -2371,7 +2419,8 @@
+@@ -2371,7 +2418,8 @@
  \fBNote:\fP A common mistake is to use \fBif [ $foo = bar ]\fP which
  fails if parameter \fBfoo\fP is null or unset, if it has embedded spaces
  (\fIi.e.\fP, \fBIFS\fP characters), or if it is a unary operator like \fB!\fP or
@@ -5990,7 +5555,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .\"}}}
  .\"{{{  time [-p] [pipeline]
  .IP "\fBtime\fP [\fB-p\fP] [ \fIpipeline\fP ]"
-@@ -2380,8 +2429,8 @@
+@@ -2380,8 +2428,8 @@
  itself, and all the commands it has run since it was started, are reported.
  The times reported are
  the real time (elapsed time from start to finish),
@@ -6001,7 +5566,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  Times are reported to standard error; the format of the output is:
  .nf
      0.00s real     0.00s user     0.00s system
-@@ -2414,7 +2463,7 @@
+@@ -2414,7 +2462,7 @@
  are received.
  \fBHandler\fP is either a null string, indicating the signals are to
  be ignored, a minus (\fB\-\fP), indicating that the default action is to
@@ -6010,7 +5575,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  commands to be evaluated and executed at the first opportunity (\fIi.e.\fP,
  when the current command completes, or before printing the next \fBPS1\fP
  prompt) after receipt of one of the signals.
-@@ -2512,7 +2561,7 @@
+@@ -2512,7 +2560,7 @@
  \-p	T{
  Print complete typeset commands that can be used to re-create the
  attributes (but not the values) of parameters.
@@ -6019,7 +5584,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  T}
  \-r	T{
  Readonly attribute: parameters with the this attribute may not be assigned to
-@@ -2530,19 +2579,21 @@
+@@ -2530,19 +2578,21 @@
  upper case.
  (In the original Korn shell, this parameter meant `unsigned integer' when used
  with the \fB\-i\fP option, which meant upper case letters would never be used
@@ -6042,12 +5607,12 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .\"}}}
 -.\"{{{  ulimit [-acdfHlmnpsStvw] [value]
 -.IP "\fBulimit\fP [\fB\-acdfHlmnpsStvw\fP] [\fIvalue\fP]"
-+.\"{{{  ulimit [-abcdfHlmnpsStvw] [value]
-+.IP "\fBulimit\fP [\fB\-abcdfHlmnpsStvw\fP] [\fIvalue\fP]"
++.\"{{{  ulimit [-abcdfHlmnprsStvw] [value]
++.IP "\fBulimit\fP [\fB\-abcdfHlmnprsStvw\fP] [\fIvalue\fP]"
  Display or set process limits.
  If no options are used, the file size limit (\fB\-f\fP) is assumed.
  \fBvalue\fP, if specified, may be either be an arithmetic expression or the
-@@ -2560,6 +2611,8 @@
+@@ -2560,6 +2610,8 @@
  Set the hard limit only (default is to set both hard and soft limits).
  .IP \fB\-S\fP
  Set the soft limit only (default is to set both hard and soft limits).
@@ -6056,7 +5621,16 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .IP \fB\-c\fP
  Impose a size limit of \fIn\fP blocks on the size of core dumps.
  .IP \fB\-d\fP
-@@ -2580,7 +2633,7 @@
+@@ -2574,19 +2626,23 @@
+ Impose a limit of \fIn\fP kbytes on the amount of physical memory used.
+ .IP \fB\-n\fP
+ Impose a limit of \fIn\fP file descriptors that can be open at once.
++.IP \fB\-r\fP
++Impose a limit of \fIn\fP threads that can be run by the user at any one
++time.
+ .IP \fB\-p\fP
+ Impose a limit of \fIn\fP processes that can be run by the user at any one
+ time.
  .IP \fB\-s\fP
  Impose a size limit of \fIn\fP kbytes on the size of the stack area.
  .IP \fB\-t\fP
@@ -6065,7 +5639,14 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .IP \fB\-v\fP
  Impose a limit of \fIn\fP kbytes on the amount of virtual memory used;
  on some systems this is the maximum allowable virtual address (in bytes,
-@@ -2767,7 +2820,8 @@
+ not kbytes).
+ .IP \fB\-w\fP
+ Impose a limit of \fIn\fP kbytes on the amount of swap space used.
++(Not supported on NetBSD)
+ .PP
+ As far as \fBulimit\fP is concerned, a block is 512 bytes.
+ .RE
+@@ -2767,7 +2823,8 @@
  necessarily mean consuming CPU time \(em the process could be blocked waiting
  for some event).
  .IP "\fBDone\fP [\fB(\fP\fInumber\fP\fB)\fP]"
@@ -6075,16 +5656,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  omitted if the status is zero.
  .IP "\fBStopped\fP [\fB(\fP\fIsignal\fP\fB)\fP]"
  the job was stopped by the indicated \fIsignal\fP (if no signal is given,
-@@ -2801,7 +2855,7 @@
- .SS "Interactive Input Line Editing"
- The shell supports three modes of reading command lines from a tty
- in an interactive session.
--Which is used is controlled by the \fBemacs\fP, \fBgmacs\fP and \fBvi\fP 
-+Which is used is controlled by the \fBemacs\fP, \fBgmacs\fP and \fBvi\fP
- \fBset\fP options (at most one of these can be set at once).
- If none of these options is enabled, the shell simply reads lines
- using the normal tty driver.
-@@ -2822,11 +2876,13 @@
+@@ -2822,11 +2879,13 @@
  .\"{{{  Emacs Editing Mode
  .SS "Emacs Editing Mode"
  When the \fBemacs\fP option is set, interactive input line editing is
@@ -6100,7 +5672,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  characters when the shell is invoked; these bindings can be changed
  using the following commands:
  .\"{{{  bind
-@@ -2838,12 +2894,15 @@
+@@ -2838,12 +2897,15 @@
  The specified editing command is bound to the given \fBstring\fP, which
  should consist of a control character (which may be written using caret
  notation \fB^\fP\fIX\fP), optionally preceded by one of the two prefix
@@ -6121,7 +5693,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .sp
  .RS
  \fBbind '^[['=prefix\-2
-@@ -2877,10 +2936,12 @@
+@@ -2877,10 +2939,12 @@
  \fB^[\fP\fIn\fP, where \fIn\fP is a sequence of 1 or more digits;
  unless otherwise specified, if a count is omitted, it defaults to 1.
  Note that editing command names are
@@ -6138,7 +5710,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  reasonable substitutes and override the default bindings.
  .\"{{{  abort ^G
  .IP "\fBabort ^G\fP"
-@@ -2889,8 +2950,8 @@
+@@ -2889,8 +2953,8 @@
  .\"}}}
  .\"{{{  auto-insert n
  .IP "\fBauto-insert\fP \fIn\fP"
@@ -6149,7 +5721,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .\"}}}
  .\"{{{  backward-char	n ^B
  .IP "\fBbackward-char\fP  \fIn\fP \fB^B\fP"
-@@ -2922,11 +2983,13 @@
+@@ -2922,11 +2986,13 @@
  .\"}}}
  .\"{{{  complete ^[^[
  .IP "\fBcomplete ^[^[\fP"
@@ -6166,7 +5738,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  prefix, a bell character is output (usually causing a audio beep).
  .\"}}}
  .\"{{{  complete-command ^X^[
-@@ -2963,7 +3026,8 @@
+@@ -2963,7 +3029,8 @@
  .\"}}}
  .\"{{{  down-history n ^N
  .IP "\fBdown-history\fP \fIn\fP \fB^N\fP"
@@ -6176,7 +5748,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  originally starts just after the last entry in the history buffer, so
  \fBdown-history\fP is not useful until either \fBsearch-history\fP or
  \fBup-history\fP has been performed.
-@@ -3044,19 +3108,20 @@
+@@ -3044,19 +3111,20 @@
  .\"{{{  list-file ^X^Y
  .IP "\fBlist-file ^X^Y\fP"
  Prints a sorted, columnated list of file names (if any) that can
@@ -6202,7 +5774,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .\"}}}
  .\"{{{  no-op QUIT
  .IP "\fBno-op QUIT\fP"
-@@ -3086,22 +3151,25 @@
+@@ -3086,22 +3154,25 @@
  .\"}}}
  .\"{{{  search-character-backward n ^[^]
  .IP "\fBsearch-character-backward\fP \fIn\fP \fB^[^]\fP"
@@ -6236,7 +5808,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  finite number of lines; the oldest are discarded as necessary.
  .\"}}}
  .\"{{{  set-mark-command ^[<space>
-@@ -3112,8 +3180,8 @@
+@@ -3112,8 +3183,8 @@
  .IP "\fBstuff\fP"
  On systems supporting it, pushes the bound character back onto the
  terminal input where it may receive special processing by the terminal
@@ -6247,16 +5819,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .\"}}}
  .\"{{{  stuff-reset
  .IP "\fBstuff-reset\fP"
-@@ -3121,7 +3189,7 @@
- .\"}}}
- .\"{{{  transport-chars ^T
- .IP "\fBtranspose-chars ^T\fP"
--If at the end of line, or if the \fBgmacs\fP option is set, 
-+If at the end of line, or if the \fBgmacs\fP option is set,
- this exchanges the two previous characters; otherwise, it
- exchanges the previous and current characters and moves the cursor
- one character to the right.
-@@ -3136,7 +3204,8 @@
+@@ -3136,7 +3207,8 @@
  .\"}}}
  .\"{{{  version ^V
  .IP "\fBversion ^V\fP"
@@ -6266,38 +5829,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  as any key is pressed (the key is then processed, unless it is a space).
  .\"}}}
  .\"{{{  yank ^Y
-@@ -3249,10 +3318,10 @@
- insert the comment character (\fB#\fP) at the start of the current line and
- return the line to the shell (equivalent to \fBI#^J\fP).
- .IP "\fIn\fP\fBg\fP"
--like \fBG\fP, except if \fIn\fP is not specified, it goes to the most recent 
-+like \fBG\fP, except if \fIn\fP is not specified, it goes to the most recent
- remembered line.
- .IP "\fIn\fP\fBv\fP"
--edit line \fIn\fP using the vi editor; 
-+edit line \fIn\fP using the vi editor;
- if \fIn\fP is not specified, the current line is edited.
- The actual command executed is
- `\fBfc \-e ${VISUAL:-${EDITOR:-vi}}\fP \fIn\fP'.
-@@ -3272,7 +3341,7 @@
- After expansion, the cursor is placed just past the last word and the editor
- is in insert mode.
- .IP "\fIn\fP\fB\e\fP, \fIn\fP\fB^F\fP, \fIn\fP\fB<tab>\fP and \fIn\fP\fB<esc>\fP"
--command/file name completion: 
-+command/file name completion:
- replace the current big-word with the longest unique
- match obtained after performing command/file name expansion.
- \fB<tab>\fP is only recognized if the \fBvi-tabcomplete\fP option is set,
-@@ -3348,7 +3417,7 @@
- move to line \fIn\fP in the history; if \fIn\fP is not specified, the
- number first remembered line is used.
- .IP "\fIn\fP\fBg\fP"
--like \fBG\fP, except if \fIn\fP is not specified, it goes to the most recent 
-+like \fBG\fP, except if \fIn\fP is not specified, it goes to the most recent
- remembered line.
- .IP "\fIn\fP\fB/\fP\fIstring\fP"
- search backward through the history for the \fIn\fPth line containing
-@@ -3412,8 +3481,8 @@
+@@ -3412,8 +3484,8 @@
  replace the next \fIn\fP characters with the character \fIc\fP.
  .IP "\fIn\fP\fBR\fP"
  replace: enter insert mode but overwrite existing characters instead of
@@ -6308,16 +5840,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .IP "\fIn\fP\fB~\fP"
  change the case of the next \fIn\fP characters.
  .IP "\fIn\fP\fBy\fP\fImove-cmd\fP"
-@@ -3449,7 +3518,7 @@
- .\"Has all vi commands except:
- .\"    movement: { } [[ ]] ^E ^Y ^U ^D ^F ^B H L M ()
- .\"    tag commands: ^T ^]
--.\"    mark commands: m ` ' 
-+.\"    mark commands: m ` '
- .\"    named-buffer commands: " @
- .\"    file/shell/ex-commands: Q ZZ ^^ : ! &
- .\"    multi-line change commands: o O J
-@@ -3463,6 +3532,8 @@
+@@ -3463,6 +3535,8 @@
  .\"}}}
  .\"{{{  Files
  .SH FILES
@@ -6326,7 +5849,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  ~/.profile
  .br
  /etc/profile
-@@ -3471,14 +3542,17 @@
+@@ -3471,14 +3545,17 @@
  .\"}}}
  .\"{{{  Bugs
  .SH BUGS
@@ -6347,7 +5870,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  ftp://ftp.cs.mun.ca/pub/pdksh/.
  .PP
  BTW, the most frequently reported bug is
-@@ -3498,17 +3572,18 @@
+@@ -3498,11 +3575,12 @@
  .SH AUTHORS
  This shell is based on the public domain 7th edition Bourne shell clone by
  Charles Forsyth and parts of the BRL shell by Doug A.\& Gwyn, Doug Kingston,
@@ -6363,14 +5886,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  The CONTRIBUTORS file in the source distribution contains a more complete
  list of people and their part in the shell's development.
  .\"}}}
- .\"{{{  See also
- .SH "SEE ALSO"
--awk(1), 
-+awk(1),
- .ksh(
- sh(1),
- .ksh)
-@@ -3518,7 +3593,7 @@
+@@ -3518,7 +3596,7 @@
  csh(1), ed(1), getconf(1), getopt(1), sed(1), stty(1), vi(1),
  dup(2), execve(2), getgid(2), getuid(2), open(2), pipe(2), wait(2),
  getopt(3), rand(3), signal(3), system(3),
@@ -6379,23 +5895,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  .PP
  .IR "The KornShell Command and Programming Language" ,
  Morris Bolsky and David Korn, 1989, ISBN 0-13-516972-0.
---- ksh_times.h.orig	1996-09-09 14:50:52.000000000 -0400
-+++ ksh_times.h	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: ksh_times.h,v 1.2 2008/05/31 16:47:36 tnn Exp $	*/
-+
- #ifndef KSH_TIMES_H
- # define KSH_TIMES_H
- 
---- lex.c.orig	1999-05-12 09:44:53.000000000 -0400
-+++ lex.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: lex.c,v 1.5 2011/01/23 17:29:30 hauke Exp $	*/
-+
- /*
-  * lexical analysis and source input
-  */
-@@ -213,10 +215,10 @@
+--- lex.c.orig	1999-05-12 13:44:53.000000000 +0000
++++ lex.c	2016-12-10 23:59:01.000000000 +0000
+@@ -213,7 +213,7 @@
  			  case '\\':
  				c = getsc();
  #ifdef OS2
@@ -6403,12 +5905,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +				if (isalnum((unsigned char)c)) {
  					*wp++ = CHAR, *wp++ = '\\';
  					*wp++ = CHAR, *wp++ = c;
--				} else 
-+				} else
- #endif
- 				if (c) /* trailing \ is lost */
- 					*wp++ = QCHAR, *wp++ = c;
-@@ -237,13 +239,22 @@
+ 				} else 
+@@ -237,13 +237,22 @@
  
  		  Subst:
  			switch (c) {
@@ -6432,7 +5930,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				  default:
  					Xcheck(ws, wp);
  					if (c) { /* trailing \ is lost */
-@@ -320,41 +331,27 @@
+@@ -320,28 +329,15 @@
  				*wp++ = COMSUB;
  				/* Need to know if we are inside double quotes
  				 * since sh/at&t-ksh translate the \" to " in
@@ -6463,35 +5961,20 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 -				if (!Flag(FPOSIX)) {
 -					Lex_state *s = statep;
 -					Lex_state *base = state_info.base;
--					while (1) {
--						for (; s != base; s--) {
--							if (s->ls_state == SDQUOTE) {
--								statep->ls_sbquote.indquotes = 1;
--								break;
--							}
--						}
--						if (s != base)
 +				s = statep;
 +				base = state_info.base;
-+				while (1) {
-+					for (; s != base; s--) {
-+						if (s->ls_state == SDQUOTE) {
-+							statep->ls_sbquote.indquotes = 1;
+ 					while (1) {
+ 						for (; s != base; s--) {
+ 							if (s->ls_state == SDQUOTE) {
+@@ -355,7 +351,6 @@
  							break;
--						if (!(s = s->ls_info.base))
--							break;
--						base = s-- - STATE_BSIZE;
-+						}
+ 						base = s-- - STATE_BSIZE;
  					}
-+					if (s != base)
-+						break;
-+					if (!(s = s->ls_info.base))
-+						break;
-+					base = s-- - STATE_BSIZE;
- 				}
+-				}
  				break;
  			  default:
-@@ -645,11 +642,13 @@
+ 				*wp++ = CHAR, *wp++ = c;
+@@ -645,11 +640,13 @@
  		if (c == c2 || (c == '<' && c2 == '>')) {
  			iop->flag = c == c2 ?
  				  (c == '>' ? IOCAT : IOHERE) : IORDWR;
@@ -6508,7 +5991,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		} else if (c2 == '&')
  			iop->flag = IODUP | (c == '<' ? IORDUP : 0);
  		else {
-@@ -725,7 +724,7 @@
+@@ -725,7 +722,7 @@
  	/* copy word to unprefixed string ident */
  	for (sp = yylval.cp, dp = ident; dp < ident+IDENT && (c = *sp++) == CHAR; )
  		*dp++ = *sp++;
@@ -6517,7 +6000,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	memset(dp, 0, (ident+IDENT) - dp + 1);
  	if (c != EOS)
  		*ident = '\0';	/* word is not unquoted */
-@@ -856,7 +855,7 @@
+@@ -856,7 +853,7 @@
  	SH_VA_START(va, fmt);
  	shf_vfprintf(shl_out, fmt, va);
  	va_end(va);
@@ -6526,7 +6009,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  }
  
  /*
-@@ -934,7 +933,7 @@
+@@ -934,7 +931,7 @@
  				source->flags |= s->flags & SF_ALIAS;
  				s = source;
  			} else if (*s->u.tblp->val.s
@@ -6535,7 +6018,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			{
  				source = s = s->next;	/* pop source stack */
  				/* Note that this alias ended with a space,
-@@ -1119,7 +1118,7 @@
+@@ -1119,7 +1116,7 @@
  		 */
  		{
  			struct shf *shf;
@@ -6544,15 +6027,15 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			Area *saved_atemp;
  
  			ps1 = str_val(global("PS1"));
-@@ -1389,5 +1388,5 @@
+@@ -1389,5 +1386,5 @@
  
  	afree(old_base, ATEMP);
  
 -	return si->base + STATE_BSIZE - 1;;
 +	return si->base + STATE_BSIZE - 1;
  }
---- lex.h.orig	1999-05-12 09:30:02.000000000 -0400
-+++ lex.h	2012-12-20 21:15:57.000000000 -0500
+--- lex.h.orig	1999-05-12 13:30:02.000000000 +0000
++++ lex.h	2016-12-10 23:49:11.000000000 +0000
 @@ -20,7 +20,7 @@
  	char	ugbuf[2];	/* buffer for ungetsc() (SREREAD) and
  				 * alias (SALIAS) */
@@ -6588,15 +6071,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  EXTERN	char  **histptr;	/* last history item */
  EXTERN	int	histsize;	/* history size */
  #endif /* HISTORY */
---- mail.c.orig	1999-04-23 14:58:50.000000000 -0400
-+++ mail.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: mail.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * Mailbox checking code by Robert J. Gibson, adapted for PD ksh by
-  * John R. MacMillan
-@@ -10,7 +12,7 @@
+--- mail.c.orig	1999-04-23 18:58:50.000000000 +0000
++++ mail.c	2016-12-10 23:59:03.000000000 +0000
+@@ -10,7 +10,7 @@
  #include "ksh_stat.h"
  #include "ksh_time.h"
  
@@ -6605,11 +6082,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  typedef struct mbox {
  	struct mbox    *mb_next;	/* next mbox in list */
---- main.c.orig	1999-05-11 09:59:52.000000000 -0400
-+++ main.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,6 +1,9 @@
-+/*	$NetBSD: main.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
+--- main.c.orig	1999-05-11 13:59:52.000000000 +0000
++++ main.c	2016-12-10 23:59:06.000000000 +0000
+@@ -1,6 +1,7 @@
  /*
 - * startup, main loop, enviroments and error handling
 + * startup, main loop, environments and error handling
@@ -6618,7 +6093,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  #define	EXTERN				/* define EXTERNs in sh.h */
  
-@@ -64,7 +67,9 @@
+@@ -64,7 +65,9 @@
  #ifdef KSH
  	 /* Aliases that are builtin commands in at&t */
  	  "login=exec login",
@@ -6628,7 +6103,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #endif /* KSH */
  	  NULL,
  	/* this is what at&t ksh seems to track, with the addition of emacs */
-@@ -79,9 +84,7 @@
+@@ -79,9 +82,7 @@
  };
  
  int
@@ -6639,7 +6114,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  {
  	register int i;
  	int argi;
-@@ -108,14 +111,14 @@
+@@ -108,14 +109,14 @@
  					    "pdksh", (char *) 0
  					};
  
@@ -6656,7 +6131,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	memset(&env, 0, sizeof(env));
  	env.type = E_NONE;
  	ainit(&env.area);
-@@ -175,8 +178,8 @@
+@@ -175,8 +176,8 @@
  	}
  
  
@@ -6667,7 +6142,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	 * (at&t ksh does not have a nohup option - it always sends
  	 * the hup).
  	 */
-@@ -201,7 +204,17 @@
+@@ -201,7 +202,17 @@
  	change_flag(FPOSIX, OF_SPECIAL, 1);
  #endif /* POSIXLY_CORRECT */
  
@@ -6686,7 +6161,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	if (environ != NULL)
  		for (wp = environ; *wp != NULL; wp++)
  			typeset(*wp, IMPORT|EXPORT, 0, 0, 0);
-@@ -244,7 +257,7 @@
+@@ -244,7 +255,7 @@
  	setstr(global(version_param), ksh_version, KSH_RETURN_ERROR);
  
  	/* execute initialization statements */
@@ -6695,7 +6170,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		shcomexec(wp);
  		for (; *wp != NULL; wp++)
  			;
-@@ -271,8 +284,10 @@
+@@ -271,8 +282,10 @@
  	/* this to note if monitor is set on command line (see below) */
  	Flag(FMONITOR) = 127;
  	argi = parse_args(argv, OF_CMDLINE, (int *) 0);
@@ -6707,7 +6182,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	if (Flag(FCOMMAND)) {
  		s = pushs(SSTRING, ATEMP);
-@@ -319,7 +334,8 @@
+@@ -319,7 +332,8 @@
  	{
  		struct stat s_stdin;
  
@@ -6717,7 +6192,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			reset_nonblock(0);
  	}
  
-@@ -336,7 +352,7 @@
+@@ -336,7 +350,7 @@
  	l = e->loc;
  	l->argv = &argv[argi - 1];
  	l->argc = argc - argi;
@@ -6726,7 +6201,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	getopts_reset(1);
  
  	/* Disable during .profile/ENV reading */
-@@ -391,7 +407,7 @@
+@@ -391,7 +405,7 @@
  #ifdef DEFAULT_ENV
  		/* If env isn't set, include default environment */
  		if (env_file == null)
@@ -6735,7 +6210,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #endif /* DEFAULT_ENV */
  		env_file = substitute(env_file, DOTILDE);
  		if (*env_file != '\0')
-@@ -411,7 +427,7 @@
+@@ -411,7 +425,7 @@
  						    "ENV", "SHELL",
  						(char *) 0
  					    };
@@ -6744,7 +6219,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		/* After typeset command... */
  		Flag(FRESTRICTED) = 1;
  	}
-@@ -426,6 +442,7 @@
+@@ -426,6 +440,7 @@
  	} else
  		Flag(FTRACKALL) = 1;	/* set after ENV */
  
@@ -6752,7 +6227,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	shell(s, TRUE);	/* doesn't return */
  	return 0;
  }
-@@ -438,7 +455,6 @@
+@@ -438,7 +453,6 @@
  	int intr_ok;
  {
  	register Source *volatile s = NULL;
@@ -6760,7 +6235,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	struct shf *shf;
  	char **volatile old_argv;
  	volatile int old_argc;
-@@ -455,11 +471,9 @@
+@@ -455,11 +469,9 @@
  		old_argv = (char **) 0;
  		old_argc = 0;
  	}
@@ -6772,7 +6247,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		if (s) /* Do this before quitenv(), which frees the memory */
  			shf_close(s->u.shf);
  		quitenv();
-@@ -496,7 +510,6 @@
+@@ -496,7 +508,6 @@
  	s->u.shf = shf;
  	s->file = str_save(name, ATEMP);
  	i = shell(s, FALSE);
@@ -6780,7 +6255,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	shf_close(s->u.shf);
  	quitenv();
  	if (old_argv) {
-@@ -511,10 +524,13 @@
+@@ -511,10 +522,13 @@
  	const char *comm;
  {
  	register Source *s;
@@ -6795,7 +6270,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  }
  
  /*
-@@ -529,6 +545,7 @@
+@@ -529,6 +543,7 @@
  	volatile int wastty = s->flags & SF_TTY;
  	volatile int attempts = 13;
  	volatile int interactive = Flag(FTALKING) && toplevel;
@@ -6803,7 +6278,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	int i;
  
  	newenv(E_PARSE);
-@@ -536,14 +553,13 @@
+@@ -536,14 +551,13 @@
  		really_exit = 0;
  	i = ksh_sigsetjmp(e->jbuf, 0);
  	if (i) {
@@ -6819,7 +6294,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				/* Reset any eof that was read as part of a
  				 * multiline command.
  				 */
-@@ -556,16 +572,20 @@
+@@ -556,16 +570,20 @@
  				 * a tty, but to have stopped jobs, one only
  				 * needs FMONITOR set (not FTALKING/SF_TTY)...
  				 */
@@ -6840,7 +6315,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			quitenv();
  			internal_errorf(1, "shell: %d", i);
  			/*NOREACHED*/
-@@ -576,11 +596,12 @@
+@@ -576,11 +594,12 @@
  		if (trap)
  			runtraps(0);
  
@@ -6854,7 +6329,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  		if (interactive) {
  			j_notify();
-@@ -621,6 +642,7 @@
+@@ -621,6 +640,7 @@
  		reclaim();
  	}
  	quitenv();
@@ -6862,7 +6337,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return exstat;
  }
  
-@@ -737,7 +759,7 @@
+@@ -737,7 +757,7 @@
  
  	/* Don't clean up temporary files - parent will probably need them.
  	 * Also, can't easily reclaim memory since variables, etc. could be
@@ -6871,7 +6346,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	 */
  
  	/* close all file descriptors hiding in savefd */
-@@ -807,7 +829,7 @@
+@@ -807,7 +827,7 @@
  				    APERM);
  				memset(t, 0, sizeof(struct temp));
  				t->name = (char *) &t[1];
@@ -6880,7 +6355,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				t->next = delayed_remove;
  				delayed_remove = t;
  			}
-@@ -836,6 +858,6 @@
+@@ -836,6 +856,6 @@
  	const char *msg;
  {
  	internal_errorf(1, "alloc: %s", msg);
@@ -6888,15 +6363,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +	errorf("%s", null); /* this is never executed - keeps gcc quiet */
  	/*NOTREACHED*/
  }
---- misc.c.orig	1999-04-16 10:50:31.000000000 -0400
-+++ misc.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: misc.c,v 1.4 2009/06/27 23:42:39 ahoka Exp $	*/
-+
- /*
-  * Miscellaneous functions
-  */
-@@ -81,7 +83,15 @@
+--- misc.c.orig	1999-04-16 14:50:31.000000000 +0000
++++ misc.c	2016-12-10 23:59:08.000000000 +0000
+@@ -81,7 +81,15 @@
  	register const char *s;
  	Area *ap;
  {
@@ -6913,7 +6382,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  }
  
  /* Allocate a string of size n+1 and copy upto n characters from the possibly
-@@ -112,13 +122,13 @@
+@@ -112,13 +120,13 @@
  {
  	char *old_beg = xsp->beg;
  
@@ -6929,7 +6398,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	/* Special cases (see parse_args()): -A, -o, -s.
  	 * Options are sorted by their longnames - the order of these
  	 * entries MUST match the order of sh_flag F* enumerations in sh.h.
-@@ -131,6 +141,7 @@
+@@ -131,6 +139,7 @@
  	{ (char *) 0, 	'c',	    OF_CMDLINE },
  #ifdef EMACS
  	{ "emacs",	  0,		OF_ANY },
@@ -6937,7 +6406,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #endif
  	{ "errexit",	'e',		OF_ANY },
  #ifdef EMACS
-@@ -171,7 +182,7 @@
+@@ -171,7 +180,7 @@
  #endif
  	{ "xtrace",	'x',		OF_ANY },
  	/* Anonymous flags: used internally by shell only
@@ -6946,7 +6415,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	 */
  	{ (char *) 0,	0,		OF_INTERNAL }, /* FTALKING_I */
  };
-@@ -185,8 +196,8 @@
+@@ -185,8 +194,8 @@
  {
  	int i;
  
@@ -6957,7 +6426,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			return i;
  
  	return -1;
-@@ -197,7 +208,7 @@
+@@ -197,7 +206,7 @@
  	struct {
  		const char *name;
  		int	flag;
@@ -6966,7 +6435,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  };
  
  static char *options_fmt_entry ARGS((void *arg, int i, char *buf, int buflen));
-@@ -232,36 +243,36 @@
+@@ -232,36 +241,36 @@
  		/* verbose version */
  		shprintf("Current option settings\n");
  
@@ -7016,7 +6485,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	*cp = 0;
  	return str_save(m, ATEMP);
  }
-@@ -308,8 +319,16 @@
+@@ -308,8 +317,16 @@
  	if (f == FPRIVILEGED && oldval && !newval) {
  #ifdef OS2
  		;
@@ -7034,7 +6503,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		setgid(getgid());
  #endif /* OS2 */
  	} else if (f == FPOSIX && newval) {
-@@ -334,8 +353,8 @@
+@@ -334,8 +351,8 @@
  	int	what;		/* OF_CMDLINE or OF_SET */
  	int	*setargsp;
  {
@@ -7045,7 +6514,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	char *opts;
  	char *array = (char *) 0;
  	Getopt go;
-@@ -345,16 +364,18 @@
+@@ -345,16 +362,18 @@
  	if (cmd_opts[0] == '\0') {
  		char *p, *q;
  
@@ -7072,7 +6541,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			}
  		}
  		*p = '\0';
-@@ -400,7 +421,7 @@
+@@ -400,7 +419,7 @@
  				 * if the output of "set +o" is to be used.
  				 */
  				;
@@ -7081,7 +6550,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				change_flag((enum sh_flag) i, what, set);
  			else {
  				bi_errorf("%s: bad option", go.optarg);
-@@ -417,15 +438,15 @@
+@@ -417,15 +436,15 @@
  				sortargs = 1;
  				break;
  			}
@@ -7101,7 +6570,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				internal_errorf(1, "parse_args: `%c'", optc);
  				return -1; /* not reached */
  			}
-@@ -471,18 +492,15 @@
+@@ -471,18 +490,15 @@
  	const char *as;
  	int *ai;
  {
@@ -7127,7 +6596,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return 1;
  }
  
-@@ -526,9 +544,9 @@
+@@ -526,9 +542,9 @@
  	if (!isfile && !has_globbing(p, pe)) {
  		int len = pe - p + 1;
  		char tbuf[64];
@@ -7139,7 +6608,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		return !strcmp(t, s);
  	}
  	return do_gmatch((const unsigned char *) s, (const unsigned char *) se,
-@@ -540,7 +558,7 @@
+@@ -540,7 +556,7 @@
   * if it contains no pattern characters or if there is a syntax error.
   * Syntax errors are:
   *	- [ with no closing ]
@@ -7148,7 +6617,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   *	- [...] and *(...) not nested (eg, [a$(b|]c), *(a[b|c]d))
   */
  /*XXX
-@@ -624,8 +642,8 @@
+@@ -624,8 +640,8 @@
  		sc = s < se ? *s : '\0';
  		s++;
  		if (isfile) {
@@ -7159,7 +6628,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		}
  		if (!ISMAGIC(pc)) {
  			if (sc != pc)
-@@ -854,7 +872,7 @@
+@@ -854,7 +870,7 @@
  	for (;;) {
  		if (i < lptr) {
  			if ((c = (*f)(*i, *lptr)) == 0) {
@@ -7168,7 +6637,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				swap2(i, lptr);
  				continue;
  			}
-@@ -867,13 +885,13 @@
+@@ -867,13 +883,13 @@
  	  begin:
  		if (j > hptr) {
  			if ((c = (*f)(*hptr, *j)) == 0) {
@@ -7184,7 +6653,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  					swap3(i, hptr, j);
  					i = lptr += 1;
  					goto begin;
-@@ -993,7 +1011,7 @@
+@@ -993,7 +1009,7 @@
  				(go->flags & GF_NONAME) ? "" : argv[0],
  				(go->flags & GF_NONAME) ? "" : ": ", c);
  			if (go->flags & GF_ERROR)
@@ -7193,7 +6662,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		}
  		return '?';
  	}
-@@ -1019,16 +1037,16 @@
+@@ -1019,16 +1035,16 @@
  				(go->flags & GF_NONAME) ? "" : argv[0],
  				(go->flags & GF_NONAME) ? "" : ": ", c);
  			if (go->flags & GF_ERROR)
@@ -7213,7 +6682,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		 * but must start with a digit.  optarg is set to 0 if the
  		 * argument is missing.
  		 */
-@@ -1037,13 +1055,13 @@
+@@ -1037,13 +1053,13 @@
  				go->optarg = argv[go->optind - 1] + go->p;
  				go->p = 0;
  			} else
@@ -7229,7 +6698,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		}
  	}
  	return c;
-@@ -1070,7 +1088,7 @@
+@@ -1070,7 +1086,7 @@
  	}
  	for (p = s; *p; p++) {
  		if (*p == '\'') {
@@ -7238,7 +6707,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			inquote = 0;
  		} else {
  			if (!inquote) {
-@@ -1088,12 +1106,13 @@
+@@ -1088,12 +1104,13 @@
   * element
   */
  void
@@ -7253,7 +6722,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  {
  	char *str = (char *) alloc(max_width + 1, ATEMP);
  	int i;
-@@ -1109,7 +1128,7 @@
+@@ -1109,7 +1126,7 @@
  	if (!cols)
  		cols = 1;
  	rows = (n + cols - 1) / cols;
@@ -7262,7 +6731,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		int tmp = rows;
  
  		rows = cols;
-@@ -1321,7 +1340,7 @@
+@@ -1321,7 +1338,7 @@
  		b = buf;
  	else
  		b = alloc(MAXPATHLEN + 1, ATEMP);
@@ -7271,8 +6740,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		errno = EACCES;
  		if (b != buf)
  			afree(b, ATEMP);
---- missing.c.orig	1999-05-24 15:32:27.000000000 -0400
-+++ missing.c	2012-12-20 21:15:57.000000000 -0500
+--- missing.c.orig	1999-05-24 19:32:27.000000000 +0000
++++ missing.c	2016-12-10 23:49:11.000000000 +0000
 @@ -291,3 +291,80 @@
  	return fcntl(oldd, F_DUPFD, newd);
  }
@@ -7354,8 +6823,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +	return(dlen + (s - src));	/* count does not include NUL */
 +}
 +#endif
---- mkman.orig	1999-05-25 13:55:49.000000000 -0400
-+++ mkman	2012-12-20 21:15:57.000000000 -0500
+--- mkman.orig	1999-05-25 17:55:49.000000000 +0000
++++ mkman	2016-12-10 23:48:09.000000000 +0000
 @@ -7,7 +7,7 @@
      shift
  fi
@@ -7365,8 +6834,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
      exit 1;
  fi
  shell=$1
---- path.c.orig	1999-05-13 12:59:04.000000000 -0400
-+++ path.c	2012-12-20 21:15:57.000000000 -0500
+--- path.c.orig	1999-05-13 16:59:04.000000000 +0000
++++ path.c	2016-12-10 23:49:11.000000000 +0000
 @@ -3,7 +3,7 @@
  
  /*
@@ -7511,8 +6980,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		if (len == 1 && p[0] == '.')
  			continue;
  		if (len == 2 && p[0] == '.' && p[1] == '.') {
---- proto.h.orig	1999-07-13 12:54:51.000000000 -0400
-+++ proto.h	2012-12-20 21:15:57.000000000 -0500
+--- proto.h.orig	1999-07-13 16:54:51.000000000 +0000
++++ proto.h	2016-12-10 23:49:11.000000000 +0000
 @@ -5,290 +5,286 @@
   */
  
@@ -8000,8 +7469,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  extern int tolower ARGS((int));
  extern int toupper ARGS((int));
  /*  Include files aren't included yet */
---- sh.h.orig	1999-05-13 13:07:58.000000000 -0400
-+++ sh.h	2012-12-20 21:15:57.000000000 -0500
+--- sh.h.orig	1999-05-13 17:07:58.000000000 +0000
++++ sh.h	2016-12-10 23:49:11.000000000 +0000
 @@ -12,7 +12,6 @@
  # define	ARGS(args)	()	/* K&R declaration */
  #endif
@@ -8186,15 +7655,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +#undef __UNCONST
 +#endif
 +#define __UNCONST(a) ((void *)(unsigned long)(const void *)(a))
---- shf.c.orig	1999-05-12 10:13:27.000000000 -0400
-+++ shf.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: shf.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  *  Shell file I/O routines
-  */
-@@ -355,7 +357,6 @@
+--- shf.c.orig	1999-05-12 14:13:27.000000000 +0000
++++ shf.c	2016-12-10 23:59:09.000000000 +0000
+@@ -355,7 +355,6 @@
  		shf->rp = nbuf + (shf->rp - shf->buf);
  		shf->wp = nbuf + (shf->wp - shf->buf);
  		shf->rbsize += shf->wbsize;
@@ -8202,7 +7665,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		shf->wnleft += shf->wbsize;
  		shf->wbsize *= 2;
  		shf->buf = nbuf;
-@@ -838,7 +839,7 @@
+@@ -838,7 +837,7 @@
   *  this out...
   *
   *	For shorts, we want sign extend for %d but not for %[oxu] - on 16 bit
@@ -8211,7 +7674,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   *  ints before pushing them.
   */
  #define POP_INT(f, s, a) (((f) & FL_LONG) ?				\
-@@ -896,6 +897,7 @@
+@@ -896,6 +895,7 @@
  	char		numbuf[(BITS(long) + 2) / 3 + 1];
  	/* this stuff for dealing with the buffer */
  	int		nwritten = 0;
@@ -8219,7 +7682,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #ifdef FP
  	/* should be in <math.h>
  	 *  extern double frexp();
-@@ -921,7 +923,7 @@
+@@ -921,7 +921,7 @@
  		 *	This will accept flags/fields in any order - not
  		 *  just the order specified in printf(3), but this is
  		 *  the way _doprnt() seems to work (on bsd and sysV).
@@ -8228,7 +7691,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		 *  come last :-).
  		 */
  		flags = field = precision = 0;
-@@ -1082,7 +1084,7 @@
+@@ -1082,7 +1082,7 @@
  			char *p;
  
  			/*
@@ -8237,7 +7700,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			 *  but it seems to work.  Note that gcvt()
  			 *  is not used, as you cannot tell it to
  			 *  not strip the zeros.
-@@ -1102,7 +1104,7 @@
+@@ -1102,7 +1102,7 @@
  			 *  This is the same as
  			 *	expo = ceil(log10(fpnum))
  			 *  but doesn't need -lm.  This is an
@@ -8246,7 +7709,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			 */
  			(void) frexp(fpnum, &expo);
  			expo = my_ceil(expo / LOG2_10);
-@@ -1214,7 +1216,7 @@
+@@ -1214,7 +1214,7 @@
  
  		case 's':
  			if (!(s = va_arg(args, char *)))
@@ -8255,36 +7718,23 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			len = strlen(s);
  			break;
  
---- sigact.c.orig	1996-03-07 12:41:43.000000000 -0500
-+++ sigact.c	2012-12-20 21:15:57.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: sigact.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /* NAME:
-  *      sigact.c - fake sigaction(2)
-  *
-@@ -145,11 +147,7 @@
+--- sigact.c.orig	1996-03-07 17:41:43.000000000 +0000
++++ sigact.c	2016-12-10 23:59:12.000000000 +0000
+@@ -145,11 +145,7 @@
  
  /*
      #ifndef __P
 -    # if defined(__STDC__) || defined(__cplusplus)
--    #   define	__P(p)	p
+     #   define	__P(p)	p
 -    # else
 -    #   define	__P(p)	()
 -    # endif
-+    # define	__P(p)	p
      #endif
  */
  
---- sigact.h.orig	1996-03-07 12:42:07.000000000 -0500
-+++ sigact.h	2012-12-20 21:15:58.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: sigact.h,v 1.2 2008/05/31 16:47:37 tnn Exp $	*/
-+
- /* NAME:
-  *      sigact.h - sigaction et al
-  *
-@@ -44,13 +46,7 @@
+--- sigact.h.orig	1996-03-07 17:42:07.000000000 +0000
++++ sigact.h	2016-12-10 23:59:15.000000000 +0000
+@@ -44,13 +44,7 @@
  
  #if 0 /* ARGS(), volatile and const are already set up in config*.h -mhr */
  #undef ARGS
@@ -8299,22 +7749,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #endif
  
  #ifndef IS_KSH
---- siglist.in.orig	1996-03-23 12:28:08.000000000 -0500
-+++ siglist.in	2012-12-20 21:15:58.000000000 -0500
-@@ -1,3 +1,4 @@
-+#	$NetBSD: siglist.in,v 1.2 2008/05/31 16:47:37 tnn Exp $
- #
- # List of signals used to initialize ksh's signal table (see trap.c
- # and siglist.sh).
---- siglist.sh.orig	1996-09-18 12:52:41.000000000 -0400
-+++ siglist.sh	2012-12-20 21:15:58.000000000 -0500
-@@ -1,5 +1,5 @@
- #!/bin/sh
--
-+#	$NetBSD: siglist.sh,v 1.3 2011/01/23 17:29:30 hauke Exp $
- #
- # Script to generate a sorted, complete list of signals, suitable
- # for inclusion in trap.c as array initializer.
+--- siglist.sh.orig	1996-09-18 16:52:41.000000000 +0000
++++ siglist.sh	2016-12-10 23:59:56.000000000 +0000
 @@ -20,18 +20,18 @@
   echo '#include "sh.h"';
   echo '	{ QwErTy SIGNALS , "DUMMY" , "hook for number of signals" },';
@@ -8339,14 +7775,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		    }
  		    print;
  		}
---- syn.c.orig	1999-04-16 14:28:49.000000000 -0400
-+++ syn.c	2012-12-20 21:15:58.000000000 -0500
-@@ -1,9 +1,12 @@
-+/*	$NetBSD: syn.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * shell parser (C version)
-  */
+--- syn.c.orig	1999-04-16 18:28:49.000000000 +0000
++++ syn.c	2016-12-11 00:00:03.000000000 +0000
+@@ -4,6 +4,7 @@
  
  #include "sh.h"
  #include "c_test.h"
@@ -8354,7 +7785,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  struct nesting_state {
  	int	start_token;	/* token than began nesting (eg, FOR) */
-@@ -569,7 +572,7 @@
+@@ -569,7 +570,7 @@
  		/*
  		 * Probably something like foo() followed by eof or ;.
  		 * This is accepted by sh and ksh88.
@@ -8363,7 +7794,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		 * be used as input), we pretend there is a colon here.
  		 */
  		t->left = newtp(TCOM);
-@@ -674,7 +677,7 @@
+@@ -674,7 +675,7 @@
  #endif /* KSH */
  	/* and some special cases... */
  	{ "newline",	'\n',	FALSE },
@@ -8372,16 +7803,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  };
  
  void
-@@ -800,7 +803,7 @@
-  *	a=[ab]
-  *	$ x=typeset; $x a=[ab]; echo "$a"
-  *	a=a
-- *	$ 
-+ *	$
-  */
- static int
- assign_command(s)
-@@ -889,8 +892,12 @@
+@@ -889,8 +890,12 @@
  	if (ret) {
  		ACCEPT;
  		if (meta != TM_END) {
@@ -8395,15 +7817,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			XPput(*te->pos.av, save);
  		}
  	}
---- table.c.orig	1996-08-19 10:47:35.000000000 -0400
-+++ table.c	2012-12-20 21:15:58.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: table.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * dynamic hashed associative table for commands and variables
-  */
-@@ -52,8 +54,8 @@
+--- table.c.orig	1996-08-19 14:47:35.000000000 +0000
++++ table.c	2016-12-11 00:00:05.000000000 +0000
+@@ -52,8 +52,8 @@
  	tp->tbls = ntblp;
  	if (otblp == NULL)
  		return;
@@ -8414,7 +7830,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			if ((tblp->flag&DEFINED)) {
  				for (p = &ntblp[hash(tblp->name)
  					  & (tp->size-1)];
-@@ -65,6 +67,8 @@
+@@ -65,6 +65,8 @@
  			} else if (!(tblp->flag & FINUSE)) {
  				afree((void*)tblp, tp->areap);
  			}
@@ -8423,23 +7839,17 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	afree((void*)otblp, tp->areap);
  }
  
---- table.h.orig	1999-04-16 13:58:12.000000000 -0400
-+++ table.h	2012-12-20 21:15:58.000000000 -0500
-@@ -1,4 +1,4 @@
+--- table.h.orig	1999-04-16 17:58:12.000000000 +0000
++++ table.h	2016-12-11 00:00:07.000000000 +0000
+@@ -1,5 +1,3 @@
 -/* $Id: table.h,v 1.3 1994/05/31 13:34:34 michael Exp $ */
-+/* $NetBSD: table.h,v 1.2 2008/05/31 16:47:37 tnn Exp $ */
- 
+-
  /*
   * generic hashed associative table for commands and variables.
---- trap.c.orig	1999-01-12 09:35:20.000000000 -0500
-+++ trap.c	2012-12-20 21:15:58.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: trap.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * signal handling
   */
-@@ -12,9 +14,9 @@
+--- trap.c.orig	1999-01-12 14:35:20.000000000 +0000
++++ trap.c	2016-12-11 00:00:09.000000000 +0000
+@@ -12,9 +12,9 @@
   * list of signals
   */
  Trap sigtraps[SIGNALS+1] = {
@@ -8451,7 +7861,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
      };
  
  static struct sigaction Sigact_ign, Sigact_trap;
-@@ -46,7 +48,7 @@
+@@ -46,7 +46,7 @@
  	sigtraps[SIGHUP].flags |= TF_FATAL;
  	sigtraps[SIGCHLD].flags |= TF_SHELL_USES;
  
@@ -8460,7 +7870,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	setsig(&sigtraps[SIGINT], trapsig, SS_RESTORE_ORIG);
  	setsig(&sigtraps[SIGQUIT], trapsig, SS_RESTORE_ORIG);
  	setsig(&sigtraps[SIGTERM], trapsig, SS_RESTORE_ORIG);
-@@ -68,6 +70,8 @@
+@@ -68,6 +68,8 @@
  alarm_catcher(sig)
  	int sig;
  {
@@ -8469,7 +7879,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	if (ksh_tmout_state == TMOUT_READING) {
  		int left = alarm(0);
  
-@@ -77,6 +81,7 @@
+@@ -77,6 +79,7 @@
  		} else
  			alarm(left);
  	}
@@ -8477,13 +7887,12 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return RETSIGVAL;
  }
  #endif /* KSH */
-@@ -97,9 +102,20 @@
+@@ -97,9 +100,20 @@
  		return NULL;
  	}
  	for (p = sigtraps, i = SIGNALS+1; --i >= 0; p++)
 -		if (p->name && (igncase ? strcasecmp(p->name, name) == 0
 -					: strcmp(p->name, name) == 0))
--			return p;
 +		if (p->name) {
 +			if (igncase) {
 +				if (p->name && (!strcasecmp(p->name, name) ||
@@ -8495,13 +7904,13 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
 +				if (p->name && (!strcmp(p->name, name) ||
 +				    (strlen(name) > 3 && !strncmp("SIG",
 +				    p->name, 3) && !strcmp(p->name, name + 3))))
-+					return p;
+ 			return p;
 +			}
 +		}
  	return NULL;
  }
  
-@@ -111,6 +127,7 @@
+@@ -111,6 +125,7 @@
  	int i;
  {
  	Trap *p = &sigtraps[i];
@@ -8509,7 +7918,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	trap = p->set = 1;
  	if (p->flags & TF_DFL_INTR)
-@@ -125,6 +142,7 @@
+@@ -125,6 +140,7 @@
  	if (sigtraps[i].cursig == trapsig) /* this for SIGCHLD,SIGALRM */
  		sigaction(i, &Sigact_trap, (struct sigaction *) 0);
  #endif /* V7_SIGNALS */
@@ -8517,7 +7926,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return RETSIGVAL;
  }
  
-@@ -156,7 +174,7 @@
+@@ -156,7 +172,7 @@
  }
  
  /* Returns the signal number of any pending traps: ie, a signal which has
@@ -8526,16 +7935,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
   * is set.
   */
  int
-@@ -252,7 +270,7 @@
- 		p->flags |= old_changed;
- 	}
- }
-- 
-+
- /* clear pending traps and reset user's trap handlers; used after fork(2) */
- void
- cleartraps()
-@@ -292,11 +310,14 @@
+@@ -292,11 +308,14 @@
  
  	if (p->trap)
  		afree(p->trap, APERM);
@@ -8555,33 +7955,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	if ((p->flags & (TF_DFL_INTR|TF_FATAL)) && f == SIG_DFL)
  		f = trapsig;
  	else if (p->flags & TF_SHELL_USES) {
---- tree.c.orig	1999-05-31 15:28:21.000000000 -0400
-+++ tree.c	2012-12-20 21:15:58.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: tree.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * command tree climbing
-  */
-@@ -370,7 +372,7 @@
- #ifdef HAVE_PROTOTYPES
- fptreef(struct shf *shf, int indent, const char *fmt, ...)
- #else
--fptreef(shf, indent, fmt, va_alist) 
-+fptreef(shf, indent, fmt, va_alist)
-   struct shf *shf;
-   int indent;
-   const char *fmt;
-@@ -380,7 +382,7 @@
-   va_list	va;
- 
-   SH_VA_START(va, fmt);
--  
-+
-   vfptreef(shf, indent, fmt, va);
-   va_end(va);
-   return 0;
-@@ -506,7 +508,7 @@
+--- tree.c.orig	1999-05-31 19:28:21.000000000 +0000
++++ tree.c	2016-12-11 00:00:11.000000000 +0000
+@@ -506,7 +506,7 @@
  		for (tw = t->vars; *tw++ != NULL; )
  			;
  		rw = r->vars = (char **)
@@ -8590,7 +7966,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		for (tw = t->vars; *tw != NULL; )
  			*rw++ = wdcopy(*tw++, ap);
  		*rw = NULL;
-@@ -518,7 +520,7 @@
+@@ -518,7 +518,7 @@
  		for (tw = t->args; *tw++ != NULL; )
  			;
  		rw = r->args = (char **)
@@ -8599,7 +7975,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		for (tw = t->args; *tw != NULL; )
  			*rw++ = wdcopy(*tw++, ap);
  		*rw = NULL;
-@@ -553,7 +555,7 @@
+@@ -553,7 +553,7 @@
  	while (1)
  		switch (*wp++) {
  		  case EOS:
@@ -8608,7 +7984,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		  case CHAR:
  		  case QCHAR:
  			wp++;
-@@ -574,7 +576,7 @@
+@@ -574,7 +574,7 @@
  		  case CSUBST:
  			wp++;
  			if (c == CSUBST && nest == 0)
@@ -8617,7 +7993,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			nest--;
  			break;
  #ifdef KSH
-@@ -585,7 +587,7 @@
+@@ -585,7 +585,7 @@
  		  case SPAT:
  		  case CPAT:
  			if (c == wp[-1] && nest == 0)
@@ -8626,7 +8002,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			if (wp[-1] == CPAT)
  				nest--;
  			break;
-@@ -679,7 +681,7 @@
+@@ -679,7 +679,7 @@
  
  	for (ior = iow; *ior++ != NULL; )
  		;
@@ -8635,8 +8011,8 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	for (i = 0; iow[i] != NULL; i++) {
  		register struct ioword *p, *q;
---- tree.h.orig	1999-05-24 14:56:27.000000000 -0400
-+++ tree.h	2012-12-20 21:15:58.000000000 -0500
+--- tree.h.orig	1999-05-24 18:56:27.000000000 +0000
++++ tree.h	2016-12-10 23:49:11.000000000 +0000
 @@ -107,7 +107,7 @@
  #define	XCCLOSE	BIT(7)		/* exchild: close close_fd in child */
  #define XERROK	BIT(8)		/* non-zero exit ok (for set -e) */
@@ -8646,15 +8022,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #define XINTACT BIT(11)		/* OS2: proc started from interactive session */
  
  /*
---- tty.c.orig	1998-12-16 14:34:26.000000000 -0500
-+++ tty.c	2012-12-20 21:15:58.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: tty.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- #include "sh.h"
- #include "ksh_stat.h"
- #define EXTERN
-@@ -102,6 +104,10 @@
+--- tty.c.orig	1998-12-16 19:34:26.000000000 +0000
++++ tty.c	2016-12-11 00:00:14.000000000 +0000
+@@ -102,6 +102,10 @@
  {
  	int	do_close = 1;
  	int	tfd;
@@ -8665,7 +8035,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	if (tty_fd >= 0) {
  		close(tty_fd);
-@@ -111,7 +117,7 @@
+@@ -111,7 +115,7 @@
  
  	/* SCO can't job control on /dev/tty, so don't try... */
  #if !defined(__SCO__)
@@ -8674,7 +8044,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #ifdef __NeXT
  		/* rlogin on NeXT boxes does not set up the controlling tty,
  		 * so force it to be done here...
-@@ -123,7 +129,7 @@
+@@ -123,7 +127,7 @@
  
  			if (s && (fd = open(s, O_RDWR, 0)) >= 0) {
  				close(fd);
@@ -8683,7 +8053,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			}
  		}
  #endif /* __NeXT */
-@@ -133,8 +139,8 @@
+@@ -133,8 +137,8 @@
  		if (tfd < 0) {
  			tty_devtty = 0;
  			warningf(FALSE,
@@ -8694,23 +8064,9 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		}
  # endif /* __mips  */
  	}
---- tty.h.orig	1996-10-08 13:27:21.000000000 -0400
-+++ tty.h	2012-12-20 21:15:58.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: tty.h,v 1.2 2008/05/31 16:47:37 tnn Exp $	*/
-+
- /*
- 	tty.h -- centralized definitions for a variety of terminal interfaces
- 
---- var.c.orig	1999-05-11 10:27:02.000000000 -0400
-+++ var.c	2012-12-20 21:15:58.000000000 -0500
-@@ -1,3 +1,5 @@
-+/*	$NetBSD: var.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- #include "sh.h"
- #include "ksh_time.h"
- #include "ksh_limval.h"
-@@ -39,7 +41,7 @@
+--- var.c.orig	1999-05-11 14:27:02.000000000 +0000
++++ var.c	2016-12-11 00:00:20.000000000 +0000
+@@ -39,7 +39,7 @@
  	ainit(&l->area); /* todo: could use e->area (l->area => l->areap) */
  	if (!e->loc) {
  		l->argc = 0;
@@ -8719,7 +8075,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	} else {
  		l->argc = e->loc->argc;
  		l->argv = e->loc->argv;
-@@ -62,12 +64,14 @@
+@@ -62,12 +62,14 @@
  	register int i;
  
  	e->loc = l->next;	/* pop block */
@@ -8736,7 +8092,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	if (l->flags & BF_DOGETOPTS)
  		user_opt = l->getopts_state;
  	afreeall(&l->area);
-@@ -122,6 +126,8 @@
+@@ -122,6 +124,8 @@
   * non-zero if this is an array, sets *valp to the array index, returns
   * the basename of the array.
   */
@@ -8745,16 +8101,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  const char *
  array_index_calc(n, arrayp, valp)
  	const char *n;
-@@ -162,7 +168,7 @@
- 	register struct block *l = e->loc;
- 	register struct tbl *vp;
- 	register int c;
--	unsigned h; 
-+	unsigned h;
- 	bool_t	 array;
- 	int	 val;
- 
-@@ -217,11 +223,12 @@
+@@ -217,11 +221,12 @@
  	}
  	for (l = e->loc; ; l = l->next) {
  		vp = tsearch(&l->vars, n, h);
@@ -8768,7 +8115,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		if (l->next == NULL)
  			break;
  	}
-@@ -325,8 +332,12 @@
+@@ -325,8 +330,12 @@
  		}
  		if (!(vp->flag & INT_U) && vp->val.i < 0)
  			*--s = '-';
@@ -8782,7 +8129,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  	return s;
  }
-@@ -353,10 +364,13 @@
+@@ -353,10 +362,13 @@
  	const char *s;
  	int error_ok;
  {
@@ -8798,7 +8145,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		return 0;
  	}
  	if (!(vq->flag&INTEGER)) { /* string dest */
-@@ -372,13 +386,12 @@
+@@ -372,12 +384,11 @@
  		vq->flag &= ~(ISSET|ALLOC);
  		vq->type = 0;
  		if (s && (vq->flag & (UCASEV_AL|LCASEV|LJUST|RJUST)))
@@ -8809,12 +8156,10 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		else {
  			vq->val.s = str_save(s, vq->areap);
 -			if (vq->val.s)		/* <sjg> don't lie */
--				vq->flag |= ALLOC;
-+			vq->flag |= ALLOC;
+ 				vq->flag |= ALLOC;
  		}
  	} else			/* integer dest */
- 		if (!v_evaluate(vq, s, error_ok))
-@@ -386,6 +399,8 @@
+@@ -386,6 +397,8 @@
  	vq->flag |= ISSET;
  	if ((vq->flag&SPECIAL))
  		setspec(vq);
@@ -8823,16 +8168,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	return 1;
  }
  
-@@ -420,7 +435,7 @@
- 	int base, neg;
- 	int have_base = 0;
- 	long num;
--	
-+
- 	if (vp->flag&SPECIAL)
- 		getspec(vp);
- 	/* XXX is it possible for ISSET to be set and val.s to be 0? */
-@@ -431,15 +446,22 @@
+@@ -431,15 +444,22 @@
  		return vp->type;
  	}
  	s = vp->val.s + vp->type;
@@ -8860,16 +8196,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			base = (int) num;
  			if (have_base || base < 2 || base > 36)
  				return -1;
-@@ -475,7 +497,7 @@
- {
- 	int base;
- 	long num;
--	
-+
- 	if ((base = getint(vp, &num)) == -1)
- 		return NULL;
- 	if (!(vq->flag & INTEGER) && (vq->flag & ALLOC)) {
-@@ -513,11 +535,11 @@
+@@ -513,11 +533,11 @@
  		int slen;
  
  		if (vp->flag & RJUST) {
@@ -8885,7 +8212,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			if (slen > vp->u2.field) {
  				s += slen - vp->u2.field;
  				slen = vp->u2.field;
-@@ -528,7 +550,7 @@
+@@ -528,7 +548,7 @@
  				vp->u2.field - slen, null, slen, s);
  		} else {
  			/* strip leading spaces/zeros */
@@ -8894,7 +8221,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				s++;
  			if (vp->flag & ZEROFIL)
  				while (*s == '0')
-@@ -541,12 +563,12 @@
+@@ -541,12 +561,12 @@
  
  	if (vp->flag & UCASEV_AL) {
  		for (q = p; *q; q++)
@@ -8911,15 +8238,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  
  	return p;
-@@ -598,14 +620,14 @@
- 		return NULL;
- 	if (*val == '[') {
- 		int len;
--		
-+
- 		len = array_ref_len(val);
- 		if (len == 0)
- 			return NULL;
+@@ -605,7 +625,7 @@
  		/* IMPORT is only used when the shell starts up and is
  		 * setting up its environment.  Allow only simple array
  		 * references at this time since parameter/command substitution
@@ -8928,7 +8247,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		 * security hole.
  		 */
  		if (set & IMPORT) {
-@@ -619,10 +641,10 @@
+@@ -619,10 +639,10 @@
  	if (*val == '=')
  		tvar = str_nsave(var, val++ - var, ATEMP);
  	else {
@@ -8941,7 +8260,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		val = NULL;
  	}
  
-@@ -690,7 +712,7 @@
+@@ -690,7 +710,7 @@
  			if (fake_assign) {
  				if (!setstr(t, s, KSH_RETURN_ERROR)) {
  					/* Somewhat arbitrary action here:
@@ -8950,7 +8269,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  					 * the flag settings.
  					 */
  					ok = 0;
-@@ -709,19 +731,19 @@
+@@ -709,19 +729,19 @@
  			}
  		}
  		if (!ok)
@@ -8973,7 +8292,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	}
  
  	/* only x[0] is ever exported, so use vpbase */
-@@ -778,7 +800,7 @@
+@@ -778,7 +798,7 @@
  		if (aok && *s == '[' && (alen = array_ref_len(s)))
  			s += alen;
  	}
@@ -8982,7 +8301,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  }
  
  /* Return a pointer to the first character past any legal variable name.  */
-@@ -811,7 +833,7 @@
+@@ -811,7 +831,7 @@
  			}
  		}
  	}
@@ -8991,7 +8310,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  }
  
  /* Check if coded string s is a variable name */
-@@ -1126,6 +1148,7 @@
+@@ -1126,6 +1146,7 @@
  	int val;
  {
  	struct tbl *prev, *curr, *new;
@@ -8999,7 +8318,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	vp->flag |= ARRAY|DEFINED;
  
-@@ -1146,8 +1169,9 @@
+@@ -1146,8 +1167,9 @@
  		else
  			new = curr;
  	} else
@@ -9011,7 +8330,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	new->flag = vp->flag & ~(ALLOC|DEFINED|ISSET|SPECIAL);
  	new->type = vp->type;
  	new->areap = vp->areap;
-@@ -1191,7 +1215,7 @@
+@@ -1191,7 +1213,7 @@
  
  	if ((p = strchr(str, '[')) == 0)
  		/* Shouldn't happen, but why worry? */
@@ -9020,28 +8339,18 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  	return str_nsave(str, p - str, ATEMP);
  }
---- version.c.orig	1999-07-13 13:23:26.000000000 -0400
-+++ version.c	2012-12-20 21:15:58.000000000 -0500
-@@ -1,8 +1,10 @@
-+/*	$NetBSD: version.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  * value of $KSH_VERSION (or $SH_VERSION)
-  */
+--- version.c.orig	1999-07-13 17:23:26.000000000 +0000
++++ version.c	2016-12-11 00:00:24.000000000 +0000
+@@ -4,5 +4,5 @@
  
  #include "sh.h"
  
 -const char ksh_version [] =
 +char ksh_version [] =
  	"@(#)PD KSH v5.2.14 99/07/13.2";
---- vi.c.orig	1999-05-18 10:57:44.000000000 -0400
-+++ vi.c	2012-12-20 21:15:58.000000000 -0500
-@@ -1,9 +1,12 @@
-+/*	$NetBSD: vi.c,v 1.3 2008/06/15 14:20:09 tnn Exp $	*/
-+
- /*
-  *	vi command editing
-  *	written by John Rochester (initially for nsh)
+--- vi.c.orig	1999-05-18 14:57:44.000000000 +0000
++++ vi.c	2016-12-11 00:00:47.000000000 +0000
+@@ -4,6 +4,7 @@
   *	bludgeoned to fit pdksh by Larry Bouzane, Jeff Sparkes & Eric Gisin
   *
   */
@@ -9049,7 +8358,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  #include "config.h"
  #ifdef VI
  
-@@ -25,44 +28,45 @@
+@@ -25,44 +26,45 @@
  };
  
  
@@ -9127,7 +8436,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  
  #define C_	0x1		/* a valid command that isn't a M_, E_, U_ */
  #define M_	0x2		/* movement command (h, l, etc.) */
-@@ -235,7 +239,7 @@
+@@ -235,7 +237,7 @@
  
  	x_putc('\r'); x_putc('\n'); x_flush();
  
@@ -9136,7 +8445,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  		return -1;
  
  	if (es->cbuf != buf)
-@@ -419,7 +423,7 @@
+@@ -419,7 +421,7 @@
  				}
  			} else {
  				locpat[srchlen] = '\0';
@@ -9145,7 +8454,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			}
  			state = VCMD;
  		} else if (ch == edchars.erase || ch == Ctrl('h')) {
-@@ -443,9 +447,9 @@
+@@ -443,9 +445,9 @@
  			int i;
  			int n = srchlen;
  
@@ -9157,7 +8466,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				n--;
  			for (i = srchlen; --i >= n; )
  				es->linelen -= char_len((unsigned char) locpat[i]);
-@@ -459,15 +463,22 @@
+@@ -459,15 +461,22 @@
  			else {
  				locpat[srchlen++] = ch;
  				if ((ch & 0x80) && Flag(FVISHOW8)) {
@@ -9181,7 +8490,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				es->cursor = es->linelen;
  				refresh(0);
  			}
-@@ -690,7 +701,7 @@
+@@ -690,7 +699,7 @@
  	/* End nonstandard vi commands } */
  
  	default:
@@ -9190,18 +8499,33 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			return -1;
  		ibuf[inslen++] = ch;
  		if (insert == INSERT) {
-@@ -817,8 +828,8 @@
+@@ -817,12 +826,11 @@
  					return -1;
  				if (*cmd == 'c' &&
  						(cmd[1]=='w' || cmd[1]=='W') &&
 -						!isspace(es->cbuf[es->cursor])) {
 -					while (isspace(es->cbuf[--ncursor]))
+-						;
 +						!isspace((unsigned char)es->cbuf[es->cursor])) {
 +					while (isspace((unsigned char)es->cbuf[--ncursor]))
- 						;
++						continue;
  					ncursor++;
- 				}
-@@ -1050,7 +1061,7 @@
+-				}
+-				if (ncursor > es->cursor) {
++				} if (ncursor > es->cursor) {
+ 					c1 = es->cursor;
+ 					c2 = ncursor;
+ 				} else {
+@@ -849,7 +857,7 @@
+ 			if (es->linelen != 0)
+ 				es->cursor++;
+ 			while (putbuf(ybuf, yanklen, 0) == 0 && --argcnt > 0)
+-				;
++				continue;
+ 			if (es->cursor != 0)
+ 				es->cursor--;
+ 			if (argcnt != 0)
+@@ -1050,7 +1058,7 @@
  			if (histnum(-1) < 0)
  				return -1;
  			p = *histpos();
@@ -9210,7 +8534,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			if (argcnt) {
  				while (*p && issp(*p))
  					p++;
-@@ -1105,12 +1116,12 @@
+@@ -1105,12 +1113,12 @@
  				return -1;
  			for (i = 0; i < argcnt; i++) {
  				p = &es->cbuf[es->cursor];
@@ -9227,7 +8551,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  				}
  				if (es->cursor < es->linelen - 1)
  					es->cursor++;
-@@ -1258,7 +1269,7 @@
+@@ -1258,7 +1266,7 @@
  
  	case '^':
  		ncursor = 0;
@@ -9236,7 +8560,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  			ncursor++;
  		break;
  
-@@ -1402,8 +1413,8 @@
+@@ -1402,8 +1410,8 @@
  
  	new = (struct edstate *)alloc(sizeof(struct edstate), APERM);
  	new->cbuf = alloc(old->cbufsize, APERM);
@@ -9246,7 +8570,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	new->linelen = old->linelen;
  	new->cursor = old->cursor;
  	new->winleft = old->winleft;
-@@ -1414,7 +1425,7 @@
+@@ -1414,7 +1422,7 @@
  restore_edstate(new, old)
  	struct edstate *old, *new;
  {
@@ -9255,7 +8579,7 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	new->linelen = old->linelen;
  	new->cursor = old->cursor;
  	new->winleft = old->winleft;
-@@ -1470,6 +1481,17 @@
+@@ -1470,6 +1478,17 @@
  	holdlen = 0;
  }
  
@@ -9273,67 +8597,89 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  static int
  putbuf(buf, len, repl)
  	const char *buf;
-@@ -1548,12 +1570,12 @@
- 			while (is_wordch(es->cbuf[ncursor]) &&
- 					ncursor < es->linelen)
+@@ -1545,15 +1564,16 @@
+ 	ncursor = es->cursor;
+ 	while (ncursor < es->linelen && argcnt--) {
+ 		if (is_wordch(es->cbuf[ncursor]))
+-			while (is_wordch(es->cbuf[ncursor]) &&
+-					ncursor < es->linelen)
++			while (ncursor < es->linelen &&
++			    is_wordch(es->cbuf[ncursor]))
  				ncursor++;
 -		else if (!isspace(es->cbuf[ncursor]))
-+		else if (!isspace((unsigned char)es->cbuf[ncursor]))
- 			while (!is_wordch(es->cbuf[ncursor]) &&
+-			while (!is_wordch(es->cbuf[ncursor]) &&
 -					!isspace(es->cbuf[ncursor]) &&
-+					!isspace((unsigned char)es->cbuf[ncursor]) &&
- 					ncursor < es->linelen)
+-					ncursor < es->linelen)
++		else if (!isspace((unsigned char)es->cbuf[ncursor]))
++			while (ncursor < es->linelen &&
++			    !is_wordch(es->cbuf[ncursor]) &&
++			    !isspace((unsigned char)es->cbuf[ncursor]))
  				ncursor++;
 -		while (isspace(es->cbuf[ncursor]) && ncursor < es->linelen)
-+		while (isspace((unsigned char)es->cbuf[ncursor]) && ncursor < es->linelen)
++		while (ncursor < es->linelen &&
++		    isspace((unsigned char)es->cbuf[ncursor]))
  			ncursor++;
  	}
  	return ncursor;
-@@ -1567,7 +1589,7 @@
+@@ -1567,18 +1587,18 @@
  
  	ncursor = es->cursor;
  	while (ncursor > 0 && argcnt--) {
 -		while (--ncursor > 0 && isspace(es->cbuf[ncursor]))
+-			;
 +		while (--ncursor > 0 && isspace((unsigned char)es->cbuf[ncursor]))
- 			;
++			continue;
  		if (ncursor > 0) {
  			if (is_wordch(es->cbuf[ncursor]))
-@@ -1577,7 +1599,7 @@
+ 				while (--ncursor >= 0 &&
+ 				   is_wordch(es->cbuf[ncursor]))
+-					;
++					continue;
  			else
  				while (--ncursor >= 0 &&
  				   !is_wordch(es->cbuf[ncursor]) &&
 -				   !isspace(es->cbuf[ncursor]))
+-					;
 +				   !isspace((unsigned char)es->cbuf[ncursor]))
- 					;
++					continue;
  			ncursor++;
  		}
-@@ -1594,7 +1616,7 @@
+ 	}
+@@ -1594,18 +1614,18 @@
  	ncursor = es->cursor;
  	while (ncursor < es->linelen && argcnt--) {
  		while (++ncursor < es->linelen - 1 &&
 -				isspace(es->cbuf[ncursor]))
-+				isspace((unsigned char)es->cbuf[ncursor]))
- 			;
+-			;
++		    isspace((unsigned char)es->cbuf[ncursor]))
++			continue;
  		if (ncursor < es->linelen - 1) {
  			if (is_wordch(es->cbuf[ncursor]))
-@@ -1604,7 +1626,7 @@
+ 				while (++ncursor < es->linelen &&
+ 					  is_wordch(es->cbuf[ncursor]))
+-					;
++					continue;
  			else
  				while (++ncursor < es->linelen &&
  				   !is_wordch(es->cbuf[ncursor]) &&
 -				   !isspace(es->cbuf[ncursor]))
+-					;
 +				   !isspace((unsigned char)es->cbuf[ncursor]))
- 					;
++					continue;
  			ncursor--;
  		}
-@@ -1620,9 +1642,9 @@
+ 	}
+@@ -1620,9 +1640,11 @@
  
  	ncursor = es->cursor;
  	while (ncursor < es->linelen && argcnt--) {
 -		while (!isspace(es->cbuf[ncursor]) && ncursor < es->linelen)
-+		while (!isspace((unsigned char)es->cbuf[ncursor]) && ncursor < es->linelen)
++		while (ncursor < es->linelen &&
++		    !isspace((unsigned char)es->cbuf[ncursor]))
  			ncursor++;
 -		while (isspace(es->cbuf[ncursor]) && ncursor < es->linelen)
-+		while (isspace((unsigned char)es->cbuf[ncursor]) && ncursor < es->linelen)
++		while (ncursor < es->linelen &&
++		    isspace((unsigned char)es->cbuf[ncursor]))
  			ncursor++;
  	}
  	return ncursor;
@@ -9342,27 +8688,31 @@ Add changes between pdksh-5.2.14 and NetBSD src/bin/ksh as of 20121220.
  	ncursor = es->cursor;
  	while (ncursor > 0 && argcnt--) {
 -		while (--ncursor >= 0 && isspace(es->cbuf[ncursor]))
-+		while (--ncursor >= 0 && isspace((unsigned char)es->cbuf[ncursor]))
- 			;
+-			;
 -		while (ncursor >= 0 && !isspace(es->cbuf[ncursor]))
++		while (--ncursor >= 0 && isspace((unsigned char)es->cbuf[ncursor]))
++			continue;
 +		while (ncursor >= 0 && !isspace((unsigned char)es->cbuf[ncursor]))
  			ncursor--;
  		ncursor++;
  	}
-@@ -1654,11 +1676,11 @@
+@@ -1654,12 +1676,12 @@
  	ncursor = es->cursor;
  	while (ncursor < es->linelen - 1 && argcnt--) {
  		while (++ncursor < es->linelen - 1 &&
 -				isspace(es->cbuf[ncursor]))
-+				isspace((unsigned char)es->cbuf[ncursor]))
- 			;
+-			;
++		    isspace((unsigned char)es->cbuf[ncursor]))
++			continue;
  		if (ncursor < es->linelen - 1) {
  			while (++ncursor < es->linelen &&
 -					!isspace(es->cbuf[ncursor]))
-+					!isspace((unsigned char)es->cbuf[ncursor]))
- 				;
+-				;
++			    !isspace((unsigned char)es->cbuf[ncursor]))
++				continue;
  			ncursor--;
  		}
+ 	}
 @@ -1732,11 +1754,11 @@
  }
  

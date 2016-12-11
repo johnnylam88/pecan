@@ -1,12 +1,12 @@
 #!/bin/sh
 
-PECAN_PKGNAME="pdksh-5.2.14+1"
+PECAN_PKGNAME="pdksh-5.2.14+2"
 
 pecan_description="Public Domain Korn Shell"
 
 pecan_fetch_url=`cat << EOF
-	ftp://ftp.cs.mun.ca/pub/pdksh/%FILE%
-	http://www.cs.mun.ca/~michael/pdksh/files/%FILE%
+	https://fossies.org/linux/misc/old/%FILE%
+	http://gd.tuwien.ac.at/utils/shells/pdksh/%FILE%
 EOF
 `
 
