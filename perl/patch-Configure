@@ -1,14 +1,24 @@
---- Configure.orig	2012-10-25 22:44:14.000000000 -0400
-+++ Configure	2012-11-09 12:54:08.000000000 -0500
-@@ -9377,6 +9377,13 @@
+--- Configure.orig	2016-04-26 22:11:09.000000000 +0000
++++ Configure	2016-12-11 12:53:34.000000000 +0000
+@@ -4961,7 +4961,8 @@
+ # and usrinc directly from the compiler.
+ # Note that ccname for clang is also gcc.
+ case "$ccname" in
+-    gcc)
++    gcc-skip-this)	# Skip this check which pollutes our carefully
++			# constructed list of paths.
+ 	$echo 'extern int foo;' > try.c
+ 	set X `$cppstdin -v try.c 2>&1 | $awk '/^#include </,/^End of search /'|$cppfilter $grep '/include'`
+ 	shift
+@@ -9901,6 +9902,13 @@
  : Check if we want perlio
  useperlio="$define"
  
 +: Look for a hint-file generated 'call-back-unit'.
-+: We need to set some defaults for building perl for Pecan.
-+if $test -f pecan.cbu; then
++: We need to set some defaults for building perl for Encap.
++if $test -f encap.cbu; then
 +	echo "Setting Pecan-specific hints regarding compiler/linker flags..."
-+	. ./pecan.cbu
++	. ./encap.cbu
 +fi
 +
  : Set the vendorbin variables

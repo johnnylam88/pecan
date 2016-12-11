@@ -1,0 +1,17 @@
+Candidate fix from https://rt.cpan.org/Public/Bug/Display.html?id=72467
+
+--- dist/Carp/lib/Carp.pm.orig	2016-04-06 12:31:16.000000000 +0000
++++ dist/Carp/lib/Carp.pm	2016-12-11 02:22:22.000000000 +0000
+@@ -227,6 +227,12 @@
+         }
+         else {
+             @args = @DB::args;
++            @args = map {
++                local $@;
++                my $tmp = eval { Carp::format_arg($_) };
++                defined($tmp) ? $tmp : 'unknown';
++            } @DB::args;
++
+             my $overflow;
+             if ( $MaxArgNums and @args > $MaxArgNums )
+             {    # More than we want to show?

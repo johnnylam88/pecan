@@ -10,3 +10,6 @@ pecan_make_dir lib/perl5
 pecan_make_dir lib/perl5/site_perl
 pecan_make_dir lib/perl5/site_perl/${perl5version}
 pecan_make_dir lib/perl5/site_perl/${perl5version}/${perl5platform}
+pecan_make_dir lib/perl5/vendor_perl
+pecan_make_dir lib/perl5/vendor_perl/${perl5version}
+pecan_make_dir lib/perl5/vendor_perl/${perl5version}/${perl5platform}
