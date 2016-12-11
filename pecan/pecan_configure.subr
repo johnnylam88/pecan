@@ -71,6 +71,8 @@ pecan_configure_deferred_vars()
 		pecan_configure_args="${pecan_configure_args} --sysconfdir=${pecan_etcdir}"
 	[ -z "${pecan_vardir}" ] || \
 		pecan_configure_args="${pecan_configure_args} --localstatedir=${pecan_vardir}"
+	[ -z "${pecan_docdir}" ] || \
+		pecan_configure_args="${pecan_configure_args} --docdir=${pecan_docdir}"
 	[ -z "${pecan_infodir}" ] || \
 		pecan_configure_args="${pecan_configure_args} --infodir=${pecan_infodir}"
 	[ -z "${pecan_mandir}" ] || \
