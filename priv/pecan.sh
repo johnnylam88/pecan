@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="priv-1.0beta2+1"
+PECAN_PKGNAME="priv-1.0beta2+2"
 
 pecan_description="Utility to execute commands as a different user"
 
@@ -32,6 +32,7 @@ pecan_post_stage()
 		> "${pecan_stagedir}/LICENSE"
 }
 
+pecan_install_args="${pecan_install_args} mandir=${pecan_mandir}/man1"
 pecan_install_args="${pecan_install_args} sysconfdir=${pecan_pkgdir}"
 pecan_install_args="${pecan_install_args} BINMODE=4711"
 
