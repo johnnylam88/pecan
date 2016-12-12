@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="libidn-1.25"
+PECAN_PKGNAME="libidn-1.33"
 
 pecan_description="GNU internationalized domain name library"
 
@@ -8,8 +8,6 @@ pecan_fetch_url="http://ftp.gnu.org/gnu/libidn/%FILE%"
 
 pecan_prereq_lib=">= gettext-runtime-0.18.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
-
-pecan_tools_build="pkg-config"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
@@ -20,24 +18,10 @@ else
 fi
 
 pecan_configure_style="gnu"
-
-pecan_pre_build()
-{
-	# toutf8.c was patched to change only the implementation, so
-	# touch the downstream documentation files generated from the
-	# file so that they aren't regenerated.
-	#
-	( cd "${pecan_srcdir}/doc" &&
-	  touch Makefile.gdoc texi/toutf8.c.texi \
-		texi/stringprep_locale_charset.texi \
-		man/stringprep_locale_charset.3 \
-		texi/stringprep_convert.texi \
-		man/stringprep_convert.3 \
-		texi/stringprep_locale_to_utf8.texi \
-		man/stringprep_locale_to_utf8.3 \
-		texi/stringprep_utf8_to_locale.texi \
-		man/stringprep_utf8_to_locale.3 )
-}
+pecan_configure_args="${pecan_configure_args} --disable-gtk-doc"
+pecan_configure_args="${pecan_configure_args} --disable-gtk-doc-html"
+pecan_configure_args="${pecan_configure_args} --disable-gtk-doc-pdf"
+pecan_configure_args="${pecan_configure_args} --disable-java"
 
 pecan_test_style=make
 
