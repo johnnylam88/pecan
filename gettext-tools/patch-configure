@@ -1,8 +1,8 @@
 Force using a pre-installed libintl from gettext-runtime.
 
---- gettext-tools/configure.orig	2010-06-06 16:12:20.000000000 -0400
-+++ gettext-tools/configure	2012-11-16 17:59:55.000000000 -0500
-@@ -20019,7 +20019,7 @@
+--- gettext-tools/configure.orig	2016-06-11 13:01:07.000000000 +0000
++++ gettext-tools/configure	2016-12-12 03:09:32.000000000 +0000
+@@ -22747,7 +22747,7 @@
                                          if { eval "gt_val=\$$gt_func_gnugettext_libc"; test "$gt_val" = "yes"; } \
             || { { eval "gt_val=\$$gt_func_gnugettext_libintl"; test "$gt_val" = "yes"; } \
                  && test "$PACKAGE" != gettext-runtime \
