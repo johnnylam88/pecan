@@ -35,8 +35,8 @@ pecan_pre_install()
 }
 
 pecan_install_target="installbin installman"
-pecan_install_args="${pecan_install_args} infodir=${pecan_pkgdir}/share/info"
-pecan_install_args="${pecan_install_args} mandir=${pecan_pkgdir}/share/man/man1"
+pecan_install_args="${pecan_install_args} infodir=${pecan_infodir}"
+pecan_install_args="${pecan_install_args} mandir=${pecan_mandir}/man1"
 
 pecan_test_style=make
 
