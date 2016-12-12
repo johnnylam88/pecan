@@ -100,12 +100,16 @@ pecan_do_debug()
 		pecan_configure_shell	\
 		pecan_configure_style	\
 		pecan_cppflags		\
+		pecan_docdir		\
+		pecan_etcdir		\
 		pecan_fetch_file	\
 		pecan_fetch_url		\
+		pecan_infodir		\
 		pecan_install_args	\
 		pecan_install_style	\
 		pecan_install_target	\
 		pecan_ldflags		\
+		pecan_mandir		\
 		pecan_pkgname		\
 		pecan_pkgver		\
 		pecan_prereq_build	\
