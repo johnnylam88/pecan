@@ -57,7 +57,7 @@ pecan_init_vars()
 	: ${PECAN_DISTDIR=${pecan_topdir}}
 
 	: ${pecan_pkgdir:=${PECAN_SOURCE}/${PECAN_PKGNAME}}
-	: ${pecan_docdir:=${pecan_pkgdir}/share/doc}
+	: ${pecan_docdir:=${pecan_pkgdir}/share/doc/${pecan_pkgname}}
 	: ${pecan_infodir:=${pecan_pkgdir}/share/info}
 	: ${pecan_mandir:=${pecan_pkgdir}/share/man}
 	: ${pecan_etcdir:=${PECAN_TARGET}/etc}

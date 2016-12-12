@@ -37,6 +37,6 @@ pecan_post_stage()
 
 pecan_install_args="OPENSSLDIR=${pecan_pkgdir}/etc/ssl"
 pecan_install_args="${pecan_install_args} MANDIR=${pecan_mandir}"
-pecan_install_args="${pecan_install_args} DOCDIR=${pecan_docdir}/openssl"
+pecan_install_args="${pecan_install_args} DOCDIR=${pecan_docdir}"
 
 pecan_main "$@"
