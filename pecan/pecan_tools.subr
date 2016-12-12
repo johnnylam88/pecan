@@ -342,6 +342,7 @@ pecan_tools_perl_vars()
 # tools: pkg-config
 #
 pecan_tools_registry="${pecan_tools_registry} pkg_config"
+pecan_tools_pkg_config_toolname="pkg-config"
 pecan_tools_pkg_config_pkgname="pkg-config"
 pecan_tools_pkg_config_prereq=">= pkg-config-0.27"
 
