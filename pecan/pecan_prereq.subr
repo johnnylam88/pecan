@@ -1,4 +1,4 @@
-# Copyright (c) 2012, Johnny C. Lam
+# Copyright (c) 2012, 2016, Johnny C. Lam
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -51,17 +51,21 @@ pecan_prereq_vars()
 		fi
 		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
 			_pb_prereq_pkgdir="${PECAN_SOURCE}/${_pb_prereq_match}"
-			if [ -z "${_pb_prereq_cppflags}" ]; then
-				_pb_prereq_cppflags="-I${_pb_prereq_pkgdir}/include"
-			else
-				_pb_prereq_cppflags="${_pb_prereq_cppflags} -I${_pb_prereq_pkgdir}/include"
+			if [ -d "${_pb_prereq_pkgdir}/include" ]; then
+				if [ -z "${_pb_prereq_cppflags}" ]; then
+					_pb_prereq_cppflags="-I${_pb_prereq_pkgdir}/include"
+				else
+					_pb_prereq_cppflags="${_pb_prereq_cppflags} -I${_pb_prereq_pkgdir}/include"
+				fi
 			fi
-			if [ -z "${_pb_prereq_ldflags}" ]; then
-				_pb_prereq_ldflags="-L${_pb_prereq_pkgdir}/lib"
-			else
-				_pb_prereq_ldflags="${_pb_prereq_ldflags} -L${_pb_prereq_pkgdir}/lib"
+			if [ -d "${_pb_prereq_pkgdir}/lib" ]; then
+				if [ -z "${_pb_prereq_ldflags}" ]; then
+					_pb_prereq_ldflags="-L${_pb_prereq_pkgdir}/lib"
+				else
+					_pb_prereq_ldflags="${_pb_prereq_ldflags} -L${_pb_prereq_pkgdir}/lib"
+				fi
+				_pb_prereq_ldflags="${_pb_prereq_ldflags} -Wl,-rpath,${_pb_prereq_pkgdir}/lib"
 			fi
-			_pb_prereq_ldflags="${_pb_prereq_ldflags} -Wl,-rpath,${_pb_prereq_pkgdir}/lib"
 		fi
 		_pb_prereq_cmp=
 	done
