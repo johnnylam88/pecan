@@ -343,6 +343,76 @@ pecan_vercmp()
 }
 
 ###
+# pecan_pkgspec_check operator pkgspec pkgspec_to_check
+#
+# Check if "pkgspec_to_check" is a match for the given prereq
+# "operator pkgspec".
+#
+# Returns 0 if a match is found; non-zero otherwise.
+#
+pecan_pkgspec_check()
+{
+	_pb_check_cmp="$1"
+	_pb_check_pkgspec="$2"
+	_pb_check_pkgspec_to_check="$3"
+
+	# Sanity-check comparison operator.
+	case "${_pb_check_cmp}" in
+	[*]|"<="|"<"|">="|">"|=)
+		;;
+	*)
+		${pecan_errmsg} "unknown pkgspec comparison operator \`${_pb_check_cmp}'."
+		return 1
+		;;
+	esac
+
+	# Split the two pkgspecs into their components.
+	pecan_pkgspec_parse "${_pb_check_pkgspec}" \
+		_pb_check_pkgname _pb_check_version || return 1
+	pecan_pkgspec_parse "${_pb_check_pkgspec_to_check}" \
+		_pb_check_pkgname_to_check _pb_check_version_to_check || return 1
+
+	[ "${_pb_check_pkgname}" = "${_pb_check_pkgname_to_check}" ] || return 1
+
+	pecan_vercmp "${_pb_check_version_to_check}" "${_pb_check_version}"
+	_pb_check_cmp_result=$?
+	case "${_pb_check_cmp}" in
+	[*])	# any
+		case "${_pb_check_cmp_result}" in
+		0|1|2)	return 0 ;;
+		esac
+		;;
+	"<=")	# less than or equal to
+		case "${_pb_check_cmp_result}" in
+		0|2)	return 0 ;;
+		esac
+		;;
+	"<")	# less than
+		case "${_pb_check_cmp_result}" in
+		2)	return 0 ;;
+		esac
+		;;
+	"=")	# equal to
+		case "${_pb_check_cmp_result}" in
+		0)	return 0 ;;
+		esac
+		;;
+	">")	# greater than
+		case "${_pb_check_cmp_result}" in
+		1)	return 0 ;;
+		esac
+		;;
+	">=")	# greater than or equal to
+		case "${_pb_check_cmp_result}" in
+		0|1)	return 0 ;;
+		esac
+		;;
+	esac
+	return 1
+}
+
+
+###
 # pecan_pkgspec_match operator pkgspec best_match_varname
 #
 # Searches for the packages in ${PECAN_SOURCE} that match the prereq
@@ -366,7 +436,7 @@ pecan_pkgspec_match()
 		;;
 	esac
 
-	pecan_pkgspec_parse ${_pb_match_pkgspec} \
+	pecan_pkgspec_parse "${_pb_match_pkgspec}" \
 		_pb_match_pkgname _pb_match_version || return 1
 
 	_pb_match_best_version=
@@ -379,49 +449,14 @@ pecan_pkgspec_match()
 			_pb_match_root="${_pb_match_root#${PECAN_SOURCE}/}"
 			;;
 		esac
-		pecan_pkgspec_parse ${_pb_match_root} \
+		pecan_pkgspec_parse "${_pb_match_root}" \
 			_pb_match_root_pkgname _pb_match_root_version || continue
-
 		[ "${_pb_match_pkgname}" = "${_pb_match_root_pkgname}" ] || continue
-		pecan_vercmp ${_pb_match_root_version} ${_pb_match_version}
-		_pb_match_root_cmp_result="$?"
-		pecan_vercmp ${_pb_match_root_version} ${_pb_match_best_version}
-		_pb_match_best_cmp_result="$?"
 
-		_pb_match_update_best=
-		case "${_pb_match_cmp}" in
-		[*])	# any
-			case "${_pb_match_root_cmp_result}" in
-			0|1|2)	_pb_match_update_best=true ;;
-			esac
-			;;
-		"<=")	# less than or equal to
-			case "${_pb_match_root_cmp_result}" in
-			0|2)	_pb_match_update_best=true ;;
-			esac
-			;;
-		"<")	# less than
-			case "${_pb_match_root_cmp_result}" in
-			2)	_pb_match_update_best=true ;;
-			esac
-			;;
-		"=")	# equal to
-			case "${_pb_match_root_cmp_result}" in
-			0)	_pb_match_update_best=true ;;
-			esac
-			;;
-		">")	# greater than
-			case "${_pb_match_root_cmp_result}" in
-			1)	_pb_match_update_best=true ;;
-			esac
-			;;
-		">=")	# greater than or equal to
-			case "${_pb_match_root_cmp_result}" in
-			0|1)	_pb_match_update_best=true ;;
-			esac
-			;;
-		esac
-		if [ -n "${_pb_match_update_best}" -a ${_pb_match_best_cmp_result} -eq 1 ]; then
+		pecan_vercmp "${_pb_match_root_version}" "${_pb_match_best_version}"
+		_pb_match_best_cmp_result="$?"
+		if pecan_pkgspec_check "${_pb_match_cmp}" "${_pb_match_pkgspec}" "${_pb_match_root}" && \
+			[ ${_pb_match_best_cmp_result} -eq 1 ]; then
 			_pb_match_best_version="${_pb_match_root_version}"
 		fi
 	done
