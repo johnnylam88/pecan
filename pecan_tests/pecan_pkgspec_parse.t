@@ -11,6 +11,7 @@ pecan_pkgspec_parse_test_helper()
 
 pecan_pkgspec_parse_test()
 {
+	pecan_pkgspec_parse_test_helper pdksh
 	pecan_pkgspec_parse_test_helper zlib-1.2.7
 	pecan_pkgspec_parse_test_helper perl-5.005
 	pecan_pkgspec_parse_test_helper png-1.2.8c

@@ -233,6 +233,20 @@ pecan_pkgspec_parse()
 		return 1
 		;;
 	esac
+
+	# Check for pkgspec with no version.
+	if [ "${_pb_parse_pkgname}" = "${_pb_parse_version}" ]; then
+		case "${_pb_parse_pkgspec}" in
+		*-*)	;;
+		*)
+			# pkgspec has no version.
+			_pb_parse_version=
+			_pb_parse_swver=
+			_pb_parse_pkgver=
+			;;
+		esac
+	fi
+
 	[ -z "${_pb_parse_pkgname_varname}" ] || \
 		eval ${_pb_parse_pkgname_varname}=\"${_pb_parse_pkgname}\"
 	[ -z "${_pb_parse_version_varname}" ] || \
