@@ -394,8 +394,8 @@ pecan_tools_sh_prereq="* pdksh"
 pecan_tools_sh_vars()
 {
 	case ${pecan_tools_sh} in
-	"")	SHELL=${pecan_tools_sh} ;;
-	*)	SHELL="${PECAN_TARGET}/bin/pdksh" ;;
+	"")	SHELL="${PECAN_TARGET}/bin/pdksh" ;;
+	*)	SHELL=${pecan_tools_sh} ;;
 	esac
 	export SHELL
 }
