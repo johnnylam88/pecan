@@ -1,12 +1,12 @@
 #!/bin/sh
 
-PECAN_PKGNAME="cyrus-sasl-2.1.26+1"
+PECAN_PKGNAME="cyrus-sasl-2.1.26+2"
 
 pecan_description="Cyrus Simple Authentication Security Layer (SASL) library"
 
 pecan_fetch_url="ftp://ftp.cyrusimap.org/cyrus-sasl/%FILE%"
 
-pecan_prereq_lib=">= gdbm-1.10"
+pecan_prereq_lib=">= gdbm-1.8.3"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 
 pecan_tools_build="libtool"

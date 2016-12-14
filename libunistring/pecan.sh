@@ -1,12 +1,12 @@
 #!/bin/sh
 
-PECAN_PKGNAME="libunistring-0.9.7"
+PECAN_PKGNAME="libunistring-0.9.7+1"
 
 pecan_description="GNU Unicode string library"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/libunistring/%FILE%"
 
-pecan_prereq_lib=">= libiconv-1.14"
+pecan_prereq_lib=">= libiconv-1.9.1"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

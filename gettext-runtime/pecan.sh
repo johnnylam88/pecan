@@ -1,13 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gettext-runtime-0.19.8.1"
+PECAN_PKGNAME="gettext-runtime-0.19.8.1+1"
 
 pecan_description="GNU internationalization & localization library"
 
 pecan_fetch_file="gettext-0.19.8.1.tar.gz"
 pecan_fetch_url="http://ftp.gnu.org/gnu/gettext/%FILE%"
 
-pecan_prereq_lib=">= libiconv-1.14"
+pecan_prereq_lib=">= libiconv-1.9.1"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

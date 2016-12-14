@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gettext-tools-0.19.8.1"
+PECAN_PKGNAME="gettext-tools-0.19.8.1+1"
 
 pecan_description="GNU internationalization & localization tools"
 
@@ -8,7 +8,7 @@ pecan_fetch_file="gettext-0.19.8.1.tar.gz"
 pecan_fetch_url="http://ftp.gnu.org/gnu/gettext/%FILE%"
 
 pecan_prereq_lib=">= gettext-runtime-0.19.8.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
+pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

@@ -1,15 +1,15 @@
 #!/bin/sh
 
-PECAN_PKGNAME="grep-2.14"
+PECAN_PKGNAME="grep-2.14+1"
 
 pecan_description="GNU regular expression search utility"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/grep/%FILE%"
 pecan_fetch_suffix=".tar.xz"
 
-pecan_prereq_lib=">= gettext-runtime-0.18.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
-pecan_prereq_lib="${pecan_prereq_lib} >= pcre-8.31"
+pecan_prereq_lib=">= gettext-runtime-0.18"
+pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
+pecan_prereq_lib="${pecan_prereq_lib} >= pcre-3.4"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

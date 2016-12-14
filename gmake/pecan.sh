@@ -1,14 +1,14 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gmake-3.82"
+PECAN_PKGNAME="gmake-3.82+1"
 
 pecan_description="GNU 'make' utility"
 
 pecan_fetch_file="make-3.82.tar.gz"
 pecan_fetch_url="http://ftp.gnu.org/gnu/make/%FILE%"
 
-pecan_prereq_lib=">= gettext-runtime-0.18.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
+pecan_prereq_lib=">= gettext-runtime-0.18"
+pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
 
 pecan_tools_build="msgfmt"
 

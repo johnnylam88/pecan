@@ -1,7 +1,7 @@
 #!/bin/sh
 
 openldap_version=2.4.33
-PECAN_PKGNAME="openldap-client-${openldap_version}+3"
+PECAN_PKGNAME="openldap-client-${openldap_version}+4"
 
 pecan_description="Lightweight Directory Access Protocol (LDAP) client & libraries"
 
@@ -15,7 +15,7 @@ pecan_fetch_url=`cat << EOF
 EOF
 `
 
-pecan_prereq_lib=">= cyrus-sasl-2.1.26"
+pecan_prereq_lib=">= cyrus-sasl-2.1.12"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 
 if [ -f ./pecan/pecan.subr ]; then

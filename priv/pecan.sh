@@ -19,6 +19,12 @@ fi
 
 pecan_configure_style="gnu"
 
+# The GNU configure script is old and doesn't accept the --docdir
+# option. Set "pecan_docdir" to the empty string to skip adding that
+# option automatically.
+#
+pecan_docdir=
+
 pecan_post_configure()
 {
 	( cd "${pecan_srcdir}" &&

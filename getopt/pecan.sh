@@ -1,13 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="getopt-1.1.5"
+PECAN_PKGNAME="getopt-1.1.5+1"
 
 pecan_description="GNU getopt(3)-compatible tool for shell scripts"
 
 pecan_fetch_url="http://software.frodo.looijaard.name/getopt/files/%FILE%"
 
-pecan_prereq_lib=">= gettext-runtime-0.18.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
+pecan_prereq_lib=">= gettext-runtime-0.18"
+pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
 
 pecan_tools_build="gmake msgfmt"
 

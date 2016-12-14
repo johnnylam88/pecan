@@ -1,15 +1,15 @@
 #!/bin/sh
 
-PECAN_PKGNAME="coreutils-8.20"
+PECAN_PKGNAME="coreutils-8.20+1"
 
 pecan_description="GNU find utilities for basic directory searches"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/coreutils/%FILE%"
 pecan_fetch_suffix=".tar.xz"
 
-pecan_prereq_lib=">= gettext-runtime-0.18.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= gmp-5.0.5"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
+pecan_prereq_lib=">= gettext-runtime-0.18"
+pecan_prereq_lib="${pecan_prereq_lib} >= gmp-4.2.1"
+pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

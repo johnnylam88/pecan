@@ -1,13 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="libidn2-0.11"
+PECAN_PKGNAME="libidn2-0.11+1"
 
 pecan_description="GNU implementation of the IDNA2008 specifications"
 
 pecan_fetch_url="ftp://alpha.gnu.org/gnu/libidn/%FILE%"
 
-pecan_prereq_lib=">= libunistring-0.9.7"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
+pecan_prereq_lib=">= libunistring-0.9.3"
+pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

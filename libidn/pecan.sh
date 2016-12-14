@@ -1,13 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="libidn-1.33"
+PECAN_PKGNAME="libidn-1.33+1"
 
 pecan_description="GNU internationalized domain name library"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/libidn/%FILE%"
 
-pecan_prereq_lib=">= gettext-runtime-0.18.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
+pecan_prereq_lib=">= gettext-runtime-0.18"
+pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

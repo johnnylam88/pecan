@@ -1,15 +1,15 @@
 #!/bin/sh
 
-PECAN_PKGNAME="bash-4.2"
+PECAN_PKGNAME="bash-4.2+1"
 
 pecan_description="GNU sh-compatible shell"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/bash/%FILE%"
 
-pecan_prereq_lib=">= gettext-runtime-0.18.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
-pecan_prereq_lib="${pecan_prereq_lib} >= ncurses-5.8"
-pecan_prereq_lib="${pecan_prereq_lib} >= readline-4.2"
+pecan_prereq_lib=">= gettext-runtime-0.18"
+pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
+pecan_prereq_lib="${pecan_prereq_lib} >= ncurses-5.0"
+pecan_prereq_lib="${pecan_prereq_lib} >= readline-2.2"
 
 pecan_tools_build="msgfmt"
 

@@ -5,6 +5,7 @@ PECAN_PKGNAME="pdksh-5.2.14+2"
 pecan_description="Public Domain Korn Shell"
 
 pecan_fetch_url=`cat << EOF
+	ftp://ftp.lip6.fr/pub/unix/shells/pdksh/%FILE%
 	https://fossies.org/linux/misc/old/%FILE%
 	http://gd.tuwien.ac.at/utils/shells/pdksh/%FILE%
 EOF

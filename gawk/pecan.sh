@@ -1,14 +1,14 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gawk-4.0.2"
+PECAN_PKGNAME="gawk-4.0.2+1"
 
 pecan_description="GNU 'awk' utility"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/gawk/%FILE%"
 
-pecan_prereq_lib=">= gettext-runtime-0.18.1"
-pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.14"
-pecan_prereq_lib="${pecan_prereq_lib} >= readline-6.2"
+pecan_prereq_lib=">= gettext-runtime-0.18"
+pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
+pecan_prereq_lib="${pecan_prereq_lib} >= readline-2.2"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr
