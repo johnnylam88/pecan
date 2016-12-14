@@ -75,6 +75,18 @@ pecan_stage_default()
 			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
 			continue
 		fi
+		pecan_pkgspec_parse "${_pb_prereq_pkgspec}" _pb_prereq_pkgname
+
+		# Check if a builtin pkgspec satisfies this prereq.
+		pecan_builtin_match "${_pb_prereq_pkgname}" _pb_prereq_builtin
+		if [ -n "${_pb_prereq_builtin}" ]; then
+			eval _pb_prereq_builtin_pkgspec=\"\${pecan_builtin_${_pb_prereq_builtin}_pkgspec}\"
+			if pecan_pkgspec_check "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" "${_pb_prereq_builtin_pkgspec}"; then
+				_pb_prereq_cmp=
+				continue
+			fi
+		fi
+		# Find the installed pecan package that satisfies this prereq.
 		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
 			echo "prereq pkgspec ${_pb_prereq_cmp} ${_pb_prereq_pkgspec}" >> ${pecan_stage_encapinfo}
 		fi

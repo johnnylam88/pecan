@@ -49,6 +49,35 @@ pecan_prereq_vars()
 			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
 			continue
 		fi
+		pecan_pkgspec_parse "${_pb_prereq_pkgspec}" _pb_prereq_pkgname
+
+		# Check if a builtin pkgspec satisfies this prereq.
+		pecan_builtin_match "${_pb_prereq_pkgname}" _pb_prereq_builtin
+		if [ -n "${_pb_prereq_builtin}" ]; then
+			eval _pb_prereq_builtin_pkgspec=\"\${pecan_builtin_${_pb_prereq_builtin}_pkgspec}\"
+			if pecan_pkgspec_check "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" "${_pb_prereq_builtin_pkgspec}"; then
+				eval _pb_prereq_builtin_cppflags=\"\${pecan_builtin_${_pb_builtin}_cppflags}\"
+				if [ -n "${_pb_prereq_builtin_cppflags}" ]; then
+					if [ -z "${_pb_prereq_cppflags}" ]; then
+						_pb_prereq_cppflags="${_pb_prereq_builtin_cppflags}"
+					else
+						_pb_prereq_cppflags="${_pb_prereq_cppflags} ${_pb_prereq_builtin_cppflags}"
+					fi
+				fi
+				eval _pb_prereq_builtin_ldflags=\"\${pecan_builtin_${_pb_builtin}_ldflags}\"
+				if [ -n "${_pb_prereq_builtin_ldflags}" ]; then
+					if [ -z "${_pb_prereq_ldflags}" ]; then
+						_pb_prereq_ldflags="${_pb_prereq_builtin_ldflags}"
+					else
+						_pb_prereq_ldflags="${_pb_prereq_ldflags} ${_pb_prereq_builtin_ldflags}"
+					fi
+				fi
+				_pb_prereq_cmp=
+				continue
+			fi
+		fi
+
+		# Find an installed pecan package that satisfies this prereq.
 		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
 			_pb_prereq_pkgdir="${PECAN_SOURCE}/${_pb_prereq_match}"
 			if [ -d "${_pb_prereq_pkgdir}/include" ]; then
@@ -103,7 +132,30 @@ pecan_prereq_default()
 			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
 			continue
 		fi
-		if ! pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+		pecan_pkgspec_parse "${_pb_prereq_pkgspec}" _pb_prereq_pkgname
+
+		# Check if a builtin pkgspec satisfies this prereq.
+		pecan_builtin_match "${_pb_prereq_pkgname}" _pb_prereq_builtin
+		if [ -n "${_pb_prereq_builtin}" ]; then
+			eval _pb_prereq_builtin_pkgspec=\"\${pecan_builtin_${_pb_prereq_builtin}_pkgspec}\"
+			if pecan_pkgspec_check "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" "${_pb_prereq_builtin_pkgspec}"; then
+				pecan_msg "prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' matches builtin \`${_pb_prereq_builtin_pkgspec}'."
+				_pb_prereq_cmp=
+				continue
+			else
+				pecan_msg "prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' not matched by builtin \`${_pb_prereq_builtin_pkgspec}'."
+			fi
+		fi
+
+		# Find an installed pecan package that satisfies this prereq.
+		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			pecan_msg "prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' matches \`${_pb_prereq_match}'."
+			if pecan_pkgspec_parse "${_pb_prereq_match}" _pb_prereq_pkgname; then
+				_pb_prereq_file="${pecan_prereq_dir}/${_pb_prereq_pkgname}"
+				echo "${_pb_prereq_match}" > "${_pb_prereq_file}"
+			fi
+		else
+			# No matching pecan package, so install one if possible.
 			pecan_msg "prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' not matched."
 			pecan_pkgspec_parse "${_pb_prereq_pkgspec}" _pb_prereq_pkgname || return 1
 			if [ ! -d "../${_pb_prereq_pkgname}" ]; then
@@ -120,13 +172,6 @@ pecan_prereq_default()
 				pecan_msg "returning to \`${pecan_pkgname}'."
 			  fi ) || return 1
 			exec $0 ${pecan_main_args}
-		fi
-		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
-			pecan_msg "prereq \`${_pb_prereq_cmp} ${_pb_prereq_pkgspec}' matches \`${_pb_prereq_match}'."
-			if pecan_pkgspec_parse "${_pb_prereq_match}" _pb_prereq_pkgname; then
-				_pb_prereq_file="${pecan_prereq_dir}/${_pb_prereq_pkgname}"
-				echo "${_pb_prereq_match}" > "${_pb_prereq_file}"
-			fi
 		fi
 		_pb_prereq_cmp=
 	done

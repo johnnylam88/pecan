@@ -1,0 +1,84 @@
+# Copyright (c) 2016, Johnny C. Lam
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#######
+# sys #
+#######
+
+pecan_action_registry="${pecan_action_registry} sys"
+
+pecan_sys_vars()
+{
+	pecan_platform_name -s _pb_sysname
+	_pb_sys_vars="pecan_sys_${_pb_sysname}_vars"
+	if pecan_is_function_defined "${_pb_sys_vars}"; then
+		${_pb_sys_vars}
+	fi
+}
+
+# NetBSD-7.0
+pecan_sys_netbsd_vars()
+{
+	# Tools pre-installed on the system.
+	: ${pecan_tools_awk=/usr/bin/awk}
+	: ${pecan_tools_bzip2=/usr/bin/bzip2}
+	: ${pecan_tools_getopt=/usr/bin/getopt}
+	: ${pecan_tools_grep=/usr/bin/grep}
+	: ${pecan_tools_gzip=/usr/bin/gzip}
+	: ${pecan_tools_id=/usr/bin/id}
+	: ${pecan_tools_ls=/bin/ls}
+	: ${pecan_tools_patch=/usr/bin/patch}
+	: ${pecan_tools_sed=/usr/bin/sed}
+	: ${pecan_tools_sh=/bin/sh}
+	: ${pecan_tools_tar=/bin/tar}
+
+	# OpenSSL (builtin)
+	: ${pecan_builtin_openssl=NO}
+	case "${pecan_builtin_openssl}" in
+	[Yy][Ee][Ss])
+		pecan_builtin_registry="${pecan_builtin_registry} openssl"
+		: ${pecan_builtin_openssl_pkgspec="openssl-1.0.2j"}
+		;;
+	esac
+
+	# OpenLDAP client (builtin)
+	: ${pecan_builtin_openldap_client=NO}
+	case "${pecan_builtin_openldap_client}" in
+	[Yy][Ee][Ss])
+		pecan_builtin_registry="${pecan_builtin_registry} openldap_client"
+		: ${pecan_builtin_openldap_client_pkgspec="openldap-client-2.4.39"}
+		;;
+	esac
+
+	# zlib (builtin)
+	: ${pecan_builtin_zlib=NO}
+	case "${pecan_builtin_zlib}" in
+	[Yy][Ee][Ss])
+		pecan_builtin_registry="${pecan_builtin_registry} zlib"
+		: ${pecan_builtin_zlib_pkgspec=zlib-1.2.3}
+		;;
+	esac
+}
