@@ -23,6 +23,12 @@ pecan_configure_style="gnu"
 configure_args="--program-transform-name='s/^ksh/pdksh/'"
 pecan_configure_args="${pecan_configure_args} ${configure_args}"
 
+# The GNU configure script is old and doesn't accept the --docdir
+# option. Set "pecan_docdir" to the empty string to skip adding that
+# option automatically.
+#
+pecan_docdir=
+
 pecan_post_stage()
 {
 	cp "${pecan_srcdir}/LEGAL" "${pecan_stagedir}"
