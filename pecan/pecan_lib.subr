@@ -274,13 +274,26 @@ pecan_pkgspec_parse()
 #
 #	alpha < beta < rc
 #
+# An empty version is a null version and is considered the lowest
+# version.
+#
 pecan_vercmp()
 {
-	if [ "$1" = "$2" ]; then
+	_pb_vercmp_version1="$1"
+	_pb_vercmp_version2="$2"
+
+	# Same versions.
+	if [ "${_pb_vercmp_version1}" = "${_pb_vercmp_version2}" ]; then
 		return 0
 	fi
-	_pb_vercmp_dot_rest1="$1"
-	_pb_vercmp_dot_rest2="$2"
+
+	# Null versions.
+	[ -n "${_pb_vercmp_version1}" ] || return 2
+	[ -n "${_pb_vercmp_version2}" ] || return 1
+
+	# Break down versions for comparisons.
+	_pb_vercmp_dot_rest1="${_pb_vercmp_version1}"
+	_pb_vercmp_dot_rest2="${_pb_vercmp_version2}"
 	while true; do
 		_pb_vercmp_dot_head1="${_pb_vercmp_dot_rest1%%.*}"
 		case "${_pb_vercmp_dot_rest1}" in

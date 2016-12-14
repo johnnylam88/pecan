@@ -4,14 +4,19 @@
 
 pecan_vercmp_test_helper()
 {
-	pecan_vercmp "$1" "$2"
+	version1="$1"
+	version2="$2"
+
+	pecan_vercmp "$version1" "$version2"
 	test_result=$?
+	: ${version1:="(null)"}
+	: ${version2:="(null)"}
 	if test $test_result -eq 2; then
-		echo "$1 < $2"
+		echo "$version1 < $version2"
 	elif test $test_result -eq 0; then
-		echo "$1 = $2 [FAIL]"
+		echo "$version1 = $version2 [FAIL]"
 	elif test $test_result -eq 1; then
-		echo "$1 > $2 [FAIL]"
+		echo "$version1 > $version2 [FAIL]"
 	fi
 }
 
@@ -34,6 +39,7 @@ pecan_vercmp_test()
 	pecan_vercmp_test_helper 1.23.0alpha99 1.23.0+1
 	pecan_vercmp_test_helper 1.23.0+2 1.23.0+11
 	pecan_vercmp_test_helper "*" 1.0
+	pecan_vercmp_test_helper "" 1.0
 }
 
 pecan_vercmp_test
