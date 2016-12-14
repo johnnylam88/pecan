@@ -1,4 +1,4 @@
-# Copyright (c) 2012, Johnny C. Lam
+# Copyright (c) 2012, 2016, Johnny C. Lam
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -154,22 +154,31 @@ pecan_action_generator()
 }
 
 ###
-# pecan_platform_name varname
+# pecan_platform_name [-a|-s|-v] varname
 #
 # Saves the Encap platform name into the named variable.
+#	-a  save the architecture name
+#	-s  save the operating system name
+#	-v  save the operating system version
 #
 pecan_platform_name()
 {
+	case "$1" in
+	-a)	_pb_platform_save=architecture; shift ;;
+	-s)	_pb_platform_save=operatingsystem; shift ;;
+	-v)	_pb_platform_save=osversion; shift ;;
+	*)	_pb_platform_save=name ;;
+	esac
+
 	_pb_platform_varname="$1"
 
-	_pb_platform_architecture=`uname -m`
-	_pb_platform_operatingsystem=`uname -s`
-	_pb_platform_osversion=`uname -r`
+	_pb_platform_architecture=`uname -m | tr '[A-Z]' '[a-z]'`
+	_pb_platform_operatingsystem=`uname -s | tr '[A-Z]' '[a-z]'`
+	_pb_platform_osversion=`uname -r | tr '[A-Z]' '[a-z]'`
 	_pb_platform_name="${_pb_platform_architecture}-${_pb_platform_operatingsystem}-${_pb_platform_osversion}"
-	_pb_platform_name=`echo "${_pb_platform_name}" | tr '[A-Z]' '[a-z]'`
 
 	[ -z "${_pb_platform_varname}" ] || \
-		eval ${_pb_platform_varname}=\"${_pb_platform_name}\"
+		eval "${_pb_platform_varname}=\"\${_pb_platform_${_pb_platform_save}}\""
 }
 
 ###
