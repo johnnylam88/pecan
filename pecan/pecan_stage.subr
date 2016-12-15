@@ -64,18 +64,30 @@ pecan_stage_default()
 		echo "date ${pecan_date}" >> ${pecan_stage_encapinfo}
 	[ -z "${PECAN_CONTACT}" ] || \
 		echo "contact ${PECAN_CONTACT}" >> ${pecan_stage_encapinfo}
+	[ -z "${pecan_abi_version}" ] || \
+		echo "abi_version ${pecan_abi_version}" >> ${pecan_stage_encapinfo}
 
 	[ -z "${pecan_prereq_pkg}" ] || set -o noglob
 	[ -z "${pecan_prereq_lib}" ] || set -o noglob
 
+	_pb_prereq_type=
 	_pb_prereq_cmp=
-	for _pb_prereq_pkgspec in ${pecan_prereq_pkg} ${pecan_prereq_lib}; do
+	for _pb_prereq_pkgspec in pkg ${pecan_prereq_pkg} lib ${pecan_prereq_lib}; do
 		set +o noglob
+
+		# Set the prereq type if it's "lib" or "pkg".
+		case "${_pb_prereq_pkgspec}" in
+		lib|pkg)
+			_pb_prereq_type="${_pb_prereq_pkgspec}"
+			continue
+			;;
+		esac
+
 		if [ -z "${_pb_prereq_cmp}" ]; then
 			_pb_prereq_cmp="${_pb_prereq_pkgspec}"
 			continue
 		fi
-		pecan_pkgspec_parse "${_pb_prereq_pkgspec}" _pb_prereq_pkgname
+		pecan_pkgspec_parse "${_pb_prereq_pkgspec}" _pb_prereq_pkgname _pb_prereq_version
 
 		# Check if a builtin pkgspec satisfies this prereq.
 		pecan_builtin_match "${_pb_prereq_pkgname}" _pb_prereq_builtin
@@ -88,6 +100,30 @@ pecan_stage_default()
 		fi
 		# Find the installed pecan package that satisfies this prereq.
 		if pecan_pkgspec_match "${_pb_prereq_cmp}" "${_pb_prereq_pkgspec}" _pb_prereq_match; then
+			#
+			# If this is a "lib" prereq and is of the form # "> pkgspec"
+			# or ">= pkgspec", then replace the pkgspec version with the
+			# greater of that version or the ABI version of the installed
+			# prereq.
+			#
+			if [ "${_pb_prereq_type}" = "lib" ]; then
+				case "${_pb_prereq_cmp}" in
+				">"|">=")
+					_pb_prereq_abi_version=
+					while read _pb_encap_field _pb_encap_abi_version; do
+						if [ "${_pb_encap_field}" = "abi_version" ]; then
+							_pb_prereq_abi_version="${_pb_encap_abi_version}"
+						fi
+					done < "${PECAN_SOURCE}/${_pb_prereq_match}/encapinfo"
+					if [ -n "${_pb_prereq_abi_version}" ]; then
+						pecan_vercmp "${_pb_prereq_version}" "${_pb_prereq_abi_version}"
+						if [ $? -eq 2 ]; then
+							_pb_prereq_pkgspec="${_pb_prereq_pkgname}-${_pb_prereq_abi_version}"
+						fi
+					fi
+					;;
+				esac
+			fi
 			echo "prereq pkgspec ${_pb_prereq_cmp} ${_pb_prereq_pkgspec}" >> ${pecan_stage_encapinfo}
 		fi
 		_pb_prereq_cmp=
