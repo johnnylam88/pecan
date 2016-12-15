@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="libunistring-0.9.7+1"
+PECAN_PKGNAME="libunistring-0.9.7+2"
 
 pecan_description="GNU Unicode string library"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/libunistring/%FILE%"
+
+pecan_abi_version="0.9.4"
+pecan_api_version="0.9.3"
 
 pecan_prereq_lib=">= libiconv-1.9.1"
 

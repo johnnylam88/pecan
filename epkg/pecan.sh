@@ -1,16 +1,16 @@
 #!/bin/sh
 
-PECAN_PKGNAME="epkg-2.3.9+6"
+PECAN_PKGNAME="epkg-2.3.9+8"
 
 pecan_description="Encap package manager"
 
 pecan_fetch_url="ftp://ftp.encap.org/pub/encap/epkg/%FILE%"
 
-pecan_prereq_lib=">= curl-7.28.0+1"
+pecan_prereq_lib=">= curl-7.12.3"
 pecan_prereq_lib="${pecan_prereq_lib} >= expat-1.95.7"
 pecan_prereq_lib="${pecan_prereq_lib} >= libidn-1.25"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
-pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.3"
+pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.1.4"
 pecan_prereq_pkg=">= m4-1.4"
 
 if [ -f ./pecan/pecan.subr ]; then

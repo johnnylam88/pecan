@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="libffi-3.0.11"
+PECAN_PKGNAME="libffi-3.0.11+1"
 
 pecan_description="Foreign function interface library"
 
 pecan_fetch_url="ftp://sourceware.org/pub/libffi/%FILE%"
+
+pecan_abi_version="3.0.11"
+pecan_api_version="1.20"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

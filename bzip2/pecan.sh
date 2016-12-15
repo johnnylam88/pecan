@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="bzip2-1.0.6"
+PECAN_PKGNAME="bzip2-1.0.6+1"
 
 pecan_description="Patent-free data compressor"
 
 pecan_fetch_url="http://www.bzip.org/1.0.6/%FILE%"
+
+pecan_abi_version="1.0"
+pecan_api_version="1.0"
 
 pecan_prereq_build="* autoconf"
 pecan_prereq_build="${pecan_prereq_build} * automake"

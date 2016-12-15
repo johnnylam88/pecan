@@ -1,14 +1,17 @@
 #!/bin/sh
 
-PECAN_PKGNAME="curl-7.28.0+2"
+PECAN_PKGNAME="curl-7.28.0+3"
 
 pecan_description="Command-line tool for transferring data with URL syntax"
 
 pecan_fetch_url="http://curl.haxx.se/download/%FILE%"
 
+pecan_abi_version="7.28.0"
+pecan_api_version="7.12.3"
+
 pecan_prereq_lib=">= libidn-0.4.6"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
-pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.3"
+pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.1.4"
 
 pecan_tools_build="pkg-config sed"
 

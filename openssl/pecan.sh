@@ -1,12 +1,15 @@
 #!/bin/sh
 
-PECAN_PKGNAME="openssl-1.1.0c+1"
+PECAN_PKGNAME="openssl-1.1.0c+2"
 
 pecan_description="SSLv2/v3 & TLSv1 protocol & cryptography library"
 
 pecan_fetch_url="http://openssl.org/source/%FILE%"
 
-pecan_prereq_lib=">= zlib-1.2.3"
+pecan_abi_version="1.1.0"
+pecan_api_version="1.0.1c"
+
+pecan_prereq_lib=">= zlib-1.1.4"
 pecan_prereq_pkg=">= perl-5.005"
 
 if [ -f ./pecan/pecan.subr ]; then

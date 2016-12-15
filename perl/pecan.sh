@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="perl-5.24.0"
+PECAN_PKGNAME="perl-5.24.0+1"
 
 pecan_description="Perl 5 scripting language interpreter"
 
 pecan_fetch_url="http://www.cpan.org/src/5.0/%FILE%"
+
+pecan_abi_version="5.24.0"
+pecan_api_version="5.005"
 
 pecan_tools_build="sed"
 

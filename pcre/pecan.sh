@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="pcre-8.31"
+PECAN_PKGNAME="pcre-8.31+1"
 
 pecan_description="Perl-compatible regular expression library"
 
 pecan_fetch_url="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/%FILE%"
+
+pecan_abi_version="8.30"
+pecan_api_version="3.4"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

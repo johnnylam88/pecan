@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gettext-tools-0.19.8.1+1"
+PECAN_PKGNAME="gettext-tools-0.19.8.1+2"
 
 pecan_description="GNU internationalization & localization tools"
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="python-2.7.3+2"
+PECAN_PKGNAME="python-2.7.3+3"
 
 pecan_description="Python 2.x scripting langauge interpreter"
 
@@ -8,7 +8,10 @@ pecan_fetch_file=Python-2.7.3.tgz
 pecan_fetch_url="http://python.org/download/releases/2.7.3/%FILE%"
 pecan_fetch_suffix=.tgz
 
-pecan_prereq_lib=">= bzip2-1.0.1"
+pecan_abi_version="2.7"
+pecan_api_version="2.7"
+
+pecan_prereq_lib=">= bzip2-1.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= expat-1.95.7"
 pecan_prereq_lib="${pecan_prereq_lib} >= gdbm-1.8.3"
 pecan_prereq_lib="${pecan_prereq_lib} >= gettext-runtime-0.18"
@@ -16,8 +19,8 @@ pecan_prereq_lib="${pecan_prereq_lib} >= libffi-1.20"
 pecan_prereq_lib="${pecan_prereq_lib} >= ncurses-5.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 pecan_prereq_lib="${pecan_prereq_lib} >= readline-2.2"
-pecan_prereq_lib="${pecan_prereq_lib} >= sqlite-2.8.0"
-pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.3"
+pecan_prereq_lib="${pecan_prereq_lib} >= sqlite-3.0.8"
+pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.1.4"
 
 pecan_tools_build="pkg-config"
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="bash-4.2+1"
+PECAN_PKGNAME="bash-4.2+2"
 
 pecan_description="GNU sh-compatible shell"
 

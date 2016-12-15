@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="ncurses-5.9"
+PECAN_PKGNAME="ncurses-5.9+1"
 
 pecan_description="SVr4-compatible curses library"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/ncurses/%FILE%"
+
+pecan_abi_version="5.0"
+pecan_api_version="5.0"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

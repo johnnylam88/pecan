@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="findutils-4.4.2+3"
+PECAN_PKGNAME="findutils-4.4.2+4"
 
 pecan_description="GNU find utilities for basic directory searches"
 

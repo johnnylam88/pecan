@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="libiconv-1.14"
+PECAN_PKGNAME="libiconv-1.14+1"
 
 pecan_description="GNU character set conversion library"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/libiconv/%FILE%"
+
+pecan_abi_version="1.9.1"
+pecan_api_version="1.9.1"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

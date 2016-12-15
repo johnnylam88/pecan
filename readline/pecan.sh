@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="readline-6.2+1"
+PECAN_PKGNAME="readline-6.2+2"
 
 pecan_description="GNU command-line editing library"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/readline/%FILE%"
+
+pecan_abi_version="6.0"
+pecan_api_version="2.2"
 
 pecan_prereq_lib=">= ncurses-5.0"
 

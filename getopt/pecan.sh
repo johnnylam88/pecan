@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="getopt-1.1.5+1"
+PECAN_PKGNAME="getopt-1.1.5+2"
 
 pecan_description="GNU getopt(3)-compatible tool for shell scripts"
 

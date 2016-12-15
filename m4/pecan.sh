@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="m4-1.4.16+1"
+PECAN_PKGNAME="m4-1.4.16+2"
 
 pecan_description="SVr4-compatible Unix macro processor"
 

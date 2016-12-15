@@ -1,15 +1,18 @@
 #!/bin/sh
 
-PECAN_PKGNAME="libxslt-1.1.27+1"
+PECAN_PKGNAME="libxslt-1.1.27+2"
 
 pecan_description="XSLT C library"
 
 pecan_fetch_url="ftp://xmlsoft.org/libxml2/%FILE%"
 
+pecan_abi_version="1.1.27"
+pecan_api_version="1.1.8"
+
 pecan_prereq_lib=">= libiconv-1.9.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= libxml2-2.6.2"
 pecan_prereq_lib="${pecan_prereq_lib} >= xz-5.0"
-pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.3"
+pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.1.4"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

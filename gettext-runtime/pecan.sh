@@ -1,11 +1,14 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gettext-runtime-0.19.8.1+1"
+PECAN_PKGNAME="gettext-runtime-0.19.8.1+2"
 
 pecan_description="GNU internationalization & localization library"
 
 pecan_fetch_file="gettext-0.19.8.1.tar.gz"
 pecan_fetch_url="http://ftp.gnu.org/gnu/gettext/%FILE%"
+
+pecan_abi_version="0.18"
+pecan_api_version="0.18"
 
 pecan_prereq_lib=">= libiconv-1.9.1"
 

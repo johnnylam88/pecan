@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="coreutils-8.20+1"
+PECAN_PKGNAME="coreutils-8.20+2"
 
 pecan_description="GNU find utilities for basic directory searches"
 

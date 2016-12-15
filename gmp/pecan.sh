@@ -1,11 +1,14 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gmp-5.0.5"
+PECAN_PKGNAME="gmp-5.0.5+1"
 
 pecan_description="GNU multiple precision arithmetic library"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/gmp/%FILE%"
 pecan_fetch_suffix=".tar.bz2"
+
+pecan_abi_version="5.0"
+pecan_api_version="4.2.1"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

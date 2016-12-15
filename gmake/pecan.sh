@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gmake-3.82+1"
+PECAN_PKGNAME="gmake-3.82+2"
 
 pecan_description="GNU 'make' utility"
 

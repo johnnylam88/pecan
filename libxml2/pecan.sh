@@ -1,14 +1,17 @@
 #!/bin/sh
 
-PECAN_PKGNAME="libxml2-2.9.0+1"
+PECAN_PKGNAME="libxml2-2.9.0+2"
 
 pecan_description="XML C parser library and toolkit"
 
 pecan_fetch_url="ftp://xmlsoft.org/libxml2/%FILE%"
 
+pecan_abi_version="2.8.0"
+pecan_api_version="2.6.2"
+
 pecan_prereq_lib=">= libiconv-1.9.1"
 pecan_prereq_lib="${pecan_prereq_lib} >= xz-5.0"
-pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.2.3"
+pecan_prereq_lib="${pecan_prereq_lib} >= zlib-1.1.4"
 
 if [ -f ./pecan/pecan.subr ]; then
 	. ./pecan/pecan.subr

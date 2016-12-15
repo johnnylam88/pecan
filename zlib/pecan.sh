@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="zlib-1.2.8"
+PECAN_PKGNAME="zlib-1.2.8+1"
 
 pecan_description="gzip-compatible compression library"
 
 pecan_fetch_url="http://zlib.net/%FILE%"
+
+pecan_abi_version="1.2.3"
+pecan_api_version="1.1.4"
 
 pecan_tools_build="sed"
 

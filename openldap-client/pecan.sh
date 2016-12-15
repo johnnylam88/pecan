@@ -1,7 +1,7 @@
 #!/bin/sh
 
 openldap_version=2.4.33
-PECAN_PKGNAME="openldap-client-${openldap_version}+4"
+PECAN_PKGNAME="openldap-client-${openldap_version}+5"
 
 pecan_description="Lightweight Directory Access Protocol (LDAP) client & libraries"
 
@@ -14,6 +14,9 @@ pecan_fetch_url=`cat << EOF
 	ftp://sunsite.cnlab-switch.ch/mirror/OpenLDAP/openldap-release/%FILE%
 EOF
 `
+
+pecan_abi_version="2.4.19"
+pecan_api_version="2.4.6"
 
 pecan_prereq_lib=">= cyrus-sasl-2.1.12"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"

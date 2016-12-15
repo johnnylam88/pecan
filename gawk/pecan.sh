@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gawk-4.0.2+1"
+PECAN_PKGNAME="gawk-4.0.2+2"
 
 pecan_description="GNU 'awk' utility"
 

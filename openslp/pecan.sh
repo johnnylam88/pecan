@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="openslp-1.2.1+4"
+PECAN_PKGNAME="openslp-1.2.1+5"
 
 pecan_description="Service Location Protocol (SLP) client & libraries"
 
@@ -9,6 +9,9 @@ pecan_fetch_file_url=`cat << EOF
 	http://sourceforge.net/projects/openslp/files/OpenSLP/1.2.1/%FILE%/download
 EOF
 `
+
+pecan_abi_version="1.2.1"
+pecan_api_version="1.0.1"
 
 pecan_prereq_lib=">= openssl-1.0.1c"
 

@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="gdbm-1.10+1"
+PECAN_PKGNAME="gdbm-1.10+2"
 
 pecan_description="GNU key/data-pair database library"
 
 pecan_fetch_url="http://ftp.gnu.org/gnu/gdbm/%FILE%"
+
+pecan_abi_version="1.10"
+pecan_api_version="1.8.3"
 
 pecan_prereq_lib=">= gettext-runtime-0.18"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"

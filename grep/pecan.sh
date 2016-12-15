@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PECAN_PKGNAME="grep-2.14+1"
+PECAN_PKGNAME="grep-2.14+2"
 
 pecan_description="GNU regular expression search utility"
 

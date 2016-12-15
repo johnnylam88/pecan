@@ -1,10 +1,13 @@
 #!/bin/sh
 
-PECAN_PKGNAME="heimdal-1.5.2+5"
+PECAN_PKGNAME="heimdal-1.5.2+6"
 
 pecan_description="Heimdal Kerberos 5 implementation"
 
 pecan_fetch_url="http://www.h5l.org/dist/src/%FILE%"
+
+pecan_abi_version="1.5"
+pecan_api_version="0.4e"
 
 pecan_prereq_lib="${pecan_prereq_lib} >= gettext-runtime-0.18"
 pecan_prereq_lib="${pecan_prereq_lib} >= libiconv-1.9.1"
@@ -12,7 +15,7 @@ pecan_prereq_lib="${pecan_prereq_lib} >= ncurses-5.0"
 pecan_prereq_lib="${pecan_prereq_lib} >= openldap-client-2.4.6"
 pecan_prereq_lib="${pecan_prereq_lib} >= openssl-1.0.1c"
 pecan_prereq_lib="${pecan_prereq_lib} >= readline-2.2"
-pecan_prereq_lib="${pecan_prereq_lib} >= sqlite-2.8.0"
+pecan_prereq_lib="${pecan_prereq_lib} >= sqlite-3.0.8"
 
 pecan_tools_build="grep msgfmt pkg-config sed"
 
