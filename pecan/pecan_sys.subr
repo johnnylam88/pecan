@@ -55,12 +55,21 @@ pecan_sys_netbsd_vars()
 	: ${pecan_tools_sh=/bin/sh}
 	: ${pecan_tools_tar=/bin/tar}
 
-	# OpenSSL (builtin)
-	: ${pecan_builtin_openssl=NO}
-	case "${pecan_builtin_openssl}" in
+	# bzip2 (builtin)
+	: ${pecan_builtin_bzip2=NO}
+	case "${pecan_builtin_bzip2}" in
 	[Yy][Ee][Ss])
-		pecan_builtin_registry="${pecan_builtin_registry} openssl"
-		: ${pecan_builtin_openssl_pkgspec="openssl-1.0.2j"}
+		pecan_builtin_registry="${pecan_builtin_registry} bzip2"
+		: ${pecan_builtin_bzip2_pkgspec="bzip2-1.0.6"}
+		;;
+	esac
+
+	# Heimdal (builtin)
+	: ${pecan_builtin_heimdal=NO}
+	case "${pecan_builtin_heimdal}" in
+	[Yy][Ee][Ss])
+		pecan_builtin_registry="${pecan_builtin_registry} heimdal"
+		: ${pecan_builtin_heimdal_pkgspec="heimdal-1.5.3"}
 		;;
 	esac
 
@@ -70,6 +79,24 @@ pecan_sys_netbsd_vars()
 	[Yy][Ee][Ss])
 		pecan_builtin_registry="${pecan_builtin_registry} openldap_client"
 		: ${pecan_builtin_openldap_client_pkgspec="openldap-client-2.4.39"}
+		;;
+	esac
+
+	# OpenPAM (builtin)
+	: ${pecan_builtin_openpam=NO}
+	case "${pecan_builtin_openpam}" in
+	[Yy][Ee][Ss])
+		pecan_builtin_registry="${pecan_builtin_registry} openpam"
+		: ${pecan_builtin_openpam_pkgspec="openpam-20140912"}
+		;;
+	esac
+
+	# OpenSSL (builtin)
+	: ${pecan_builtin_openssl=NO}
+	case "${pecan_builtin_openssl}" in
+	[Yy][Ee][Ss])
+		pecan_builtin_registry="${pecan_builtin_registry} openssl"
+		: ${pecan_builtin_openssl_pkgspec="openssl-1.0.2j"}
 		;;
 	esac
 
