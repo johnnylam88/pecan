@@ -563,3 +563,31 @@ pecan_lndir()
 		fi
 	done
 }
+
+###
+# pecan_encapinfo_lookup path_to_encapinfo field varname
+#
+# Look for the named field in the encapinfo file and store its value
+# in the given variable.
+#
+pecan_encapinfo_lookup()
+{
+	_pb_encapinfo_path="$1"
+	_pb_encapinfo_fieldname="$2"
+	_pb_encapinfo_varname="$3"
+
+	[ -f "${_pb_encapinfo_path}" ] || return 1
+
+	while read _pb_encapinfo_field _pb_encapinfo_rest; do
+		case "${_pb_encapinfo_field}" in
+		"${_pb_encapinfo_fieldname}")
+			[ -z "${_pb_encapinfo_varname}" ] || \
+				eval "${_pb_encapinfo_varname}=\"${_pb_encapinfo_rest}\""
+			return 0
+			;;
+		*)
+			continue
+			;;
+		esac
+	done < "${_pb_encapinfo_path}"
+}

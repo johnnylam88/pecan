@@ -109,12 +109,7 @@ pecan_stage_default()
 			if [ "${_pb_prereq_type}" = "lib" ]; then
 				case "${_pb_prereq_cmp}" in
 				">"|">=")
-					_pb_prereq_abi_version=
-					while read _pb_encap_field _pb_encap_abi_version; do
-						if [ "${_pb_encap_field}" = "abi_version" ]; then
-							_pb_prereq_abi_version="${_pb_encap_abi_version}"
-						fi
-					done < "${PECAN_SOURCE}/${_pb_prereq_match}/encapinfo"
+					pecan_encapinfo_lookup "${PECAN_SOURCE}/${_pb_prereq_match}/encapinfo" abi_version _pb_prereq_abi_version
 					if [ -n "${_pb_prereq_abi_version}" ]; then
 						pecan_vercmp "${_pb_prereq_version}" "${_pb_prereq_abi_version}"
 						if [ $? -eq 2 ]; then
